@@ -147,9 +147,9 @@ public enum CompoundCatalog {
         regulatoryStatus: .researchOnly,
         evidenceTier: .humanTrialsUnapproved,
         preferredDoseUnit: .milligram,
-        halfLifeHours: 0.5, // ~30 min
+        halfLifeHours: 0.5, // ~30 min — COMMUNITY estimate; no published human terminal t½ for Mod-GRF(1-29)
         wadaProhibited: true,
-        notes: "Short-acting GHRH analog; ~100–300 mcg 1–3×/day in community use. Distinct from the DAC version."
+        notes: "Short-acting GHRH analog; ~100–300 mcg 1–3×/day in community use. The ~30-min half-life is a community estimate, NOT literature (the closest studied analog, D-Ala²-GHRH, is ~7 min IV). Distinct from the DAC version."
     )
 
     public static let ipamorelin = Compound(
@@ -199,9 +199,9 @@ public enum CompoundCatalog {
         regulatoryStatus: .researchOnly,
         evidenceTier: .humanTrialsUnapproved,
         preferredDoseUnit: .milligram,
-        halfLifeHours: 0.25,
+        halfLifeHours: 2.5, // human LC-MS PK: biphasic, terminal t½ ~2.5 h (Cabrales 2013)
         wadaProhibited: true,
-        notes: "GH-releasing peptide; strongly increases appetite via ghrelin signaling. Not FDA-approved."
+        notes: "GH-releasing peptide; strongly increases appetite via ghrelin signaling. Not FDA-approved. Human PK (Cabrales 2013) is biphasic: ~8 min distribution, ~2.5 h terminal."
     )
 
     public static let hexarelin = Compound(
@@ -225,9 +225,9 @@ public enum CompoundCatalog {
         regulatoryStatus: .researchOnly,
         evidenceTier: .humanTrialsUnapproved,
         preferredDoseUnit: .milligram,
-        halfLifeHours: 24, // orally active, once-daily
+        halfLifeHours: 24, // once-daily DURATION OF ACTION (IGF-1 stays elevated ~24 h); human plasma t½ is uncharacterized
         wadaProhibited: true,
-        notes: "Orally active ghrelin-receptor agonist (not injected). Studied in humans but never approved; can raise appetite, blood glucose, and water retention."
+        notes: "Orally active ghrelin-receptor agonist (not injected). Studied in humans but never approved; can raise appetite, blood glucose, and water retention. The ~24 h figure is its once-daily duration of action (IGF-1 elevation), not a measured human plasma half-life."
     )
 
     // MARK: Healing / recovery
@@ -587,9 +587,9 @@ public enum CompoundCatalog {
         regulatoryStatus: .researchOnly,
         evidenceTier: .preclinicalOrFailed,
         preferredDoseUnit: .milligram,
-        halfLifeHours: nil,
+        halfLifeHours: 300, // ~10–15 days (Fc-fusion), single-ascending-dose Phase 1 (Attie 2013)
         wadaProhibited: true,
-        notes: "A soluble activin receptor (myostatin/activin trap). Human trials were HALTED for safety (nosebleeds, gum bleeding, dilated vessels). WADA-prohibited; not approved."
+        notes: "A soluble activin receptor (myostatin/activin trap). As an Fc-fusion its half-life is long (~10–15 days SC; Attie 2013). Human trials were HALTED for safety (nosebleeds, gum bleeding, dilated vessels). WADA-prohibited; not approved."
     )
 
     public static let bpc157Arginate = Compound(

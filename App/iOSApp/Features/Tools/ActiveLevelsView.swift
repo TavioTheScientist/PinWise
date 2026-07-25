@@ -172,9 +172,19 @@ struct ActiveLevelsView: View {
 
         var out: [LevelPoint] = []
         for (_, entry) in eventsByCompound {
-            let samples = Pharmacokinetics.levels(
-                doses: entry.doses, halfLifeHours: entry.halfLife,
-                from: windowStart, to: windowEnd, step: 6 * 3_600)
+            // Half-lives across the catalog span minutes (sermorelin) to days (CJC-DAC, ACE-031).
+            // A fixed coarse grid would flatten short-half-life compounds to ~zero between samples,
+            // so we sample a 3-hour grid UNION every dose instant in the window — that guarantees
+            // each peak is represented no matter how fast the compound clears.
+            var times = Set<Date>()
+            var t = windowStart
+            while t <= windowEnd { times.insert(t); t = t.addingTimeInterval(3 * 3_600) }
+            for d in entry.doses where d.time >= windowStart && d.time <= windowEnd { times.insert(d.time) }
+            let sorted = times.sorted()
+
+            let samples = sorted.map { time in
+                Pharmacokinetics.Sample(time: time, level: Pharmacokinetics.level(at: time, doses: entry.doses, halfLifeHours: entry.halfLife))
+            }
             let peak = samples.map(\.level).max() ?? 0
             guard peak > 0 else { continue }
             for s in samples {
