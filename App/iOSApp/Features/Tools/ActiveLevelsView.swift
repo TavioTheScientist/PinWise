@@ -33,10 +33,17 @@ struct ActiveLevelsView: View {
     private let windowFwd: TimeInterval = 7 * 24 * 3_600
     private let lookback: TimeInterval = 30 * 24 * 3_600
 
+    /// A 10-hue palette so a big stack doesn't collide on color. Vivid mid-tones chosen to read on
+    /// both light and dark card surfaces; colors are assigned per compound and stay stable.
     private let palette: [Color] = [
-        BrandColor.data, BrandColor.accentText, BrandColor.success,
-        BrandColor.warning, BrandColor.danger
+        Color(hex: 0x4F8CFF), Color(hex: 0x18E39A), Color(hex: 0xFFB020), Color(hex: 0xFF4D6D),
+        Color(hex: 0x9B7DFF), Color(hex: 0x4FD1C5), Color(hex: 0xFF8A3D), Color(hex: 0xE84FCB),
+        Color(hex: 0x6BD44F), Color(hex: 0x00B4D8)
     ]
+
+    /// Compounds the user has tapped off in the legend (combined chart only; the by-compound grid
+    /// always shows everything).
+    @State private var hidden: Set<String> = []
 
     var body: some View {
         ScrollView {
@@ -54,20 +61,42 @@ struct ActiveLevelsView: View {
                             message: emptyMessage(omitted: result.omitted))
                     }
                 } else {
+                    let colors = colorMap(for: compounds)
+                    let visible = compounds.filter { !hidden.contains($0) }
+
+                    // Combined overlay — tap a legend chip to show/hide a compound.
                     Card {
                         VStack(alignment: .leading, spacing: Space.md) {
                             Text("Relative level")
                                 .font(Typo.headline)
                                 .foregroundStyle(BrandColor.textPrimary)
-                            Text("Each line is a compound you're taking — logged doses so far, your active protocol projected ahead — scaled to its own peak, so you can compare *when* levels are high or low across your stack.")
+                            Text("Each compound you're taking — logged doses so far, your active protocol projected ahead — scaled to its own peak, so you can compare *when* levels run high or low. Tap a name to show or hide it.")
                                 .font(.caption)
                                 .foregroundStyle(BrandColor.textSecondary)
-                            chart(points: points, compounds: compounds, now: now)
-                            legend(compounds)
+                            chart(points: points.filter { !hidden.contains($0.compound) },
+                                  compounds: visible, colors: colors, now: now)
+                            legend(compounds, colors: colors)
                             if !result.omitted.isEmpty {
                                 Text("Not shown: \(result.omitted.joined(separator: ", ")) — no known half-life to model.")
                                     .font(.caption2)
                                     .foregroundStyle(BrandColor.textSecondary)
+                            }
+                        }
+                    }
+
+                    // Small multiples — one tidy curve per compound, no overlap.
+                    if compounds.count > 1 {
+                        Card {
+                            VStack(alignment: .leading, spacing: Space.md) {
+                                Text("By compound")
+                                    .font(Typo.headline)
+                                    .foregroundStyle(BrandColor.textPrimary)
+                                LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.md), GridItem(.flexible(), spacing: Space.md)], spacing: Space.md) {
+                                    ForEach(compounds, id: \.self) { name in
+                                        miniCard(name, points: points.filter { $0.compound == name },
+                                                 color: colors[name] ?? BrandColor.data, now: now)
+                                    }
+                                }
                             }
                         }
                     }
@@ -85,7 +114,7 @@ struct ActiveLevelsView: View {
     // MARK: - Chart
 
     @ViewBuilder
-    private func chart(points: [LevelPoint], compounds: [String], now: Date) -> some View {
+    private func chart(points: [LevelPoint], compounds: [String], colors: [String: Color], now: Date) -> some View {
         Chart {
             ForEach(points) { p in
                 LineMark(
@@ -103,8 +132,8 @@ struct ActiveLevelsView: View {
                     Text("Now").font(.system(size: 10, weight: .semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
         }
-        .chartForegroundStyleScale(domain: compounds, range: compounds.indices.map { color(at: $0) })
-        .chartLegend(.hidden) // custom legend below reads better than the default swatches
+        .chartForegroundStyleScale(domain: compounds, range: compounds.map { colors[$0] ?? BrandColor.data })
+        .chartLegend(.hidden) // custom, tappable legend below reads better than the default swatches
         .chartYScale(domain: 0...100)
         .chartYAxis {
             AxisMarks(values: [0, 50, 100]) { value in
@@ -123,19 +152,62 @@ struct ActiveLevelsView: View {
         .frame(height: 220)
     }
 
+    /// A compact per-compound curve for the small-multiples grid.
     @ViewBuilder
-    private func legend(_ compounds: [String]) -> some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: Space.sm)], alignment: .leading, spacing: Space.xs) {
-            ForEach(Array(compounds.enumerated()), id: \.element) { idx, name in
-                HStack(spacing: 6) {
-                    Circle().fill(color(at: idx)).frame(width: 8, height: 8)
-                    Text(name).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+    private func miniCard(_ name: String, points: [LevelPoint], color: Color, now: Date) -> some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            Text(name).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+            Chart {
+                ForEach(points) { p in
+                    AreaMark(x: .value("Date", p.time), y: .value("Level", p.percent))
+                        .foregroundStyle(color.opacity(0.14)).interpolationMethod(.monotone)
+                    LineMark(x: .value("Date", p.time), y: .value("Level", p.percent))
+                        .foregroundStyle(color).lineStyle(StrokeStyle(lineWidth: 1.5)).interpolationMethod(.monotone)
                 }
+                RuleMark(x: .value("Now", now))
+                    .foregroundStyle(BrandColor.textSecondary.opacity(0.6))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            }
+            .chartYScale(domain: 0...100)
+            .chartYAxis(.hidden)
+            .chartXAxis(.hidden)
+            .frame(height: 72)
+        }
+        .padding(Space.sm)
+        .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func legend(_ compounds: [String], colors: [String: Color]) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: Space.sm)], alignment: .leading, spacing: Space.xs) {
+            ForEach(compounds, id: \.self) { name in
+                let isHidden = hidden.contains(name)
+                let dot = colors[name] ?? BrandColor.data
+                Button {
+                    if isHidden { hidden.remove(name) } else { hidden.insert(name) }
+                } label: {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(isHidden ? Color.clear : dot)
+                            .overlay(Circle().strokeBorder(dot, lineWidth: isHidden ? 1 : 0))
+                            .frame(width: 9, height: 9)
+                        Text(name).font(.caption).lineLimit(1)
+                            .foregroundStyle(isHidden ? BrandColor.textSecondary.opacity(0.5) : BrandColor.textSecondary)
+                            .strikethrough(isHidden, color: BrandColor.textSecondary.opacity(0.5))
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
     }
 
-    private func color(at index: Int) -> Color { palette[index % palette.count] }
+    /// Stable color per compound, keyed by first-appearance order (so hiding one never recolors the rest).
+    private func colorMap(for compounds: [String]) -> [String: Color] {
+        var map: [String: Color] = [:]
+        for (i, name) in compounds.enumerated() { map[name] = palette[i % palette.count] }
+        return map
+    }
 
     // MARK: - Model → curves
 
