@@ -8,25 +8,22 @@ import PeptideKit
 /// you actually LOGGED (past → now) plus your ACTIVE PROTOCOLS projected forward, each decayed by the
 /// compound's half-life (first-order model in PeptideKit.Pharmacokinetics).
 ///
-/// Design note: half-lives span minutes (sermorelin) to weeks (semaglutide), so it is NOT meaningful to
-/// compare their heights on one shared axis. Instead we compare *timing*: every compound is scaled to its
-/// OWN peak and shown two ways —
-///   • "Right now" — a per-compound gauge of where it sits between its own trough and peak this instant.
-///   • "Timeline" — a ridgeline of self-scaled lanes on a shared time axis; read down the "Now" line to
-///     compare when each compound is high vs. low, never one lane's height against another's.
-/// Compounds with no known half-life (custom/uncharacterized) can't be modeled, so they're named as
-/// omitted rather than silently dropped. Educational relative estimate — never plasma levels or dosing advice.
+/// The hard problem: half-lives span minutes (sermorelin) to weeks (semaglutide), so no single time
+/// axis can render them together — a 2-week axis turns a minutes-scale peptide into invisible spikes.
+/// Solution: each compound gets its OWN time window sized to its half-life (≈ a few half-lives of history
+/// + projection), but every window is split 60% past / 40% future, so the dashed "Now" line lands at the
+/// same horizontal position in every lane and stays a shared visual anchor. Each lane is self-scaled to its
+/// own peak and labels its own time span. A scale-free "Right now" gauge answers "what's high or low" at a
+/// glance. Compounds with no known half-life can't be modeled, so they're named as omitted, not dropped.
+/// Educational relative estimate — never plasma levels or dosing advice.
 struct ActiveLevelsView: View {
     @Query(filter: #Predicate<SavedProtocol> { $0.isActive })
     private var activeProtocols: [SavedProtocol]
 
     @Query private var loggedDoses: [LoggedDose]
 
-    // 14-day window centered on now; the level at the window's start already reflects up to 30 days
-    // of prior doses (so nothing starts artificially at zero).
-    private let windowBack: TimeInterval = 7 * 24 * 3_600
-    private let windowFwd: TimeInterval = 7 * 24 * 3_600
-    private let lookback: TimeInterval = 30 * 24 * 3_600
+    private let lookback: TimeInterval = 30 * 24 * 3_600      // how far back logged doses are gathered
+    private let projectionForward: TimeInterval = 14 * 24 * 3_600  // how far protocols are projected
 
     /// A 10-hue palette; a compound's color is fixed by its catalog position, so it never changes when
     /// other compounds are added or removed. Vivid mid-tones chosen to read on light and dark surfaces.
@@ -55,7 +52,8 @@ struct ActiveLevelsView: View {
         let percent: Double
     }
 
-    /// Everything the UI needs for one compound.
+    /// Everything the UI needs for one compound. `domain` is this compound's own time window (sized to
+    /// its half-life); `spanLabel` names that window's scale (e.g. "~18h" or "~35d").
     private struct CompoundSeries: Identifiable {
         let id = UUID()
         let name: String
@@ -63,15 +61,16 @@ struct ActiveLevelsView: View {
         let samples: [LevelPoint]
         let currentPercent: Double
         let status: LevelStatus
+        let domain: ClosedRange<Date>
+        let spanHours: Double
+        let spanLabel: String
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
                 let now = Date()
-                let windowStart = now.addingTimeInterval(-windowBack)
-                let windowEnd = now.addingTimeInterval(windowFwd)
-                let result = series(now: now, windowStart: windowStart, windowEnd: windowEnd)
+                let result = series(now: now)
 
                 if result.series.isEmpty {
                     Card {
@@ -81,7 +80,7 @@ struct ActiveLevelsView: View {
                             message: emptyMessage(omitted: result.omitted))
                     }
                 } else {
-                    // ── Right now — the at-a-glance answer ─────────────────────────
+                    // ── Right now — the scale-free at-a-glance answer ──────────────
                     Card {
                         VStack(alignment: .leading, spacing: Space.md) {
                             Text("Right now")
@@ -92,17 +91,15 @@ struct ActiveLevelsView: View {
                         }
                     }
 
-                    // ── Timeline — ridgeline on a shared time axis ─────────────────
+                    // ── Timeline — each lane on its own time scale, Now aligned ────
                     Card {
                         VStack(alignment: .leading, spacing: Space.sm) {
                             Text("Timeline")
                                 .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                            Text("Each compound is scaled to its own peak. Compare *when* levels are high or low by reading down the Now line — not one compound's height against another's.")
+                            Text("Each compound uses its own time window, sized to its half-life — minutes-scale peptides show hours, weekly ones show weeks. The dashed Now line is aligned across every lane, so you can read where each compound is in its own cycle.")
                                 .font(.caption).foregroundStyle(BrandColor.textSecondary)
                             VStack(spacing: Space.md) {
-                                ForEach(Array(result.series.enumerated()), id: \.element.id) { idx, s in
-                                    lane(s, isLast: idx == result.series.count - 1, now: now, domain: windowStart...windowEnd)
-                                }
+                                ForEach(result.series) { lane($0, now: now) }
                             }
                             .padding(.top, Space.xs)
                         }
@@ -148,14 +145,16 @@ struct ActiveLevelsView: View {
         }
     }
 
-    // MARK: - Timeline ridgeline lane
+    // MARK: - Timeline ridgeline lane (own time window; Now fixed at 60% width)
 
     @ViewBuilder
-    private func lane(_ s: CompoundSeries, isLast: Bool, now: Date, domain: ClosedRange<Date>) -> some View {
+    private func lane(_ s: CompoundSeries, now: Date) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Circle().fill(s.color).frame(width: 7, height: 7)
                 Text(s.name).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+                Spacer()
+                Text(s.spanLabel).font(.caption2).foregroundStyle(BrandColor.textSecondary)
             }
             Chart {
                 ForEach(s.samples) { p in
@@ -168,17 +167,15 @@ struct ActiveLevelsView: View {
                     .foregroundStyle(BrandColor.textSecondary.opacity(0.55))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }
-            .chartXScale(domain: domain)
+            .chartXScale(domain: s.domain)
             .chartYScale(domain: 0...100)
             .chartYAxis(.hidden)
             .chartXAxis {
-                if isLast {
-                    AxisMarks { _ in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
-                        AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary)
-                    }
-                } else {
-                    AxisMarks { _ in AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke.opacity(0.5)) }
+                AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
+                    // Short windows read as clock time; long ones as calendar dates.
+                    AxisValueLabel(format: s.spanHours <= 48 ? Date.FormatStyle.dateTime.hour() : Date.FormatStyle.dateTime.month(.abbreviated).day())
+                        .font(.system(size: 9)).foregroundStyle(BrandColor.textSecondary)
                 }
             }
             .frame(height: 46)
@@ -187,10 +184,12 @@ struct ActiveLevelsView: View {
 
     // MARK: - Model → series
 
-    /// Build per-compound series from LOGGED doses (past → now) + ACTIVE-PROTOCOL projection (now → +7d).
-    /// Returns the drawable series plus the names of compounds skipped for lacking a known half-life.
-    private func series(now: Date, windowStart: Date, windowEnd: Date) -> (series: [CompoundSeries], omitted: [String]) {
+    /// Build per-compound series from LOGGED doses (past → now) + ACTIVE-PROTOCOL projection (now → +14d).
+    /// Each compound gets its own half-life-sized window. Returns drawable series + names skipped for
+    /// lacking a known half-life.
+    private func series(now: Date) -> (series: [CompoundSeries], omitted: [String]) {
         let doseWindowStart = now.addingTimeInterval(-lookback)
+        let projectionEnd = now.addingTimeInterval(projectionForward)
 
         var eventsByCompound: [String: (display: String, halfLife: Double, doses: [Pharmacokinetics.DoseEvent])] = [:]
         var omittedByKey: [String: String] = [:]
@@ -216,8 +215,8 @@ struct ActiveLevelsView: View {
         // 2) Where your active protocols take you next — projected doses strictly after now.
         for proto in activeProtocols {
             let expandFrom = max(now, proto.startDate)
-            guard expandFrom <= windowEnd else { continue }
-            let dates = AdherenceCalculator.expectedDates(schedule: proto.schedule, start: expandFrom, end: windowEnd)
+            guard expandFrom <= projectionEnd else { continue }
+            let dates = AdherenceCalculator.expectedDates(schedule: proto.schedule, start: expandFrom, end: projectionEnd)
             for item in proto.items {
                 for d in dates where d > now { add(name: item.compoundName, amountMcg: item.doseMicrograms, at: d) }
             }
@@ -226,11 +225,21 @@ struct ActiveLevelsView: View {
 
         var out: [CompoundSeries] = []
         for (_, entry) in eventsByCompound {
-            // Sample a 3-hour grid UNION every dose instant, so short-half-life peaks aren't missed.
+            // This compound's own window: ~a few half-lives of future + 1.5× that in the past, so the
+            // Now line lands at 60% width in EVERY lane (aligned) while the span fits the half-life.
+            let futureH = min(max(entry.halfLife * 4, 6), 14 * 24)   // 6h … 14d
+            let pastH = futureH * 1.5
+            let laneStart = now.addingTimeInterval(-pastH * 3_600)
+            let laneEnd = now.addingTimeInterval(futureH * 3_600)
+            let spanHours = pastH + futureH
+
+            // Resolution that fits the window (≈150 samples) UNION every dose instant in it, so peaks
+            // aren't missed regardless of scale.
+            let step = max(300, laneEnd.timeIntervalSince(laneStart) / 150)
             var times = Set<Date>()
-            var t = windowStart
-            while t <= windowEnd { times.insert(t); t = t.addingTimeInterval(3 * 3_600) }
-            for d in entry.doses where d.time >= windowStart && d.time <= windowEnd { times.insert(d.time) }
+            var t = laneStart
+            while t <= laneEnd { times.insert(t); t = t.addingTimeInterval(step) }
+            for d in entry.doses where d.time >= laneStart && d.time <= laneEnd { times.insert(d.time) }
             let sortedTimes = times.sorted()
 
             let levels = sortedTimes.map { Pharmacokinetics.level(at: $0, doses: entry.doses, halfLifeHours: entry.halfLife) }
@@ -246,12 +255,18 @@ struct ActiveLevelsView: View {
                 (current > prior * 1.02 ? .rising :
                  (currentPct <= 20 ? .low : .tapering))
 
-            out.append(CompoundSeries(name: entry.display, color: stableColor(for: entry.display),
-                                      samples: samples, currentPercent: currentPct, status: status))
+            out.append(CompoundSeries(
+                name: entry.display, color: stableColor(for: entry.display),
+                samples: samples, currentPercent: currentPct, status: status,
+                domain: laneStart...laneEnd, spanHours: spanHours, spanLabel: spanLabel(spanHours)))
         }
-        // Stable, predictable order.
         out.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         return (series: out, omitted: omittedByKey.values.sorted())
+    }
+
+    /// Human label for a lane's time span: "~18h" for sub-2-day windows, "~35d" otherwise.
+    private func spanLabel(_ spanHours: Double) -> String {
+        spanHours <= 48 ? "~\(Int(spanHours.rounded()))h" : "~\(Int((spanHours / 24).rounded()))d"
     }
 
     /// A compound's color is fixed by its position in the catalog (or a deterministic name hash for
@@ -261,7 +276,7 @@ struct ActiveLevelsView: View {
         if let i = CompoundCatalog.all.firstIndex(where: { $0.name.lowercased() == key }) {
             return palette[i % palette.count]
         }
-        // Deterministic fallback for custom compounds (String.hashValue is randomized per run, so don't use it).
+        // Deterministic fallback for custom compounds (String.hashValue is randomized per run).
         let h = key.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
         return palette[h % palette.count]
     }
