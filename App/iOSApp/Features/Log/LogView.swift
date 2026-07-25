@@ -496,8 +496,8 @@ struct LogView: View {
                     Button { withAnimation(.easeInOut(duration: 0.2)) { showWhen.toggle() } } label: {
                         HStack(spacing: Space.sm) {
                             Text("When").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                            Spacer()
                             Text(whenLabel).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            Spacer()
                             Image(systemName: showWhen ? "chevron.up" : "chevron.down")
                                 .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                         }
