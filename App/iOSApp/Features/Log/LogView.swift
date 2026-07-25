@@ -116,23 +116,15 @@ struct LogView: View {
                         // No protocols yet — a one-time pin is the only way to log.
                         compoundCard
                         entrySection
+                    } else if mode == .compound {
+                        // One-time pin — a rare, opt-in action: reachable, but never co-equal with the
+                        // protocols this tab is really for. A minimal link leads back.
+                        compoundCard
+                        entrySection
+                        oneTimeModeLink(backToProtocols: true)
                     } else {
-                        // Protocol-first. The Protocol / One-Time Pin toggle only appears while a
-                        // protocol is still loggable today; otherwise we're in the all-set state.
+                        // Protocol-first — the whole point of this tab: what you're actually running.
                         if !loggableProtocols.isEmpty {
-                            Picker("", selection: $mode) {
-                                ForEach(LogMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                            }
-                            .pickerStyle(.segmented)
-                        }
-
-                        if mode == .compound {
-                            compoundCard
-                            entrySection
-                        } else if !loggableProtocols.isEmpty {
-                            // Step 1: pick a protocol (the picker leads). Step 2 — its entry fields
-                            // — appears only once one is selected; logging it returns here with that
-                            // protocol removed for the day.
                             protocolCard
                             if let sel = selectedProtocolID, loggableProtocols.contains(where: { $0.id == sel }) {
                                 entrySection
@@ -140,14 +132,9 @@ struct LogView: View {
                         } else {
                             // Every due protocol is logged for today.
                             allSetView
-                            Button { mode = .compound } label: {
-                                Text("Log a one-time pin instead")
-                                    .font(.footnote.weight(.semibold))
-                                    .foregroundStyle(BrandColor.accentText)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(.plain)
                         }
+                        // A small escape hatch below the protocols — not a co-equal toggle.
+                        oneTimeModeLink(backToProtocols: false)
                     }
                 }
                 .padding(Space.lg)
@@ -306,6 +293,25 @@ struct LogView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// The minimal one-time-pin link: leads INTO one-time mode from the protocol list, or BACK to
+    /// protocols from one-time mode. A quiet footnote — deliberately not a co-equal segmented toggle.
+    @ViewBuilder
+    private func oneTimeModeLink(backToProtocols: Bool) -> some View {
+        Button {
+            mode = backToProtocols ? .protocolBased : .compound
+            doseText = ""
+            selectedVialID = nil
+            if !backToProtocols { selectedProtocolID = nil }   // leaving the protocol context
+        } label: {
+            Text(backToProtocols ? "Back to your protocols" : "Log a one-time pin instead")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(BrandColor.accentText)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .padding(.top, Space.xs)
     }
 
     /// When a protocol's next dose falls, in plain language.
