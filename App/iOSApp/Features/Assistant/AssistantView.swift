@@ -301,7 +301,7 @@ struct AssistantView: View {
                         .font(.largeTitle).foregroundStyle(BrandColor.accentText)
                     Text("Sign in to chat with Natt")
                         .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
-                    Text("Natt, PinWise's AI assistant, is part of your account. Sign in with Apple or your email to start chatting — the rest of the app stays free as a guest.")
+                    Text("Natt, PinWise's AI assistant, comes with your account. Sign in with Apple or email to start chatting — everything else stays free for guests.")
                         .font(.callout).foregroundStyle(BrandColor.textSecondary)
                 }
                 .padding(Space.lg)
@@ -324,17 +324,17 @@ struct AssistantView: View {
                         .font(.largeTitle).foregroundStyle(BrandColor.accentText)
                     Text("Before you chat with Natt")
                         .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
-                    Text("Natt is PinWise's AI assistant.")
+                    Text("Natt is PinWise's AI assistant. A few things to know first.")
                         .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     VStack(alignment: .leading, spacing: Space.md) {
-                        gatePoint("Daily limits. On the free trial, Natt answers up to 2 messages a day. Pro — monthly or yearly — raises that to 10 a day.")
-                        gatePoint("It runs in the cloud. To answer, your questions and a snapshot of your PinWise data — your stack, dose logs, symptoms, and labs — are sent securely to our AI provider for processing. See the Privacy Policy for what's shared and how it's handled.")
-                        gatePoint("It can use your Apple Health. By continuing, you turn on sharing your connected Apple Health metrics — weight, resting heart rate, HRV, sleep, steps — with Natt so it can personalize its answers. You can turn this off anytime in Settings › Security & Privacy.")
-                        gatePoint("It's AI, and it can be wrong. Responses may be inaccurate, incomplete, or out of date — always fact-check them against the linked/primary sources.")
-                        gatePoint("It is not medical advice. It does not diagnose, treat, or recommend personalized doses — though it can explain what the research shows, including the doses studied in clinical trials. Decisions about your health belong with a licensed healthcare professional.")
-                        gatePoint("You use it at your own risk. PinWise and its makers are not liable for any actions or outcomes based on Natt's responses.")
+                        gatePoint("Daily limits", "Free trial: 2 messages a day. Pro (monthly or yearly): 10 a day.")
+                        gatePoint("Runs in the cloud", "Your questions and a snapshot of your data — stack, doses, symptoms, labs — go securely to our AI provider to generate each answer. Details in the Privacy Policy.")
+                        gatePoint("Uses your Apple Health", "Continuing turns on sharing your Apple Health metrics — weight, heart rate, HRV, sleep, steps — so Natt can tailor answers. Turn it off anytime in Settings › Security & Privacy.")
+                        gatePoint("Can be wrong", "AI answers may be inaccurate or out of date. Check them against the sources Natt cites.")
+                        gatePoint("Not medical advice", "Natt won't diagnose, treat, or set your dose. It explains what the research shows — including the doses studied in trials — and leaves health decisions to you and your clinician.")
+                        gatePoint("Your responsibility", "You use Natt at your own risk. PinWise isn't liable for actions taken on its answers.")
                     }
-                    Text("By continuing you acknowledge and accept the above.")
+                    Text("Tap Accept & continue to agree to the points above.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                 }
                 .padding(Space.lg)
@@ -352,10 +352,13 @@ struct AssistantView: View {
         }
     }
 
-    private func gatePoint(_ text: String) -> some View {
+    private func gatePoint(_ title: String, _ body: String) -> some View {
         HStack(alignment: .top, spacing: Space.sm) {
             Image(systemName: "checkmark.shield").font(.body).foregroundStyle(BrandColor.warning).padding(.top, 2)
-            Text(text).font(.callout).foregroundStyle(BrandColor.textPrimary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.callout.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
+                Text(body).font(.callout).foregroundStyle(BrandColor.textSecondary)
+            }
         }
     }
 

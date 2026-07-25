@@ -267,7 +267,7 @@ struct CompoundDetailView: View {
     }
 
     /// The one place a strong warning stays by design: compounds the user added themselves.
-    static let customCompoundNote = "You are choosing to add this compound yourself — PinWise has no verified data on it. Confirm identity, purity, and handling with your supplier's certificate of analysis. PinWise provides no information or assurances for user-added compounds and takes no responsibility for them."
+    static let customCompoundNote = "You're adding this compound yourself, so PinWise has no verified data on it. Confirm its identity, purity, and handling against your supplier's certificate of analysis. PinWise makes no assurances for user-added compounds and takes no responsibility for them."
 
     private var regulatoryLabel: String {
         switch compound.regulatoryStatus {

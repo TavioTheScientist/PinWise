@@ -328,7 +328,7 @@ struct HomeView: View {
                     Text(hasVial ? "Build your first protocol" : "Add your first vial")
                         .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                     Text(hasVial
-                         ? "Nice — you've got a vial in your Stack. Build a protocol from it to set your cadence, then log your doses. Home fills in with your adherence and health as you go."
+                         ? "You've got a vial in your Stack. Build a protocol to set your cadence, then log doses — Home fills in your adherence and health as you go."
                          : "Head to Stack ▸ Your vials — add a compound or blend, build a protocol from it, then log. Home fills in with your adherence and health as you go.")
                         .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     PrimaryButton(title: "Go to Stack", systemImage: "square.stack.3d.up.fill") { selected = .protocols }

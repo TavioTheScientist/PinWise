@@ -31,7 +31,7 @@ struct InventoryList: View {
                 Card {
                     VStack(alignment: .leading, spacing: Space.sm) {
                         Text("No vials yet").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                        Text("Add a vial to track remaining doses, run-out date, cost per dose, and expiry. A vial can hold one API or several (a blend).")
+                        Text("Add a vial to track doses left, run-out date, cost per dose, and expiry. A vial holds one compound or several (a blend).")
                             .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
@@ -527,7 +527,7 @@ struct VialBuilderView: View {
                         Card {
                             VStack(alignment: .leading, spacing: Space.sm) {
                                 SectionHeader(title: "Refill")
-                                Text("Finished this vial? Start a fresh one with the same specs — same compound, concentration, and dose — without re-entering anything. This vial is replaced with a full one; your logged doses are kept.")
+                                Text("Finished this vial? Start a full one with the same specs — compound, concentration, dose — no re-entering. Your logged doses are kept.")
                                     .font(.caption).foregroundStyle(BrandColor.textSecondary)
                                 Button { refill() } label: {
                                     Label("Refill — new vial, same specs", systemImage: "arrow.triangle.2.circlepath")

@@ -171,7 +171,7 @@ struct ProtocolsView: View {
                     .foregroundStyle(BrandColor.textPrimary)
                 Text(vials.isEmpty
                      ? "Protocols are built from your vials — add a vial under Your vials first, then create a protocol from it with a dose and schedule."
-                     : "Create one from a vial — pick one of your vials, set the dose per shot, and choose a schedule. You can still log ad-hoc doses without a protocol.")
+                     : "Create one from a vial — set the dose per shot and choose a schedule. You can still log one-time pins without a protocol.")
                     .font(Typo.body)
                     .foregroundStyle(BrandColor.textSecondary)
             }

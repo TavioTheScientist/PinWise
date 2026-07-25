@@ -318,7 +318,7 @@ struct LabelScannerView: View {
                 row("Vial size", r.volumeMl.map { fmt($0) + " mL" } ?? "—")
                 row("Expires", r.expiration.map { $0.formatted(.dateTime.month().day().year()) } ?? "—")
                 if r.isEmpty {
-                    Text("Couldn't recognize the usual fields. Try a closer, straighter photo — or just enter them by hand.")
+                    Text("Couldn't read the label. Try a closer, straighter photo, or enter the details by hand.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                 } else {
                     PrimaryButton(title: "Use these details", systemImage: "checkmark") {

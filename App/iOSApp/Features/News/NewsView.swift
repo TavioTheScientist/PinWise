@@ -210,7 +210,7 @@ struct NewsView: View {
                 withAnimation(.snappy) { myStack.toggle() }
             }
             if myStack {
-                Text(userCompounds.isEmpty ? "Add a protocol or log a dose to use this"
+                Text(userCompounds.isEmpty ? "Add a protocol or log a dose first."
                                            : "Filtered to what you're taking")
                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
             }
@@ -284,7 +284,7 @@ struct NewsView: View {
         if results.isEmpty {
             Card {
                 Text(myStack && userCompounds.isEmpty
-                     ? "Add a protocol or log a dose — then this shows news about the compounds you're taking."
+                     ? "Add a protocol or log a dose to see news about what you're taking."
                      : "No stories match. Try a different word or category.")
                     .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
