@@ -512,6 +512,10 @@ struct LogView: View {
         // just-logged protocol has already dropped out of `loggableProtocols`. When it was the
         // last one, the all-set state shows instead. The success haptic confirms the save.
         selectedProtocolID = nil
+        // After a one-time pin, drop back to the default Log screen (the protocol picker) rather
+        // than leaving the user parked in the one-time form — unless there are no protocols at all,
+        // where the one-time pin is the only way to log. Mirrors onAppear.
+        mode = activeProtocols.isEmpty ? .compound : .protocolBased
         savedCount += 1
     }
 }
