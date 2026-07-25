@@ -285,6 +285,22 @@ do {
     ]
     check(SiteRotationAdvisor.suggestNext(candidates: [.thighLeft, .thighRight], history: history) == .thighLeft,
           "picks less-recently-used thigh")
+
+    // Absorption-grounded ordering (abdomen absorbs best → ranked first; GLP-1 label sites only).
+    let glp1Sites = SiteRotationAdvisor.preferredSites(for: .glp1)
+    check(glp1Sites.first?.region == .abdomen, "GLP-1: abdomen ranked first (best absorption)")
+    check(Set(glp1Sites.map(\.region)) == Set([.abdomen, .thigh, .arm]), "GLP-1: only FDA-label regions (abdomen/thigh/arm)")
+    let healingSites = SiteRotationAdvisor.preferredSites(for: .healingRecovery)
+    check(healingSites.count == InjectionSite.allCases.count, "Healing: any site allowed")
+    check(healingSites.first?.region == .abdomen, "Healing: still abdomen-first for systemic use")
+    check(SiteRotationAdvisor.preferredSites(for: .metabolic).first?.region == .abdomen, "Metabolic: abdomen-first")
+    // First suggestion (no history) lands on the best-absorption region for a GLP-1.
+    check(SiteRotationAdvisor.suggestNext(for: CompoundCatalog.semaglutide, history: [])?.region == .abdomen,
+          "GLP-1 first suggestion ⇒ abdomen (no history)")
+    // A GLP-1 never gets a non-label site (e.g. glute) recommended.
+    let gluteHistory = [DoseLog(compoundID: c, timestamp: day(2026, 6, 30), dose: .mcg(250), site: .abdomenUpperLeft)]
+    let glp1Next = SiteRotationAdvisor.suggestNext(for: CompoundCatalog.semaglutide, history: gluteHistory)
+    check(glp1Next.map { Set([.abdomen, .thigh, .arm]).contains($0.region) } ?? false, "GLP-1 suggestion stays within label sites")
 }
 
 // MARK: - Blend calculator

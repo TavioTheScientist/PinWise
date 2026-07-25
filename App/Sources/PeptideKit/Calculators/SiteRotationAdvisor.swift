@@ -50,19 +50,28 @@ public enum SiteRotationAdvisor {
 }
 
 public extension SiteRotationAdvisor {
-    /// The subcutaneous zones commonly used for a compound (informational, not medical advice):
-    /// GLP-1s, GH secretagogues, and metabolic/cosmetic peptides are typically abdomen-favored
-    /// with thigh/arm/flank as alternates; healing peptides are often placed near the area being
-    /// treated, so any site is fair game.
+    /// Subcutaneous zones for a compound, ORDERED by absorption suitability so the first recommendation
+    /// is the best-absorbing site and rotation then spreads load across the tissue. Grounding
+    /// (informational, not medical advice):
+    ///   • Abdomen absorbs fastest and most consistently for SC peptides → ranked first.
+    ///   • Thigh (anterior/lateral) and upper arm are the next best-studied SC sites.
+    ///   • GLP-1 incretins are restricted to their FDA-label sites: **abdomen, thigh, upper arm.**
+    ///   • Flank ("love handles") and back sites are alternates, mainly to keep rotation going.
+    ///   • Healing/recovery peptides are often placed near the treated area, so ANY site is allowed —
+    ///     still abdomen-first for systemic use.
     static func preferredSites(for category: CompoundCategory) -> [InjectionSite] {
+        let regionOrder: [InjectionSite.Region]
         switch category {
+        case .glp1:
+            regionOrder = [.abdomen, .thigh, .arm]                                   // FDA GLP-1 label sites
         case .healingRecovery:
-            return InjectionSite.allCases
+            regionOrder = [.abdomen, .thigh, .arm, .flank, .tricep, .glute, .lowerBack]  // any site; near-target is fine
         default:
-            return InjectionSite.allCases.filter {
-                [.abdomen, .flank, .thigh, .arm].contains($0.region)
-            }
+            regionOrder = [.abdomen, .thigh, .arm, .flank]                           // systemic SC peptides
         }
+        // Flatten region-by-region so the array order encodes absorption preference; the rotation
+        // scorer above uses that order as its final tiebreak (never-used sites, best absorption first).
+        return regionOrder.flatMap { region in InjectionSite.allCases.filter { $0.region == region } }
     }
 
     /// Least-recently-used site within the compound's preferred zones (falls back to all sites).

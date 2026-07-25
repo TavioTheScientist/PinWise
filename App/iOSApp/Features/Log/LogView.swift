@@ -92,8 +92,14 @@ struct LogView: View {
     }
     private var siteRationale: String {
         switch activeCompound.category {
-        case .healingRecovery: return "Healing peptides are often placed near the area you're treating."
-        default: return "Abdomen is the usual first choice for \(activeCompound.name); rotate to avoid irritation."
+        case .glp1:
+            return "Inject subcutaneously. The abdomen absorbs fastest and most consistently; the thigh and upper arm are the other label sites — rotate between them to avoid lipohypertrophy."
+        case .healingRecovery:
+            return "Often placed subcutaneously near the area you're treating; the abdomen works for systemic use. Rotate sites to protect the tissue."
+        case .growthHormoneSecretagogue:
+            return "Inject subcutaneously. The abdomen gives the most consistent absorption; thigh and upper arm are good alternates — rotate each time."
+        default:
+            return "Inject subcutaneously. The abdomen absorbs most consistently; thigh, upper arm, and flank are alternates — rotate to avoid lipohypertrophy."
         }
     }
     private var canSave: Bool {
@@ -451,13 +457,9 @@ struct LogView: View {
                 FieldRow("Where did you inject?", hint: "Front or back, then a spot. Only doses with a site show on your injection map.") {
                     siteSelector
                 }
-                if site == nil {
-                    Label("Optional — but pick a spot to add this dose to your injection map.", systemImage: "figure.stand")
-                        .font(.caption2).foregroundStyle(BrandColor.warning)
-                }
                 if let suggested = suggestedSite, suggested != site {
                     Button { site = suggested; showBack = suggested.isBack } label: {
-                        Label("Suggested: \(suggested.displayName)", systemImage: "sparkles")
+                        Label("Recommended: \(suggested.displayName)", systemImage: "sparkles")
                             .font(.caption).foregroundStyle(BrandColor.accentText)
                     }
                 }
