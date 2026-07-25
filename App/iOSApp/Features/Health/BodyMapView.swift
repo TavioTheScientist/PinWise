@@ -14,9 +14,12 @@ struct InjectionMapInfoView: View {
                     Card {
                         VStack(alignment: .leading, spacing: Space.md) {
                             SectionHeader(title: "Reading the colors")
-                            colorRow(HeatRamp.swatch(HeatRamp.green), "Green — light or well-rotated use. Good to keep using.")
-                            colorRow(HeatRamp.swatch(HeatRamp.amber), "Amber — you're leaning on this area; start spreading out.")
-                            colorRow(HeatRamp.swatch(HeatRamp.red), "Red — heavy reliance on one area. Rotate elsewhere so it can recover.")
+                            Capsule()
+                                .fill(LinearGradient(colors: HeatRamp.colors, startPoint: .leading, endPoint: .trailing))
+                                .frame(height: 8)
+                            colorRow(HeatRamp.color(at: 0.0), "Green — light or well-rotated use. Good to keep using.")
+                            colorRow(HeatRamp.color(at: 0.5), "Yellow to orange — you're leaning on this area; start spreading out.")
+                            colorRow(HeatRamp.color(at: 1.0), "Red — heavy reliance on one area. Rotate elsewhere so it can recover.")
                         }
                     }
                     Card {
@@ -64,11 +67,35 @@ struct InjectionMapInfoView: View {
 /// anchors — defined once here instead of being retyped at the legend, the body scale, and the
 /// per-site dots (previously three hardcoded copies).
 enum HeatRamp {
-    static let green = (r: 0.13, g: 0.83, b: 0.55)
-    static let amber = (r: 1.00, g: 0.69, b: 0.13)
-    static let red = (r: 1.00, g: 0.30, b: 0.30)
+    /// Ordered low→high anchors of the rotation-load ramp. A full spectrum (green → lime → yellow →
+    /// orange → red → deep red) rather than three stops, so intensity reads as a smooth gradient.
+    /// "Light use = cool green (good), overused = hot deep-red (rotate away)" — the hue never carries a
+    /// cold/blue end that would muddy "green = fine".
+    static let stops: [(r: Double, g: Double, b: Double)] = [
+        (0.13, 0.83, 0.55),   // green      — light / well-rotated
+        (0.55, 0.85, 0.25),   // lime
+        (0.98, 0.85, 0.20),   // yellow
+        (1.00, 0.62, 0.10),   // orange     — leaning on this area
+        (1.00, 0.32, 0.28),   // red
+        (0.80, 0.10, 0.18),   // deep red   — heavy overuse
+    ]
     static func swatch(_ c: (r: Double, g: Double, b: Double)) -> Color { Color(red: c.r, green: c.g, blue: c.b) }
-    static var colors: [Color] { [swatch(green), swatch(amber), swatch(red)] }
+    /// All stops as SwiftUI colors — feeds MuscleMap's (linearly-interpolating) color scale.
+    static var colors: [Color] { stops.map(swatch) }
+
+    /// Continuous color at intensity `t` (0…1), interpolated across every stop — the single source of
+    /// truth for the body fill, the per-site dots, and the legend so they can never drift apart.
+    static func color(at t: Double) -> Color {
+        let x = max(0, min(1, t))
+        guard stops.count > 1 else { return swatch(stops[0]) }
+        let scaled = x * Double(stops.count - 1)
+        let i = min(Int(scaled), stops.count - 2)
+        let f = scaled - Double(i)
+        let a = stops[i], b = stops[i + 1]
+        return Color(red: a.r + (b.r - a.r) * f,
+                     green: a.g + (b.g - a.g) * f,
+                     blue: a.b + (b.b - a.b) * f)
+    }
 }
 
 enum HeatWindow: String, CaseIterable, Identifiable {
@@ -238,27 +265,12 @@ struct BodyMapView: View {
         HStack(spacing: Space.sm) {
             Text("Light use").font(.caption2).foregroundStyle(BrandColor.textSecondary)
             Capsule()
-                .fill(LinearGradient(colors: [heatColor(0.1), heatColor(0.5), heatColor(0.95)],
-                                     startPoint: .leading, endPoint: .trailing))
+                .fill(LinearGradient(colors: HeatRamp.colors, startPoint: .leading, endPoint: .trailing))
                 .frame(height: 6)
             Text("Heavy").font(.caption2).foregroundStyle(BrandColor.textSecondary)
         }
     }
 
-    /// Matches the body heatmap ramp for the per-site legend dots.
-    private func heatColor(_ t: Double) -> Color {
-        let x = max(0, min(1, t))
-        func lerp(_ a: Double, _ b: Double, _ u: Double) -> Double { a + (b - a) * u }
-        if x < 0.5 {
-            let u = x / 0.5
-            return Color(red: lerp(HeatRamp.green.r, HeatRamp.amber.r, u),
-                         green: lerp(HeatRamp.green.g, HeatRamp.amber.g, u),
-                         blue: lerp(HeatRamp.green.b, HeatRamp.amber.b, u))
-        } else {
-            let u = (x - 0.5) / 0.5
-            return Color(red: lerp(HeatRamp.amber.r, HeatRamp.red.r, u),
-                         green: lerp(HeatRamp.amber.g, HeatRamp.red.g, u),
-                         blue: lerp(HeatRamp.amber.b, HeatRamp.red.b, u))
-        }
-    }
+    /// The per-site dots use the exact same continuous ramp as the body fill.
+    private func heatColor(_ t: Double) -> Color { HeatRamp.color(at: t) }
 }
