@@ -166,6 +166,9 @@ struct ActiveLevelsView: View {
                 }
                 .pickerStyle(.segmented)
 
+                Text("Curves show *shape* — each scaled to its own peak so different compounds compare. Tap a compound for actual amounts and dose changes.")
+                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+
                 if hasLong {
                     Text("Long-acting · scaled to each compound's own peak")
                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
@@ -328,7 +331,7 @@ struct ActiveLevelsView: View {
             guard !name.isEmpty else { return }
             let key = name.lowercased()
             guard let halfLife = halfLife(for: name) else { omittedByKey[key] = name; return }
-            let event = Pharmacokinetics.DoseEvent(time: time, amount: max(amountMcg, 1))
+            let event = Pharmacokinetics.DoseEvent(time: time, amount: amountMcg)   // real micrograms (absolute detail depends on this)
             if var e = eventsByCompound[key] { e.doses.append(event); eventsByCompound[key] = e }
             else { eventsByCompound[key] = (name, halfLife, [event]) }
         }
@@ -399,7 +402,9 @@ struct ActiveLevelsView: View {
 
     // MARK: - Tap-in detail
 
-    /// Detail for one compound at its natural time scale: full curve with dose dots + exact facts.
+    /// Detail for one compound at its natural time scale. Unlike the normalized overlay, this plots the
+    /// ABSOLUTE amount on board in the compound's own dose unit — so a titration ramp reads honestly (a
+    /// bigger dose draws a taller curve; the past doesn't rescale).
     private struct LevelDetailSheet: View {
         let series: CompoundModel
         let palette: [Color]
@@ -410,7 +415,9 @@ struct ActiveLevelsView: View {
             let ws = now.addingTimeInterval(-futureH * 1.5 * 3_600)
             let we = now.addingTimeInterval(futureH * 3_600)
             let spanHours = futureH * 2.5
-            let curve = normalizedSamples(from: ws, to: we)
+            let curve = absoluteSamples(from: ws, to: we)     // amounts already in display units
+            let onBoardNow = amount(Pharmacokinetics.level(at: now, doses: series.doses, halfLifeHours: series.halfLifeHours))
+            let peakInWindow = curve.points.map(\.value).max() ?? 0
 
             MenuSheet(title: series.name) {
                 Card {
@@ -419,7 +426,7 @@ struct ActiveLevelsView: View {
                             Circle().fill(series.color).frame(width: 10, height: 10)
                             Text(series.status.label).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                             Spacer()
-                            Text("\(Int(series.currentPercent.rounded()))% of peak")
+                            Text("\(fmt(onBoardNow)) \(unitLabel) on board")
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(series.color)
                         }
                         Text(series.isLong ? "Long-acting compound." : "Short-acting compound.")
@@ -428,13 +435,17 @@ struct ActiveLevelsView: View {
                 }
                 Card {
                     VStack(alignment: .leading, spacing: Space.sm) {
-                        Text("Level over time · \(spanLabel(spanHours)) window").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        Text("Amount on board · \(unitLabel) · \(spanLabel(spanHours)) window")
+                            .font(.caption).foregroundStyle(BrandColor.textSecondary)
                         detailChart(curve: curve.points, markers: curve.markers, domain: ws...we, spanHours: spanHours, now: now)
-                        Text("Dots mark each dose. Dashed line is now.").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        Text("Actual estimated amount in your body — a ramp-up shows as a taller curve. Dots mark each dose; dashed line is now.")
+                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
                 Card {
                     VStack(alignment: .leading, spacing: Space.sm) {
+                        factRow("On board now", "\(fmt(onBoardNow)) \(unitLabel)"); Divider().overlay(BrandColor.stroke)
+                        factRow("Peak in window", "\(fmt(peakInWindow)) \(unitLabel)"); Divider().overlay(BrandColor.stroke)
                         factRow("Half-life", halfLifeLabel(series.halfLifeHours)); Divider().overlay(BrandColor.stroke)
                         factRow("Last dose", series.lastDose.map { relative($0, now: now) } ?? "—"); Divider().overlay(BrandColor.stroke)
                         factRow("Next dose", series.nextDose.map { relative($0, now: now) } ?? "None scheduled")
@@ -445,23 +456,20 @@ struct ActiveLevelsView: View {
             }
         }
 
-        private struct P: Identifiable { let id = UUID(); let time: Date; let percent: Double }
+        private struct P: Identifiable { let id = UUID(); let time: Date; let value: Double }
 
-        private func normalizedSamples(from ws: Date, to we: Date) -> (points: [P], markers: [P]) {
+        /// Absolute amount on board over [ws, we], converted to the compound's display unit.
+        private func absoluteSamples(from ws: Date, to we: Date) -> (points: [P], markers: [P]) {
             let step = max(300, we.timeIntervalSince(ws) / 160)
             var times = Set<Date>()
             var t = ws
             while t <= we { times.insert(t); t = t.addingTimeInterval(step) }
             for d in series.doses where d.time >= ws && d.time <= we { times.insert(d.time) }
             let sorted = times.sorted()
-            let levels = sorted.map { Pharmacokinetics.level(at: $0, doses: series.doses, halfLifeHours: series.halfLifeHours) }
-            let peak = levels.max() ?? 0
-            guard peak > 0 else { return ([], []) }
-            let byTime = Dictionary(zip(sorted, levels), uniquingKeysWith: { a, _ in a })
-            let points = zip(sorted, levels).map { P(time: $0, percent: $1 / peak * 100) }
+            let points = sorted.map { P(time: $0, value: amount(Pharmacokinetics.level(at: $0, doses: series.doses, halfLifeHours: series.halfLifeHours))) }
+            let byTime = Dictionary(uniqueKeysWithValues: zip(sorted, points.map(\.value)))
             let markers = series.doses.filter { $0.time >= ws && $0.time <= we }.compactMap { ev -> P? in
-                guard let raw = byTime[ev.time] else { return nil }
-                return P(time: ev.time, percent: raw / peak * 100)
+                byTime[ev.time].map { P(time: ev.time, value: $0) }
             }
             return (points, markers)
         }
@@ -470,13 +478,13 @@ struct ActiveLevelsView: View {
         private func detailChart(curve: [P], markers: [P], domain: ClosedRange<Date>, spanHours: Double, now: Date) -> some View {
             Chart {
                 ForEach(curve) { p in
-                    AreaMark(x: .value("Date", p.time), y: .value("Level", p.percent))
+                    AreaMark(x: .value("Date", p.time), y: .value("Amount", p.value))
                         .foregroundStyle(series.color.opacity(0.16)).interpolationMethod(.monotone)
-                    LineMark(x: .value("Date", p.time), y: .value("Level", p.percent))
+                    LineMark(x: .value("Date", p.time), y: .value("Amount", p.value))
                         .foregroundStyle(series.color).lineStyle(StrokeStyle(lineWidth: 2)).interpolationMethod(.monotone)
                 }
                 ForEach(markers) { d in
-                    PointMark(x: .value("Date", d.time), y: .value("Level", d.percent))
+                    PointMark(x: .value("Date", d.time), y: .value("Amount", d.value))
                         .foregroundStyle(series.color).symbolSize(28)
                 }
                 RuleMark(x: .value("Now", now))
@@ -487,10 +495,9 @@ struct ActiveLevelsView: View {
                     }
             }
             .chartXScale(domain: domain)
-            .chartYScale(domain: 0...100)
-            .chartYAxis { AxisMarks(values: [0, 50, 100]) { v in
+            .chartYAxis { AxisMarks { _ in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
-                AxisValueLabel { if let i = v.as(Int.self) { Text("\(i)%").font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary) } }
+                AxisValueLabel().font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary)
             } }
             .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
@@ -498,6 +505,21 @@ struct ActiveLevelsView: View {
                     .font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary)
             } }
             .frame(height: 240)
+        }
+
+        // Unit handling: GLP-1s track in mg, most peptides in mcg. Convert the mcg model output to the
+        // compound's preferred unit for display.
+        private var usesMg: Bool {
+            let key = series.name.lowercased()
+            return CompoundCatalog.all.first { $0.name.lowercased() == key }?.preferredDoseUnit == .milligram
+        }
+        private var unitLabel: String { usesMg ? "mg" : "mcg" }
+        private func amount(_ mcg: Double) -> Double { usesMg ? mcg / 1_000 : mcg }
+        private func fmt(_ v: Double) -> String {
+            if v >= 100 { return String(Int(v.rounded())) }
+            if v >= 10 { return String(format: "%.0f", v) }
+            if v >= 1 { return String(format: "%.1f", v) }
+            return String(format: "%.2f", v)
         }
 
         private func factRow(_ key: String, _ value: String) -> some View {
