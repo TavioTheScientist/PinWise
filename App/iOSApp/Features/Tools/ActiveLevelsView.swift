@@ -3,17 +3,21 @@ import SwiftData
 import Charts
 import PeptideKit
 
-/// "Active levels" — a relative body-load curve for every compound in the user's *active* protocols,
-/// so a stacker (e.g. Retatrutide + BPC-157 + CJC/Ipamorelin) can see at a glance when each compound
-/// peaks and troughs relative to the others. Driven entirely by active protocols: each protocol's
-/// schedule is expanded into dose events, decayed by the compound's half-life (first-order model in
-/// PeptideKit.Pharmacokinetics), then each compound is normalized to its own peak so the shapes —
-/// the timing of highs and lows — compare cleanly regardless of dose size.
+/// "Active levels" — a relative body-load curve for every compound the user is taking, so a stacker
+/// (e.g. Retatrutide + BPC-157 + CJC/Ipamorelin) can see at a glance when each compound peaks and
+/// troughs relative to the others. Driven by the doses you actually LOGGED (the ground truth of what's
+/// on board) for the past, plus your ACTIVE PROTOCOLS projected forward for the next week. Each dose is
+/// decayed by the compound's half-life (first-order model in PeptideKit.Pharmacokinetics), then each
+/// compound is normalized to its own peak so the shapes — the timing of highs and lows — compare cleanly
+/// regardless of dose size. Compounds with no known half-life (custom/uncharacterized) can't be curved,
+/// so they're listed as omitted rather than silently dropped.
 ///
 /// This is an educational relative estimate, never plasma concentrations and never dosing advice.
 struct ActiveLevelsView: View {
     @Query(filter: #Predicate<SavedProtocol> { $0.isActive })
     private var activeProtocols: [SavedProtocol]
+
+    @Query private var loggedDoses: [LoggedDose]
 
     /// A single point on one compound's relative-level curve (0–100% of that compound's own peak).
     private struct LevelPoint: Identifiable {
@@ -38,15 +42,16 @@ struct ActiveLevelsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
                 let now = Date()
-                let points = levelPoints(now: now)
+                let result = levelPoints(now: now)
+                let points = result.points
                 let compounds = orderedCompounds(in: points)
 
                 if compounds.isEmpty {
                     Card {
                         ThemedEmptyState(
                             icon: "waveform.path.ecg",
-                            title: "No active levels yet",
-                            message: "Start a protocol with a compound that has a known half-life, and its relative level over time shows up here.")
+                            title: "No levels to show yet",
+                            message: emptyMessage(omitted: result.omitted))
                     }
                 } else {
                     Card {
@@ -54,11 +59,16 @@ struct ActiveLevelsView: View {
                             Text("Relative level")
                                 .font(Typo.headline)
                                 .foregroundStyle(BrandColor.textPrimary)
-                            Text("Each line is a compound in your active protocols, scaled to its own peak — so you can compare *when* levels are high or low across your stack.")
+                            Text("Each line is a compound you're taking — logged doses so far, your active protocol projected ahead — scaled to its own peak, so you can compare *when* levels are high or low across your stack.")
                                 .font(.caption)
                                 .foregroundStyle(BrandColor.textSecondary)
                             chart(points: points, compounds: compounds, now: now)
                             legend(compounds)
+                            if !result.omitted.isEmpty {
+                                Text("Not shown: \(result.omitted.joined(separator: ", ")) — no known half-life to model.")
+                                    .font(.caption2)
+                                    .foregroundStyle(BrandColor.textSecondary)
+                            }
                         }
                     }
 
@@ -139,36 +149,50 @@ struct ActiveLevelsView: View {
         return out
     }
 
-    /// Expand active protocols → dose events per compound → decay → normalize to each compound's peak.
-    private func levelPoints(now: Date) -> [LevelPoint] {
+    /// Build per-compound dose events from LOGGED doses (past → now) + ACTIVE-PROTOCOL projection
+    /// (now → +7d), decay each, and normalize to that compound's own peak. Returns the plotted points
+    /// plus the names of compounds that had doses but no known half-life (so we can say why they're not shown).
+    private func levelPoints(now: Date) -> (points: [LevelPoint], omitted: [String]) {
         let windowStart = now.addingTimeInterval(-windowBack)
         let windowEnd = now.addingTimeInterval(windowFwd)
         let doseWindowStart = now.addingTimeInterval(-lookback)
 
         // compoundName (display) → its accumulated dose events + resolved half-life
         var eventsByCompound: [String: (display: String, halfLife: Double, doses: [Pharmacokinetics.DoseEvent])] = [:]
+        var omittedByKey: [String: String] = [:]   // compounds seen with doses but no half-life
 
-        for proto in activeProtocols {
-            // Don't manufacture doses before the protocol actually started.
-            let expandFrom = max(doseWindowStart, proto.startDate)
-            guard expandFrom <= windowEnd else { continue }
-            let dates = AdherenceCalculator.expectedDates(schedule: proto.schedule, start: expandFrom, end: windowEnd)
-            guard !dates.isEmpty else { continue }
-
-            for item in proto.items {
-                let name = item.compoundName.trimmingCharacters(in: .whitespaces)
-                guard !name.isEmpty, let halfLife = halfLife(for: name) else { continue }
-                let amount = max(item.doseMicrograms, 1) // shape only; each compound is self-normalized
-                let key = name.lowercased()
-                let newDoses = dates.map { Pharmacokinetics.DoseEvent(time: $0, amount: amount) }
-                if var existing = eventsByCompound[key] {
-                    existing.doses.append(contentsOf: newDoses)
-                    eventsByCompound[key] = existing
-                } else {
-                    eventsByCompound[key] = (display: name, halfLife: halfLife, doses: newDoses)
-                }
+        // Add one dose event to a compound's bucket, resolving its half-life (or recording it as omitted).
+        func add(name rawName: String, amountMcg: Double, at time: Date) {
+            let name = rawName.trimmingCharacters(in: .whitespaces)
+            guard !name.isEmpty else { return }
+            let key = name.lowercased()
+            guard let halfLife = halfLife(for: name) else { omittedByKey[key] = name; return }
+            let amount = max(amountMcg, 1) // shape only; each compound is self-normalized
+            let event = Pharmacokinetics.DoseEvent(time: time, amount: amount)
+            if var existing = eventsByCompound[key] {
+                existing.doses.append(event); eventsByCompound[key] = existing
+            } else {
+                eventsByCompound[key] = (display: name, halfLife: halfLife, doses: [event])
             }
         }
+
+        // 1) What you actually took — logged doses within the lookback window, up to now.
+        for dose in loggedDoses where dose.timestamp >= doseWindowStart && dose.timestamp <= now {
+            add(name: dose.compoundName, amountMcg: dose.doseMicrograms, at: dose.timestamp)
+        }
+
+        // 2) Where your active protocols take you next — projected doses strictly after now.
+        for proto in activeProtocols {
+            let expandFrom = max(now, proto.startDate)
+            guard expandFrom <= windowEnd else { continue }
+            let dates = AdherenceCalculator.expectedDates(schedule: proto.schedule, start: expandFrom, end: windowEnd)
+            for item in proto.items {
+                for d in dates where d > now { add(name: item.compoundName, amountMcg: item.doseMicrograms, at: d) }
+            }
+        }
+
+        // A compound that IS plotted shouldn't also appear in the omitted note.
+        for key in eventsByCompound.keys { omittedByKey[key] = nil }
 
         var out: [LevelPoint] = []
         for (_, entry) in eventsByCompound {
@@ -191,7 +215,17 @@ struct ActiveLevelsView: View {
                 out.append(LevelPoint(compound: entry.display, time: s.time, percent: s.level / peak * 100))
             }
         }
-        return out
+        let omitted = omittedByKey.values.sorted()
+        return (points: out, omitted: omitted)
+    }
+
+    /// Empty-state copy — tailored to whether the reason is "no doses at all" vs. "doses exist but
+    /// none of those compounds have a known half-life to model."
+    private func emptyMessage(omitted: [String]) -> String {
+        if omitted.isEmpty {
+            return "Log a dose or start a protocol for a compound with a known half-life, and its level over time shows up here."
+        }
+        return "We can't model \(omitted.joined(separator: ", ")) — no known half-life for \(omitted.count == 1 ? "it" : "them"). Levels appear once you're taking a compound we can model (most GLP-1s and GH peptides)."
     }
 
     /// Population-average half-life from the vetted catalog (case-insensitive). Custom compounds and
