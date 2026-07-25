@@ -25,6 +25,8 @@ struct LogView: View {
     @State private var showBack = false
     @State private var timestamp: Date = Date()
     @State private var notes: String = ""
+    /// Notes are collapsed by default — a rarely-used field shouldn't occupy space until wanted.
+    @State private var showNotes = false
     @State private var savedCount = 0
     /// One-time mode: the vial the user chose to log from (nil = pick any compound).
     @State private var selectedVialID: UUID?
@@ -468,8 +470,24 @@ struct LogView: View {
                     DatePicker("", selection: $timestamp, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
                         .labelsHidden()
                 }
-                FieldRow("Notes", hint: "Optional.") {
-                    TextField("Anything worth remembering", text: $notes, axis: .vertical).pinwiseField()
+                // Collapsible notes — hidden until tapped, so it takes no space when unused.
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    Button { withAnimation(.easeInOut(duration: 0.2)) { showNotes.toggle() } } label: {
+                        HStack(spacing: Space.sm) {
+                            Text("Notes").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                            Text("optional").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            Spacer()
+                            Image(systemName: showNotes ? "chevron.up" : "chevron.down")
+                                .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    if showNotes {
+                        TextField("Anything worth remembering", text: $notes, axis: .vertical)
+                            .pinwiseField()
+                            .padding(.top, 2)
+                    }
                 }
             }
         }
@@ -577,6 +595,7 @@ struct LogView: View {
 
     private func finishSave() {
         notes = ""
+        showNotes = false   // re-collapse notes for the next log
         timestamp = Date()
         site = nil          // clear so the next log starts unselected (no silently-wrong location)
         showBack = false
