@@ -3,29 +3,24 @@ import SwiftData
 import Charts
 import PeptideKit
 
-/// "Active levels" — a relative body-load curve for every compound the user is taking, so a stacker
-/// (e.g. Retatrutide + BPC-157 + CJC/Ipamorelin) can see at a glance when each compound peaks and
-/// troughs relative to the others. Driven by the doses you actually LOGGED (the ground truth of what's
-/// on board) for the past, plus your ACTIVE PROTOCOLS projected forward for the next week. Each dose is
-/// decayed by the compound's half-life (first-order model in PeptideKit.Pharmacokinetics), then each
-/// compound is normalized to its own peak so the shapes — the timing of highs and lows — compare cleanly
-/// regardless of dose size. Compounds with no known half-life (custom/uncharacterized) can't be curved,
-/// so they're listed as omitted rather than silently dropped.
+/// "Active levels" — how much of each compound you're taking is on board over time, so a stacker
+/// (e.g. Retatrutide + CJC/Ipamorelin) can see when each one runs high or low. Driven by the doses
+/// you actually LOGGED (past → now) plus your ACTIVE PROTOCOLS projected forward, each decayed by the
+/// compound's half-life (first-order model in PeptideKit.Pharmacokinetics).
 ///
-/// This is an educational relative estimate, never plasma concentrations and never dosing advice.
+/// Design note: half-lives span minutes (sermorelin) to weeks (semaglutide), so it is NOT meaningful to
+/// compare their heights on one shared axis. Instead we compare *timing*: every compound is scaled to its
+/// OWN peak and shown two ways —
+///   • "Right now" — a per-compound gauge of where it sits between its own trough and peak this instant.
+///   • "Timeline" — a ridgeline of self-scaled lanes on a shared time axis; read down the "Now" line to
+///     compare when each compound is high vs. low, never one lane's height against another's.
+/// Compounds with no known half-life (custom/uncharacterized) can't be modeled, so they're named as
+/// omitted rather than silently dropped. Educational relative estimate — never plasma levels or dosing advice.
 struct ActiveLevelsView: View {
     @Query(filter: #Predicate<SavedProtocol> { $0.isActive })
     private var activeProtocols: [SavedProtocol]
 
     @Query private var loggedDoses: [LoggedDose]
-
-    /// A single point on one compound's relative-level curve (0–100% of that compound's own peak).
-    private struct LevelPoint: Identifiable {
-        let id = UUID()
-        let compound: String
-        let time: Date
-        let percent: Double
-    }
 
     // 14-day window centered on now; the level at the window's start already reflects up to 30 days
     // of prior doses (so nothing starts artificially at zero).
@@ -33,27 +28,52 @@ struct ActiveLevelsView: View {
     private let windowFwd: TimeInterval = 7 * 24 * 3_600
     private let lookback: TimeInterval = 30 * 24 * 3_600
 
-    /// A 10-hue palette so a big stack doesn't collide on color. Vivid mid-tones chosen to read on
-    /// both light and dark card surfaces; colors are assigned per compound and stay stable.
+    /// A 10-hue palette; a compound's color is fixed by its catalog position, so it never changes when
+    /// other compounds are added or removed. Vivid mid-tones chosen to read on light and dark surfaces.
     private let palette: [Color] = [
         Color(hex: 0x4F8CFF), Color(hex: 0x18E39A), Color(hex: 0xFFB020), Color(hex: 0xFF4D6D),
         Color(hex: 0x9B7DFF), Color(hex: 0x4FD1C5), Color(hex: 0xFF8A3D), Color(hex: 0xE84FCB),
         Color(hex: 0x6BD44F), Color(hex: 0x00B4D8)
     ]
 
-    /// Compounds the user has tapped off in the legend (combined chart only; the by-compound grid
-    /// always shows everything).
-    @State private var hidden: Set<String> = []
+    private enum LevelStatus {
+        case rising, nearPeak, tapering, low
+        var label: String {
+            switch self {
+            case .rising: return "Rising"
+            case .nearPeak: return "Near peak"
+            case .tapering: return "Tapering"
+            case .low: return "Low"
+            }
+        }
+    }
+
+    /// One sampled point of a compound's own-peak-normalized curve (0–100%).
+    private struct LevelPoint: Identifiable {
+        let id = UUID()
+        let time: Date
+        let percent: Double
+    }
+
+    /// Everything the UI needs for one compound.
+    private struct CompoundSeries: Identifiable {
+        let id = UUID()
+        let name: String
+        let color: Color
+        let samples: [LevelPoint]
+        let currentPercent: Double
+        let status: LevelStatus
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
                 let now = Date()
-                let result = levelPoints(now: now)
-                let points = result.points
-                let compounds = orderedCompounds(in: points)
+                let windowStart = now.addingTimeInterval(-windowBack)
+                let windowEnd = now.addingTimeInterval(windowFwd)
+                let result = series(now: now, windowStart: windowStart, windowEnd: windowEnd)
 
-                if compounds.isEmpty {
+                if result.series.isEmpty {
                     Card {
                         ThemedEmptyState(
                             icon: "waveform.path.ecg",
@@ -61,44 +81,37 @@ struct ActiveLevelsView: View {
                             message: emptyMessage(omitted: result.omitted))
                     }
                 } else {
-                    let colors = colorMap(for: compounds)
-                    let visible = compounds.filter { !hidden.contains($0) }
-
-                    // Combined overlay — tap a legend chip to show/hide a compound.
+                    // ── Right now — the at-a-glance answer ─────────────────────────
                     Card {
                         VStack(alignment: .leading, spacing: Space.md) {
-                            Text("Relative level")
-                                .font(Typo.headline)
-                                .foregroundStyle(BrandColor.textPrimary)
-                            Text("Each compound you're taking — logged doses so far, your active protocol projected ahead — scaled to its own peak, so you can compare *when* levels run high or low. Tap a name to show or hide it.")
-                                .font(.caption)
-                                .foregroundStyle(BrandColor.textSecondary)
-                            chart(points: points.filter { !hidden.contains($0.compound) },
-                                  compounds: visible, colors: colors, now: now)
-                            legend(compounds, colors: colors)
-                            if !result.omitted.isEmpty {
-                                Text("Not shown: \(result.omitted.joined(separator: ", ")) — no known half-life to model.")
-                                    .font(.caption2)
-                                    .foregroundStyle(BrandColor.textSecondary)
-                            }
+                            Text("Right now")
+                                .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                            Text("Where each compound sits between its own trough and peak this moment.")
+                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            ForEach(result.series) { gaugeRow($0) }
                         }
                     }
 
-                    // Small multiples — one tidy curve per compound, no overlap.
-                    if compounds.count > 1 {
-                        Card {
-                            VStack(alignment: .leading, spacing: Space.md) {
-                                Text("By compound")
-                                    .font(Typo.headline)
-                                    .foregroundStyle(BrandColor.textPrimary)
-                                LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.md), GridItem(.flexible(), spacing: Space.md)], spacing: Space.md) {
-                                    ForEach(compounds, id: \.self) { name in
-                                        miniCard(name, points: points.filter { $0.compound == name },
-                                                 color: colors[name] ?? BrandColor.data, now: now)
-                                    }
+                    // ── Timeline — ridgeline on a shared time axis ─────────────────
+                    Card {
+                        VStack(alignment: .leading, spacing: Space.sm) {
+                            Text("Timeline")
+                                .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                            Text("Each compound is scaled to its own peak. Compare *when* levels are high or low by reading down the Now line — not one compound's height against another's.")
+                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            VStack(spacing: Space.md) {
+                                ForEach(Array(result.series.enumerated()), id: \.element.id) { idx, s in
+                                    lane(s, isLast: idx == result.series.count - 1, now: now, domain: windowStart...windowEnd)
                                 }
                             }
+                            .padding(.top, Space.xs)
                         }
+                    }
+
+                    if !result.omitted.isEmpty {
+                        Text("Not shown: \(result.omitted.joined(separator: ", ")) — no known half-life to model.")
+                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .padding(.horizontal, Space.xs)
                     }
 
                     DisclaimerBanner(text: "An estimated relative level from a simple half-life model — not a plasma concentration, and not medical or dosing advice. Talk to a clinician about your protocol.")
@@ -111,129 +124,77 @@ struct ActiveLevelsView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    // MARK: - Chart
+    // MARK: - Right-now gauge
 
     @ViewBuilder
-    private func chart(points: [LevelPoint], compounds: [String], colors: [String: Color], now: Date) -> some View {
-        Chart {
-            ForEach(points) { p in
-                LineMark(
-                    x: .value("Date", p.time),
-                    y: .value("Level", p.percent)
-                )
-                .foregroundStyle(by: .value("Compound", p.compound))
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                .interpolationMethod(.monotone)
+    private func gaugeRow(_ s: CompoundSeries) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: Space.sm) {
+                Circle().fill(s.color).frame(width: 9, height: 9)
+                Text(s.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+                Spacer()
+                Text(s.status.label)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(s.status == .nearPeak ? s.color : BrandColor.textSecondary)
             }
-            RuleMark(x: .value("Now", now))
-                .foregroundStyle(BrandColor.textSecondary)
-                .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                .annotation(position: .top, alignment: .center) {
-                    Text("Now").font(.system(size: 10, weight: .semibold)).foregroundStyle(BrandColor.textSecondary)
-                }
-        }
-        .chartForegroundStyleScale(domain: compounds, range: compounds.map { colors[$0] ?? BrandColor.data })
-        .chartLegend(.hidden) // custom, tappable legend below reads better than the default swatches
-        .chartYScale(domain: 0...100)
-        .chartYAxis {
-            AxisMarks(values: [0, 50, 100]) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
-                AxisValueLabel {
-                    if let v = value.as(Int.self) { Text("\(v)%").font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary) }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(BrandColor.stroke.opacity(0.4))
+                    Capsule().fill(s.color)
+                        .frame(width: max(6, geo.size.width * s.currentPercent / 100))
                 }
             }
+            .frame(height: 6)
         }
-        .chartXAxis {
-            AxisMarks { _ in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
-                AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary)
-            }
-        }
-        .frame(height: 220)
     }
 
-    /// A compact per-compound curve for the small-multiples grid.
+    // MARK: - Timeline ridgeline lane
+
     @ViewBuilder
-    private func miniCard(_ name: String, points: [LevelPoint], color: Color, now: Date) -> some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
-            Text(name).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+    private func lane(_ s: CompoundSeries, isLast: Bool, now: Date, domain: ClosedRange<Date>) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Circle().fill(s.color).frame(width: 7, height: 7)
+                Text(s.name).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+            }
             Chart {
-                ForEach(points) { p in
+                ForEach(s.samples) { p in
                     AreaMark(x: .value("Date", p.time), y: .value("Level", p.percent))
-                        .foregroundStyle(color.opacity(0.14)).interpolationMethod(.monotone)
+                        .foregroundStyle(s.color.opacity(0.16)).interpolationMethod(.monotone)
                     LineMark(x: .value("Date", p.time), y: .value("Level", p.percent))
-                        .foregroundStyle(color).lineStyle(StrokeStyle(lineWidth: 1.5)).interpolationMethod(.monotone)
+                        .foregroundStyle(s.color).lineStyle(StrokeStyle(lineWidth: 1.5)).interpolationMethod(.monotone)
                 }
                 RuleMark(x: .value("Now", now))
-                    .foregroundStyle(BrandColor.textSecondary.opacity(0.6))
+                    .foregroundStyle(BrandColor.textSecondary.opacity(0.55))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             }
+            .chartXScale(domain: domain)
             .chartYScale(domain: 0...100)
             .chartYAxis(.hidden)
-            .chartXAxis(.hidden)
-            .frame(height: 72)
-        }
-        .padding(Space.sm)
-        .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-    }
-
-    @ViewBuilder
-    private func legend(_ compounds: [String], colors: [String: Color]) -> some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: Space.sm)], alignment: .leading, spacing: Space.xs) {
-            ForEach(compounds, id: \.self) { name in
-                let isHidden = hidden.contains(name)
-                let dot = colors[name] ?? BrandColor.data
-                Button {
-                    if isHidden { hidden.remove(name) } else { hidden.insert(name) }
-                } label: {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(isHidden ? Color.clear : dot)
-                            .overlay(Circle().strokeBorder(dot, lineWidth: isHidden ? 1 : 0))
-                            .frame(width: 9, height: 9)
-                        Text(name).font(.caption).lineLimit(1)
-                            .foregroundStyle(isHidden ? BrandColor.textSecondary.opacity(0.5) : BrandColor.textSecondary)
-                            .strikethrough(isHidden, color: BrandColor.textSecondary.opacity(0.5))
+            .chartXAxis {
+                if isLast {
+                    AxisMarks { _ in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
+                        AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary)
                     }
-                    .contentShape(Rectangle())
+                } else {
+                    AxisMarks { _ in AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke.opacity(0.5)) }
                 }
-                .buttonStyle(.plain)
             }
+            .frame(height: 46)
         }
     }
 
-    /// Stable color per compound, keyed by first-appearance order (so hiding one never recolors the rest).
-    private func colorMap(for compounds: [String]) -> [String: Color] {
-        var map: [String: Color] = [:]
-        for (i, name) in compounds.enumerated() { map[name] = palette[i % palette.count] }
-        return map
-    }
+    // MARK: - Model → series
 
-    // MARK: - Model → curves
-
-    /// All compounds present in the built points, in a stable display order (first appearance).
-    private func orderedCompounds(in points: [LevelPoint]) -> [String] {
-        var seen = Set<String>()
-        var out: [String] = []
-        for p in points where !seen.contains(p.compound) {
-            seen.insert(p.compound); out.append(p.compound)
-        }
-        return out
-    }
-
-    /// Build per-compound dose events from LOGGED doses (past → now) + ACTIVE-PROTOCOL projection
-    /// (now → +7d), decay each, and normalize to that compound's own peak. Returns the plotted points
-    /// plus the names of compounds that had doses but no known half-life (so we can say why they're not shown).
-    private func levelPoints(now: Date) -> (points: [LevelPoint], omitted: [String]) {
-        let windowStart = now.addingTimeInterval(-windowBack)
-        let windowEnd = now.addingTimeInterval(windowFwd)
+    /// Build per-compound series from LOGGED doses (past → now) + ACTIVE-PROTOCOL projection (now → +7d).
+    /// Returns the drawable series plus the names of compounds skipped for lacking a known half-life.
+    private func series(now: Date, windowStart: Date, windowEnd: Date) -> (series: [CompoundSeries], omitted: [String]) {
         let doseWindowStart = now.addingTimeInterval(-lookback)
 
-        // compoundName (display) → its accumulated dose events + resolved half-life
         var eventsByCompound: [String: (display: String, halfLife: Double, doses: [Pharmacokinetics.DoseEvent])] = [:]
-        var omittedByKey: [String: String] = [:]   // compounds seen with doses but no half-life
+        var omittedByKey: [String: String] = [:]
 
-        // Add one dose event to a compound's bucket, resolving its half-life (or recording it as omitted).
         func add(name rawName: String, amountMcg: Double, at time: Date) {
             let name = rawName.trimmingCharacters(in: .whitespaces)
             guard !name.isEmpty else { return }
@@ -252,7 +213,6 @@ struct ActiveLevelsView: View {
         for dose in loggedDoses where dose.timestamp >= doseWindowStart && dose.timestamp <= now {
             add(name: dose.compoundName, amountMcg: dose.doseMicrograms, at: dose.timestamp)
         }
-
         // 2) Where your active protocols take you next — projected doses strictly after now.
         for proto in activeProtocols {
             let expandFrom = max(now, proto.startDate)
@@ -262,42 +222,48 @@ struct ActiveLevelsView: View {
                 for d in dates where d > now { add(name: item.compoundName, amountMcg: item.doseMicrograms, at: d) }
             }
         }
-
-        // A compound that IS plotted shouldn't also appear in the omitted note.
         for key in eventsByCompound.keys { omittedByKey[key] = nil }
 
-        var out: [LevelPoint] = []
+        var out: [CompoundSeries] = []
         for (_, entry) in eventsByCompound {
-            // Half-lives across the catalog span minutes (sermorelin) to days (CJC-DAC, ACE-031).
-            // A fixed coarse grid would flatten short-half-life compounds to ~zero between samples,
-            // so we sample a 3-hour grid UNION every dose instant in the window — that guarantees
-            // each peak is represented no matter how fast the compound clears.
+            // Sample a 3-hour grid UNION every dose instant, so short-half-life peaks aren't missed.
             var times = Set<Date>()
             var t = windowStart
             while t <= windowEnd { times.insert(t); t = t.addingTimeInterval(3 * 3_600) }
             for d in entry.doses where d.time >= windowStart && d.time <= windowEnd { times.insert(d.time) }
-            let sorted = times.sorted()
+            let sortedTimes = times.sorted()
 
-            let samples = sorted.map { time in
-                Pharmacokinetics.Sample(time: time, level: Pharmacokinetics.level(at: time, doses: entry.doses, halfLifeHours: entry.halfLife))
-            }
-            let peak = samples.map(\.level).max() ?? 0
+            let levels = sortedTimes.map { Pharmacokinetics.level(at: $0, doses: entry.doses, halfLifeHours: entry.halfLife) }
+            let peak = levels.max() ?? 0
             guard peak > 0 else { continue }
-            for s in samples {
-                out.append(LevelPoint(compound: entry.display, time: s.time, percent: s.level / peak * 100))
-            }
+
+            let samples = zip(sortedTimes, levels).map { LevelPoint(time: $0, percent: $1 / peak * 100) }
+            let current = Pharmacokinetics.level(at: now, doses: entry.doses, halfLifeHours: entry.halfLife)
+            let prior = Pharmacokinetics.level(at: now.addingTimeInterval(-3 * 3_600), doses: entry.doses, halfLifeHours: entry.halfLife)
+            let currentPct = current / peak * 100
+            let status: LevelStatus =
+                currentPct >= 75 ? .nearPeak :
+                (current > prior * 1.02 ? .rising :
+                 (currentPct <= 20 ? .low : .tapering))
+
+            out.append(CompoundSeries(name: entry.display, color: stableColor(for: entry.display),
+                                      samples: samples, currentPercent: currentPct, status: status))
         }
-        let omitted = omittedByKey.values.sorted()
-        return (points: out, omitted: omitted)
+        // Stable, predictable order.
+        out.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return (series: out, omitted: omittedByKey.values.sorted())
     }
 
-    /// Empty-state copy — tailored to whether the reason is "no doses at all" vs. "doses exist but
-    /// none of those compounds have a known half-life to model."
-    private func emptyMessage(omitted: [String]) -> String {
-        if omitted.isEmpty {
-            return "Log a dose or start a protocol for a compound with a known half-life, and its level over time shows up here."
+    /// A compound's color is fixed by its position in the catalog (or a deterministic name hash for
+    /// custom compounds), so it is CONSTANT across launches and never shifts when the stack changes.
+    private func stableColor(for name: String) -> Color {
+        let key = name.lowercased()
+        if let i = CompoundCatalog.all.firstIndex(where: { $0.name.lowercased() == key }) {
+            return palette[i % palette.count]
         }
-        return "We can't model \(omitted.joined(separator: ", ")) — no known half-life for \(omitted.count == 1 ? "it" : "them"). Levels appear once you're taking a compound we can model (most GLP-1s and GH peptides)."
+        // Deterministic fallback for custom compounds (String.hashValue is randomized per run, so don't use it).
+        let h = key.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
+        return palette[h % palette.count]
     }
 
     /// Population-average half-life from the vetted catalog (case-insensitive). Custom compounds and
@@ -305,5 +271,13 @@ struct ActiveLevelsView: View {
     private func halfLife(for name: String) -> Double? {
         let key = name.lowercased()
         return CompoundCatalog.all.first { $0.name.lowercased() == key }?.halfLifeHours
+    }
+
+    /// Empty-state copy — tailored to "no doses at all" vs. "doses exist but none can be modeled."
+    private func emptyMessage(omitted: [String]) -> String {
+        if omitted.isEmpty {
+            return "Log a dose or start a protocol for a compound with a known half-life, and its level over time shows up here."
+        }
+        return "We can't model \(omitted.joined(separator: ", ")) — no known half-life for \(omitted.count == 1 ? "it" : "them"). Levels appear once you're taking a compound we can model (most GLP-1s and GH peptides)."
     }
 }
