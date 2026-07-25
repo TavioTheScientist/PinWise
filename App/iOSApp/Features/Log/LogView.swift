@@ -27,6 +27,8 @@ struct LogView: View {
     @State private var notes: String = ""
     /// Notes are collapsed by default — a rarely-used field shouldn't occupy space until wanted.
     @State private var showNotes = false
+    /// "When" is collapsed by default (defaults to now); expand only to backdate a dose.
+    @State private var showWhen = false
     @State private var savedCount = 0
     /// One-time mode: the vial the user chose to log from (nil = pick any compound).
     @State private var selectedVialID: UUID?
@@ -103,6 +105,14 @@ struct LogView: View {
         default:
             return "Inject subcutaneously. The abdomen absorbs most consistently; thigh, upper arm, and flank are alternates — rotate to avoid lipohypertrophy."
         }
+    }
+
+    /// Compact value shown in the collapsed "When" header: "Now" while it's ~current, else the time.
+    private var whenLabel: String {
+        if abs(timestamp.timeIntervalSinceNow) < 120 { return "Now" }
+        let time = timestamp.formatted(date: .omitted, time: .shortened)
+        if Calendar.current.isDateInToday(timestamp) { return "Today, \(time)" }
+        return "\(timestamp.formatted(.dateTime.month(.abbreviated).day())), \(time)"
     }
     private var canSave: Bool {
         switch mode {
@@ -466,9 +476,25 @@ struct LogView: View {
                     }
                 }
                 Text(siteRationale).font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                FieldRow("When?", hint: "Now by default — change it to log an earlier dose.") {
-                    DatePicker("", selection: $timestamp, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
-                        .labelsHidden()
+                // Collapsible "When" — defaults to now, so it stays collapsed; the header shows the
+                // chosen time so it's never ambiguous. Expand only to log an earlier dose.
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    Button { withAnimation(.easeInOut(duration: 0.2)) { showWhen.toggle() } } label: {
+                        HStack(spacing: Space.sm) {
+                            Text("When").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                            Spacer()
+                            Text(whenLabel).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            Image(systemName: showWhen ? "chevron.up" : "chevron.down")
+                                .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    if showWhen {
+                        DatePicker("", selection: $timestamp, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
+                            .labelsHidden()
+                            .padding(.top, 2)
+                    }
                 }
                 // Collapsible notes — hidden until tapped, so it takes no space when unused.
                 VStack(alignment: .leading, spacing: Space.xs) {
@@ -596,6 +622,7 @@ struct LogView: View {
     private func finishSave() {
         notes = ""
         showNotes = false   // re-collapse notes for the next log
+        showWhen = false    // re-collapse the time picker (back to "Now")
         timestamp = Date()
         site = nil          // clear so the next log starts unselected (no silently-wrong location)
         showBack = false
