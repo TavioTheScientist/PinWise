@@ -11,35 +11,37 @@ struct ToolsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     header
-                    // Grid order groups the domains: rows 1-2 = the blue dose family,
-                    // then body (green) + feel (amber), then data (teal).
+                    // Ordered by what the peptide/GLP-1 community values most (Reddit research):
+                    // the reconstitution calculator and the dose log lead (the daily must-haves),
+                    // then titration + the compound/evidence reference, then the per-session and
+                    // outcome tools; the reverse "check a dose" sanity-check sits last (most niche).
                     LazyVGrid(columns: columns, spacing: Space.md) {
-                        ToolCard(title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data) {
-                            CompoundsView()
-                        }
                         ToolCard(title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.accentText) {
                             ReconstitutionCalculatorView()
-                        }
-                        ToolCard(title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText) {
-                            ReverseDoseView()
-                        }
-                        ToolCard(title: "Ramp-up plan", subtitle: "Build a titration ladder", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText) {
-                            RampUpPlannerView()
                         }
                         ToolCard(title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText) {
                             DoseHistoryView()
                         }
+                        ToolCard(title: "Ramp-up plan", subtitle: "Build a titration ladder", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText) {
+                            RampUpPlannerView()
+                        }
+                        ToolCard(title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data) {
+                            CompoundsView()
+                        }
                         ToolCard(title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success) {
                             BodyMapView()
-                        }
-                        ToolCard(title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success) {
-                            PhysiqueView()
                         }
                         ToolCard(title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: BrandColor.warning) {
                             SymptomsView()
                         }
                         ToolCard(title: "Labs & metrics", subtitle: "Track weight, labs, and vitals", systemImage: "chart.xyaxis.line", hue: BrandColor.data) {
                             BiomarkersView()
+                        }
+                        ToolCard(title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success) {
+                            PhysiqueView()
+                        }
+                        ToolCard(title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText) {
+                            ReverseDoseView()
                         }
                     }
                 }
