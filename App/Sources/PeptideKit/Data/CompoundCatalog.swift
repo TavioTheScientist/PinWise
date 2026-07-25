@@ -147,9 +147,9 @@ public enum CompoundCatalog {
         regulatoryStatus: .researchOnly,
         evidenceTier: .humanTrialsUnapproved,
         preferredDoseUnit: .milligram,
-        halfLifeHours: 0.5, // ~30 min
+        halfLifeHours: 0.5, // ~30 min — COMMUNITY estimate; no published human terminal t½ for Mod-GRF(1-29)
         wadaProhibited: true,
-        notes: "Short-acting GHRH analog; ~100–300 mcg 1–3×/day in community use. Distinct from the DAC version."
+        notes: "Short-acting GHRH analog; ~100–300 mcg 1–3×/day in community use. The ~30-min half-life is a community estimate, NOT literature (the closest studied analog, D-Ala²-GHRH, is ~7 min IV). Distinct from the DAC version."
     )
 
     public static let ipamorelin = Compound(
@@ -199,9 +199,9 @@ public enum CompoundCatalog {
         regulatoryStatus: .researchOnly,
         evidenceTier: .humanTrialsUnapproved,
         preferredDoseUnit: .milligram,
-        halfLifeHours: 0.25,
+        halfLifeHours: 2.5, // human LC-MS PK: biphasic, terminal t½ ~2.5 h (Cabrales 2013)
         wadaProhibited: true,
-        notes: "GH-releasing peptide; strongly increases appetite via ghrelin signaling. Not FDA-approved."
+        notes: "GH-releasing peptide; strongly increases appetite via ghrelin signaling. Not FDA-approved. Human PK (Cabrales 2013) is biphasic: ~8 min distribution, ~2.5 h terminal."
     )
 
     public static let hexarelin = Compound(
@@ -225,9 +225,9 @@ public enum CompoundCatalog {
         regulatoryStatus: .researchOnly,
         evidenceTier: .humanTrialsUnapproved,
         preferredDoseUnit: .milligram,
-        halfLifeHours: 24, // orally active, once-daily
+        halfLifeHours: 24, // once-daily DURATION OF ACTION (IGF-1 stays elevated ~24 h); human plasma t½ is uncharacterized
         wadaProhibited: true,
-        notes: "Orally active ghrelin-receptor agonist (not injected). Studied in humans but never approved; can raise appetite, blood glucose, and water retention."
+        notes: "Orally active ghrelin-receptor agonist (not injected). Studied in humans but never approved; can raise appetite, blood glucose, and water retention. The ~24 h figure is its once-daily duration of action (IGF-1 elevation), not a measured human plasma half-life."
     )
 
     // MARK: Healing / recovery
@@ -456,6 +456,277 @@ public enum CompoundCatalog {
         notes: "Modified IGF-1 with an extended half-life. WADA-prohibited (S2). No approved human product; growth-factor signaling carries theoretical cancer-risk concerns."
     )
 
+    public static let ss31 = Compound(
+        id: id("00000000-0000-0000-0000-000000000024"),
+        name: "SS-31",
+        aliases: ["Elamipretide", "MTP-131", "Bendavia"],
+        category: .metabolic,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .humanTrialsUnapproved,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: 2.5,
+        notes: "Mitochondria-targeting tetrapeptide (cardiolipin-binding). In human trials (e.g. Barth syndrome, mitochondrial myopathy) but NOT FDA-approved as of 2026."
+    )
+
+    public static let amino1mq = Compound(
+        id: id("00000000-0000-0000-0000-000000000025"),
+        name: "5-Amino-1MQ",
+        aliases: ["5-Amino-1-methylquinolinium"],
+        category: .metabolic,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "CORRECTION: a small-molecule NNMT inhibitor, NOT a peptide, and taken orally. Preclinical (animal) data only for fat loss/metabolism; no human trials; not approved."
+    )
+
+    public static let foxo4dri = Compound(
+        id: id("00000000-0000-0000-0000-000000000026"),
+        name: "FOXO4-DRI",
+        aliases: ["FOXO4-DRI senolytic", "ES2"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Experimental senolytic peptide (clears senescent cells) with data only in mice. No human trials; safety and dosing in humans are unknown. Not approved."
+    )
+
+    public static let humanin = Compound(
+        id: id("00000000-0000-0000-0000-000000000027"),
+        name: "Humanin",
+        aliases: ["HN", "MT-RNR2 peptide"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Mitochondrial-derived peptide studied preclinically for cytoprotection/longevity. No approved human product."
+    )
+
+    public static let snap8 = Compound(
+        id: id("00000000-0000-0000-0000-000000000028"),
+        name: "SNAP-8",
+        aliases: ["Acetyl octapeptide-3", "Acetyl glutamyl heptapeptide-1"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .precursorOffLabel,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "A TOPICAL cosmetic peptide (a longer Argireline analog) used in anti-wrinkle skincare. Evidence is for topical use only; not an injectable and not a drug."
+    )
+
+    public static let argireline = Compound(
+        id: id("00000000-0000-0000-0000-000000000029"),
+        name: "Argireline",
+        aliases: ["Acetyl hexapeptide-8", "Acetyl hexapeptide-3"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .precursorOffLabel,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "A TOPICAL cosmetic peptide marketed as a 'Botox-like' wrinkle softener. Evidence is for topical skincare use only; not an injectable and not a drug."
+    )
+
+    public static let matrixyl = Compound(
+        id: id("00000000-0000-0000-0000-00000000002a"),
+        name: "Matrixyl 3000",
+        aliases: ["Matrixyl", "Palmitoyl pentapeptide-4", "Palmitoyl tripeptide-1", "Palmitoyl tetrapeptide-7"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .precursorOffLabel,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "A TOPICAL cosmetic peptide complex used in anti-aging skincare to signal collagen. Evidence is for topical use only; not an injectable and not a drug."
+    )
+
+    public static let pegMgf = Compound(
+        id: id("00000000-0000-0000-0000-00000000002b"),
+        name: "PEG-MGF",
+        aliases: ["Pegylated MGF", "PEG mechano growth factor"],
+        category: .metabolic,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        wadaProhibited: true,
+        notes: "Pegylated form of MGF (an IGF-1 splice variant) marketed for muscle repair; PEGylation extends its action. Preclinical only; WADA-prohibited (S2); not approved."
+    )
+
+    public static let mgf = Compound(
+        id: id("00000000-0000-0000-0000-00000000002c"),
+        name: "MGF",
+        aliases: ["Mechano Growth Factor", "IGF-1Ec"],
+        category: .metabolic,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        wadaProhibited: true,
+        notes: "A mechanically-activated IGF-1 splice variant studied preclinically for muscle repair; very short-lived in plasma. WADA-prohibited (S2); no approved human product."
+    )
+
+    public static let follistatin344 = Compound(
+        id: id("00000000-0000-0000-0000-00000000002d"),
+        name: "Follistatin 344",
+        aliases: ["FS-344", "Follistatin"],
+        category: .metabolic,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        wadaProhibited: true,
+        notes: "A myostatin-binding protein used to chase muscle growth. Preclinical/gene-therapy research only as an injectable; WADA-prohibited (S4.4, myostatin function); not approved."
+    )
+
+    public static let ace031 = Compound(
+        id: id("00000000-0000-0000-0000-00000000002e"),
+        name: "ACE-031",
+        aliases: ["ActRIIB-Fc", "Ramatercept"],
+        category: .metabolic,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: 300, // ~10–15 days (Fc-fusion), single-ascending-dose Phase 1 (Attie 2013)
+        wadaProhibited: true,
+        notes: "A soluble activin receptor (myostatin/activin trap). As an Fc-fusion its half-life is long (~10–15 days SC; Attie 2013). Human trials were HALTED for safety (nosebleeds, gum bleeding, dilated vessels). WADA-prohibited; not approved."
+    )
+
+    public static let bpc157Arginate = Compound(
+        id: id("00000000-0000-0000-0000-00000000002f"),
+        name: "BPC-157 Arginate",
+        aliases: ["BPC-157 arginine salt", "Stable BPC-157"],
+        category: .healingRecovery,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: 0.4,
+        wadaProhibited: true,
+        notes: "The arginine-salt form of BPC-157, marketed as more stable than the acetate. Same preclinical-only evidence base and WADA-prohibited status as BPC-157."
+    )
+
+    // Peptide bioregulators (Khavinson short peptides): studied largely in Russian literature; no
+    // robust independent human evidence; none are FDA-approved. Grouped for the community's Tier-5 set.
+    public static let cartalax = Compound(
+        id: id("00000000-0000-0000-0000-000000000030"),
+        name: "Cartalax",
+        aliases: ["AED", "Ala-Glu-Asp"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (cartilage/connective tissue). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let pinealon = Compound(
+        id: id("00000000-0000-0000-0000-000000000031"),
+        name: "Pinealon",
+        aliases: ["EDR", "Glu-Asp-Arg"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (brain/neuro). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let cortagen = Compound(
+        id: id("00000000-0000-0000-0000-000000000032"),
+        name: "Cortagen",
+        aliases: ["AEDP", "Ala-Glu-Asp-Pro"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (cortex/nerve). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let vesugen = Compound(
+        id: id("00000000-0000-0000-0000-000000000033"),
+        name: "Vesugen",
+        aliases: ["KED", "Lys-Glu-Asp"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (vascular). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let bronchogen = Compound(
+        id: id("00000000-0000-0000-0000-000000000034"),
+        name: "Bronchogen",
+        aliases: ["AEDL", "Ala-Glu-Asp-Leu"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (bronchial). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let ovagen = Compound(
+        id: id("00000000-0000-0000-0000-000000000035"),
+        name: "Ovagen",
+        aliases: ["EDL", "Glu-Asp-Leu"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (liver/GI). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let testagen = Compound(
+        id: id("00000000-0000-0000-0000-000000000036"),
+        name: "Testagen",
+        aliases: ["KEDG", "Lys-Glu-Asp-Gly"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (thymus/immune). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let livagen = Compound(
+        id: id("00000000-0000-0000-0000-000000000037"),
+        name: "Livagen",
+        aliases: ["KEDA", "Lys-Glu-Asp-Ala"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (liver/immune). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let prostamax = Compound(
+        id: id("00000000-0000-0000-0000-000000000038"),
+        name: "Prostamax",
+        aliases: ["KEDP", "Lys-Glu-Asp-Pro"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (prostate). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
+    public static let crystagen = Compound(
+        id: id("00000000-0000-0000-0000-000000000039"),
+        name: "Crystagen",
+        aliases: ["EDP", "Glu-Asp-Pro"],
+        category: .cosmeticLongevity,
+        regulatoryStatus: .researchOnly,
+        evidenceTier: .preclinicalOrFailed,
+        preferredDoseUnit: .milligram,
+        halfLifeHours: nil,
+        notes: "Khavinson peptide bioregulator (immune). Studied mainly in Russian literature; no robust independent human evidence; not approved."
+    )
+
     /// Everything, for seeding a searchable picker.
     public static let all: [Compound] = [
         // GLP-1 / incretin
@@ -470,6 +741,13 @@ public enum CompoundCatalog {
         ghkCu, pt141, melanotan2, epithalon, aod9604, motsc,
         // Metabolic / other
         nadPlus, glutathione, dsip, selank, semax, igf1lr3,
+        ss31, amino1mq, pegMgf, mgf, follistatin344, ace031,
+        // Healing / recovery
+        bpc157Arginate,
+        // Cosmetic / longevity + peptide bioregulators
+        foxo4dri, humanin, snap8, argireline, matrixyl,
+        cartalax, pinealon, cortagen, vesugen, bronchogen,
+        ovagen, testagen, livagen, prostamax, crystagen,
     ]
 
     /// Alphabetical order, for pickers and the library list.

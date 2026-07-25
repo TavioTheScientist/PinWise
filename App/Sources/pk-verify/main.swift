@@ -342,7 +342,7 @@ do {
 // MARK: - Catalog integrity
 section("Compound catalog")
 do {
-    check(CompoundCatalog.all.count == 35, "catalog has 35 seeded compounds")
+    check(CompoundCatalog.all.count == 57, "catalog has 57 seeded compounds")
     check(Set(CompoundCatalog.all.map { $0.id }).count == CompoundCatalog.all.count, "catalog IDs are unique")
     check(CompoundCatalog.tesamorelin.evidenceTier == .fdaApproved && CompoundCatalog.tesamorelin.regulatoryStatus == .fdaApproved,
           "tesamorelin is the FDA-approved anchor")
@@ -521,6 +521,25 @@ do {
     check(ReviewPrompt.due(daysSinceInstall: 40, lastFired: 0) == 30, "opened at day 40 cold ⇒ one prompt (30), not a backlog")
     check(ReviewPrompt.due(daysSinceInstall: 65, lastFired: 30) == 60, "day 65 after day-30 fired ⇒ milestone 60")
     check(ReviewPrompt.due(daysSinceInstall: 100, lastFired: 60) == nil, "past day 60 ⇒ no further prompts")
+}
+
+// MARK: - Pharmacokinetics (active levels)
+section("Pharmacokinetics (active levels)")
+do {
+    let t0 = day(2026, 7, 1)
+    let hour: TimeInterval = 3600
+    let one = [Pharmacokinetics.DoseEvent(time: t0, amount: 100)]
+    check(approx(Pharmacokinetics.level(at: t0, doses: one, halfLifeHours: 24), 100), "at dose time ⇒ full amount (100)")
+    check(approx(Pharmacokinetics.level(at: t0.addingTimeInterval(24 * hour), doses: one, halfLifeHours: 24), 50), "one half-life ⇒ 50")
+    check(approx(Pharmacokinetics.level(at: t0.addingTimeInterval(48 * hour), doses: one, halfLifeHours: 24), 25), "two half-lives ⇒ 25")
+    check(Pharmacokinetics.level(at: t0.addingTimeInterval(-hour), doses: one, halfLifeHours: 24) == 0, "before any dose ⇒ 0")
+    let two = [Pharmacokinetics.DoseEvent(time: t0, amount: 100),
+               Pharmacokinetics.DoseEvent(time: t0.addingTimeInterval(24 * hour), amount: 100)]
+    check(approx(Pharmacokinetics.level(at: t0.addingTimeInterval(24 * hour), doses: two, halfLifeHours: 24), 150), "2nd dose stacks on decayed 1st ⇒ 50 + 100 = 150")
+    check(Pharmacokinetics.level(at: t0, doses: two, halfLifeHours: 0) == 0, "half-life 0 ⇒ 0 (guard)")
+    let series = Pharmacokinetics.levels(doses: one, halfLifeHours: 24, from: t0, to: t0.addingTimeInterval(48 * hour), step: 24 * hour)
+    check(series.count == 3, "levels() 0/24/48h at 24h step ⇒ 3 samples")
+    check(approx(series.last?.level ?? -1, 25), "last sample (48h) ⇒ 25")
 }
 
 // MARK: - Summary
