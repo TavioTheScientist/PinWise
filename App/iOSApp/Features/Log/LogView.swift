@@ -159,6 +159,8 @@ struct LogView: View {
             }
             // If a reminder is tapped while Log is already on screen, honor it immediately.
             .onChange(of: reminderRouter.pendingProtocolID) { _, id in consumeReminder(id) }
+            // Cold launch: retry once SwiftData finishes loading protocols (onAppear may beat it).
+            .onChange(of: protocols.count) { _, _ in consumeReminder(reminderRouter.pendingProtocolID) }
             .onChange(of: compound) { _, newValue in
                 doseUnit = newValue.preferredDoseUnit
                 // Drop the vial link if the user switches to a compound that vial doesn't hold,
@@ -310,11 +312,14 @@ struct LogView: View {
     /// then clear the router so it fires only once.
     private func consumeReminder(_ id: UUID?) {
         guard let id else { return }
+        // Cold launch from a lock-screen tap can run onAppear BEFORE SwiftData loads protocols.
+        // If nothing's loaded yet, leave the pending ID intact so the protocols-loaded onChange retries.
+        guard !activeProtocols.isEmpty else { return }
         if loggableProtocols.contains(where: { $0.id == id }) {
             mode = .protocolBased
             selectedProtocolID = id
         }
-        reminderRouter.pendingProtocolID = nil
+        reminderRouter.pendingProtocolID = nil   // consume once resolved (selected, or genuinely absent/already-logged)
     }
 
     private func doseMetric(_ label: String, _ value: String, _ color: Color) -> some View {
