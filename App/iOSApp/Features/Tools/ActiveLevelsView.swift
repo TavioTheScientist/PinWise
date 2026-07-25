@@ -22,6 +22,9 @@ struct ActiveLevelsView: View {
 
     @Query private var loggedDoses: [LoggedDose]
 
+    /// The compound whose detail sheet is open (nil = none).
+    @State private var selected: CompoundSeries?
+
     private let lookback: TimeInterval = 30 * 24 * 3_600      // how far back logged doses are gathered
     private let projectionForward: TimeInterval = 14 * 24 * 3_600  // how far protocols are projected
 
@@ -64,6 +67,11 @@ struct ActiveLevelsView: View {
         let domain: ClosedRange<Date>
         let spanHours: Double
         let spanLabel: String
+        // For the tap-in detail view:
+        let halfLifeHours: Double
+        let lastDose: Date?
+        let nextDose: Date?
+        let doseMarkers: [LevelPoint]   // normalized level at each dose instant in the window
     }
 
     var body: some View {
@@ -119,30 +127,36 @@ struct ActiveLevelsView: View {
         .heroScreen()
         .navigationTitle("Active levels")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $selected) { LevelDetailSheet(series: $0) }
     }
 
     // MARK: - Right-now gauge
 
     @ViewBuilder
     private func gaugeRow(_ s: CompoundSeries) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: Space.sm) {
-                Circle().fill(s.color).frame(width: 9, height: 9)
-                Text(s.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
-                Spacer()
-                Text(s.status.label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(s.status == .nearPeak ? s.color : BrandColor.textSecondary)
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(BrandColor.stroke.opacity(0.4))
-                    Capsule().fill(s.color)
-                        .frame(width: max(6, geo.size.width * s.currentPercent / 100))
+        Button { selected = s } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: Space.sm) {
+                    Circle().fill(s.color).frame(width: 9, height: 9)
+                    Text(s.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+                    Spacer()
+                    Text(s.status.label)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(s.status == .nearPeak ? s.color : BrandColor.textSecondary)
+                    Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(BrandColor.stroke.opacity(0.4))
+                        Capsule().fill(s.color)
+                            .frame(width: max(6, geo.size.width * s.currentPercent / 100))
+                    }
+                }
+                .frame(height: 6)
             }
-            .frame(height: 6)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Timeline ridgeline lane (own time window; Now fixed at 60% width)
@@ -180,6 +194,8 @@ struct ActiveLevelsView: View {
             }
             .frame(height: 46)
         }
+        .contentShape(Rectangle())
+        .onTapGesture { selected = s }
     }
 
     // MARK: - Model → series
@@ -255,10 +271,22 @@ struct ActiveLevelsView: View {
                 (current > prior * 1.02 ? .rising :
                  (currentPct <= 20 ? .low : .tapering))
 
+            // Dose instants inside this compound's window, as normalized markers for the detail chart.
+            let levelByTime = Dictionary(zip(sortedTimes, levels), uniquingKeysWith: { a, _ in a })
+            let doseMarkers = entry.doses
+                .filter { $0.time >= laneStart && $0.time <= laneEnd }
+                .compactMap { ev -> LevelPoint? in
+                    guard let raw = levelByTime[ev.time] else { return nil }
+                    return LevelPoint(time: ev.time, percent: raw / peak * 100)
+                }
+            let lastDose = entry.doses.map(\.time).filter { $0 <= now }.max()
+            let nextDose = entry.doses.map(\.time).filter { $0 > now }.min()
+
             out.append(CompoundSeries(
                 name: entry.display, color: stableColor(for: entry.display),
                 samples: samples, currentPercent: currentPct, status: status,
-                domain: laneStart...laneEnd, spanHours: spanHours, spanLabel: spanLabel(spanHours)))
+                domain: laneStart...laneEnd, spanHours: spanHours, spanLabel: spanLabel(spanHours),
+                halfLifeHours: entry.halfLife, lastDose: lastDose, nextDose: nextDose, doseMarkers: doseMarkers))
         }
         out.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         return (series: out, omitted: omittedByKey.values.sorted())
@@ -294,5 +322,127 @@ struct ActiveLevelsView: View {
             return "Log a dose or start a protocol for a compound with a known half-life, and its level over time shows up here."
         }
         return "We can't model \(omitted.joined(separator: ", ")) — no known half-life for \(omitted.count == 1 ? "it" : "them"). Levels appear once you're taking a compound we can model (most GLP-1s and GH peptides)."
+    }
+
+    // MARK: - Tap-in detail
+
+    /// Detail for one compound: a full-size level chart with dose markers, plus the exact facts —
+    /// current % of peak, half-life, last dose, next scheduled dose.
+    private struct LevelDetailSheet: View {
+        let series: CompoundSeries
+
+        var body: some View {
+            let now = Date()
+            MenuSheet(title: series.name) {
+                Card {
+                    VStack(alignment: .leading, spacing: Space.sm) {
+                        HStack(spacing: Space.sm) {
+                            Circle().fill(series.color).frame(width: 10, height: 10)
+                            Text(series.status.label).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                            Spacer()
+                            Text("\(Int(series.currentPercent.rounded()))% of peak")
+                                .font(.subheadline.weight(.semibold)).foregroundStyle(series.color)
+                        }
+                        Text("Where this compound sits right now, relative to its own peak level.")
+                            .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    }
+                }
+
+                Card {
+                    VStack(alignment: .leading, spacing: Space.sm) {
+                        Text("Level over time · \(series.spanLabel) window")
+                            .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        detailChart(now: now)
+                        Text("Dots mark each dose. Dashed line is now.")
+                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    }
+                }
+
+                Card {
+                    VStack(alignment: .leading, spacing: Space.sm) {
+                        factRow("Half-life", halfLifeLabel(series.halfLifeHours))
+                        Divider().overlay(BrandColor.stroke)
+                        factRow("Last dose", series.lastDose.map { relative($0, now: now) } ?? "—")
+                        Divider().overlay(BrandColor.stroke)
+                        factRow("Next dose", series.nextDose.map { relative($0, now: now) } ?? "None scheduled")
+                    }
+                }
+
+                Text("Estimated from a simple half-life model — not a plasma concentration, and not medical or dosing advice.")
+                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+            }
+        }
+
+        @ViewBuilder
+        private func detailChart(now: Date) -> some View {
+            Chart {
+                ForEach(series.samples) { p in
+                    AreaMark(x: .value("Date", p.time), y: .value("Level", p.percent))
+                        .foregroundStyle(series.color.opacity(0.16)).interpolationMethod(.monotone)
+                    LineMark(x: .value("Date", p.time), y: .value("Level", p.percent))
+                        .foregroundStyle(series.color).lineStyle(StrokeStyle(lineWidth: 2)).interpolationMethod(.monotone)
+                }
+                ForEach(series.doseMarkers) { d in
+                    PointMark(x: .value("Date", d.time), y: .value("Level", d.percent))
+                        .foregroundStyle(series.color).symbolSize(28)
+                }
+                RuleMark(x: .value("Now", now))
+                    .foregroundStyle(BrandColor.textSecondary.opacity(0.6))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    .annotation(position: .top, alignment: .center) {
+                        Text("Now").font(.system(size: 10, weight: .semibold)).foregroundStyle(BrandColor.textSecondary)
+                    }
+            }
+            .chartXScale(domain: series.domain)
+            .chartYScale(domain: 0...100)
+            .chartYAxis {
+                AxisMarks(values: [0, 50, 100]) { value in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
+                    AxisValueLabel {
+                        if let v = value.as(Int.self) { Text("\(v)%").font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary) }
+                    }
+                }
+            }
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
+                    AxisValueLabel(format: series.spanHours <= 48 ? Date.FormatStyle.dateTime.hour() : Date.FormatStyle.dateTime.month(.abbreviated).day())
+                        .font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary)
+                }
+            }
+            .frame(height: 240)
+        }
+
+        private func factRow(_ key: String, _ value: String) -> some View {
+            HStack {
+                Text(key).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                Spacer()
+                Text(value).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textSecondary)
+            }
+        }
+
+        private func halfLifeLabel(_ h: Double) -> String {
+            if h < 1 { return "\(Int((h * 60).rounded())) min" }
+            if h < 48 {
+                let v = h == h.rounded() ? "\(Int(h))" : String(format: "%.1f", h)
+                return "\(v) h"
+            }
+            let d = h / 24
+            let v = d == d.rounded() ? "\(Int(d))" : String(format: "%.1f", d)
+            return "\(v) days"
+        }
+
+        private func relative(_ date: Date, now: Date) -> String {
+            let secs = date.timeIntervalSince(now)
+            let past = secs < 0
+            let a = abs(secs)
+            if a < 60 { return past ? "just now" : "now" }
+            let value: Double, unit: String
+            if a < 3_600 { value = a / 60; unit = "min" }
+            else if a < 86_400 { value = a / 3_600; unit = "h" }
+            else { value = a / 86_400; unit = "d" }
+            let n = Int(value.rounded())
+            return past ? "\(n)\(unit) ago" : "in \(n)\(unit)"
+        }
     }
 }
