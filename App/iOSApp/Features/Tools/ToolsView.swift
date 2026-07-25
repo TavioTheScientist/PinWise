@@ -28,6 +28,9 @@ struct ToolsView: View {
                         ToolCard(title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data) {
                             CompoundsView()
                         }
+                        ToolCard(title: "Active levels", subtitle: "See your stack's body load", systemImage: "waveform.path.ecg", hue: BrandColor.data) {
+                            ActiveLevelsView()
+                        }
                         ToolCard(title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success) {
                             BodyMapView()
                         }
