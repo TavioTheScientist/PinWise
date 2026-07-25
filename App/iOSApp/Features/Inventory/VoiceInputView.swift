@@ -81,7 +81,7 @@ struct VoiceInputView: View {
                 row("Vial size", r.volumeMl.map { fmt($0) + " mL" } ?? "—")
                 row("Expires", r.expiration.map { $0.formatted(.dateTime.month().day().year()) } ?? "—")
                 if r.isEmpty {
-                    Text("Didn't catch the usual details. Try again — say the compound, the dose, and any volume or expiry clearly.")
+                    Text("Didn't catch that. Say the compound, dose, and any volume or expiry clearly, then try again.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                 } else {
                     PrimaryButton(title: "Use these details", systemImage: "checkmark") {

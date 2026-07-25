@@ -21,7 +21,7 @@ struct EmailSignInView: View {
                     Text(codeSent ? "Enter your code" : "Sign in with email")
                         .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
                     Text(codeSent
-                         ? "We emailed a 6-digit code to \(email). Enter it below — it can take a moment to arrive."
+                         ? "We emailed a 6-digit code to \(email). It may take a moment to arrive."
                          : "We'll email you a one-time code. No password needed.")
                         .font(.callout).foregroundStyle(BrandColor.textSecondary)
 

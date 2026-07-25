@@ -99,7 +99,7 @@ struct ReconstitutionCalculatorView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
-                Text("Find out how much to draw into your syringe — for a single peptide or a blend vial.")
+                Text("See how much to draw — for a single peptide or a blend vial.")
                     .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
 
                 Picker("", selection: $model.mode) {
@@ -164,7 +164,7 @@ struct ReconstitutionCalculatorView: View {
                                     Text("/mL").foregroundStyle(BrandColor.textSecondary)
                                 }
                             }
-                            FieldRow("Vial size (optional)", hint: "Total liquid in the vial — lets us estimate how many doses it holds.") {
+                            FieldRow("Vial size (optional)", hint: "Total liquid in the vial — we'll estimate how many doses it holds.") {
                                 HStack {
                                     TextField("e.g. 4", text: $model.totalVolumeText).keyboardType(.decimalPad).pinwiseField()
                                     Text("mL").foregroundStyle(BrandColor.textSecondary)

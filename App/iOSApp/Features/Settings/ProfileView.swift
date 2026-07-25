@@ -316,7 +316,7 @@ struct ProfileView: View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
                 SectionHeader(title: "About you")
-                FieldRow("Sex assigned at birth", hint: "Tailors the app to you — including which body the injection map draws.") {
+                FieldRow("Sex assigned at birth", hint: "Sets which body the injection map draws.") {
                     Picker("", selection: $bodyGenderRaw) {
                         Text("Male").tag("male")
                         Text("Female").tag("female")
