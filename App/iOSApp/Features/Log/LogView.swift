@@ -28,6 +28,8 @@ struct LogView: View {
     @State private var savedCount = 0
     /// One-time mode: the vial the user chose to log from (nil = pick any compound).
     @State private var selectedVialID: UUID?
+    /// Set when the user tapped a dose reminder — preselect that protocol on open.
+    @State private var reminderRouter = DoseReminderRouter.shared
 
     private var activeProtocols: [SavedProtocol] { protocols.filter(\.isActive) }
     /// Protocols still worth logging right now: active, minus any that are due TODAY and have
@@ -40,6 +42,8 @@ struct LogView: View {
             let loggedToday = recent.contains { cal.isDateInToday($0.timestamp) && p.compoundNames.contains($0.compoundName) }
             return !(dueToday && loggedToday)
         }
+        // Most-needed first: soonest next dose leads; as-needed (no next dose) sinks to the bottom.
+        .sorted { ($0.nextDose() ?? .distantFuture) < ($1.nextDose() ?? .distantFuture) }
     }
     private var selectedProtocol: SavedProtocol? { activeProtocols.first { $0.id == selectedProtocolID } }
     private var doseValue: Double? {
@@ -151,7 +155,10 @@ struct LogView: View {
                 doseUnit = compound.preferredDoseUnit
                 // Do NOT auto-fill the site: a log must record where you ACTUALLY injected, not a
                 // rotation suggestion. The "Suggested" hint below applies the pick on tap.
+                consumeReminder(reminderRouter.pendingProtocolID)
             }
+            // If a reminder is tapped while Log is already on screen, honor it immediately.
+            .onChange(of: reminderRouter.pendingProtocolID) { _, id in consumeReminder(id) }
             .onChange(of: compound) { _, newValue in
                 doseUnit = newValue.preferredDoseUnit
                 // Drop the vial link if the user switches to a compound that vial doesn't hold,
@@ -197,16 +204,12 @@ struct LogView: View {
     private var protocolCard: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
-                Text("Select a protocol").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Space.sm) {
-                        ForEach(loggableProtocols, id: \.id) { p in
-                            SelectableChip(title: p.name, isSelected: selectedProtocolID == p.id) {
-                                // Re-tapping the selected protocol deselects it, collapsing the
-                                // entry fields back to just the picker.
-                                selectedProtocolID = (selectedProtocolID == p.id) ? nil : p.id
-                            }
-                        }
+                Text("Which protocol are you logging?").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                // A vertical list of full-width rows — every protocol visible at a glance, soonest-due
+                // first. (Replaces a left-right chip scroll that hid protocols and wasted the tall screen.)
+                VStack(spacing: Space.sm) {
+                    ForEach(loggableProtocols, id: \.id) { p in
+                        protocolRow(p)
                     }
                 }
                 // Condition form: the onAppear default-seed (nil → first id) is programmatic,
@@ -263,6 +266,55 @@ struct LogView: View {
                 }
             }
         }
+    }
+
+    /// A full-width, tappable protocol row for the vertical picker: name + when-due + compounds,
+    /// with a clear selected state. Re-tapping the selected row deselects it.
+    @ViewBuilder
+    private func protocolRow(_ p: SavedProtocol) -> some View {
+        let isSelected = selectedProtocolID == p.id
+        Button {
+            selectedProtocolID = isSelected ? nil : p.id
+        } label: {
+            HStack(spacing: Space.md) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+                    Text("\(dueLabel(p)) · \(p.compoundNames.joined(separator: " + "))")
+                        .font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                }
+                Spacer(minLength: Space.sm)
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? BrandColor.accent : BrandColor.textSecondary)
+            }
+            .padding(Space.md)
+            .background(isSelected ? BrandColor.accent.opacity(0.12) : BrandColor.surfaceElevated,
+                        in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+                .strokeBorder(isSelected ? BrandColor.accent : BrandColor.stroke, lineWidth: isSelected ? 1.5 : 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// When a protocol's next dose falls, in plain language.
+    private func dueLabel(_ p: SavedProtocol) -> String {
+        guard let d = p.nextDose() else { return "As needed" }
+        let cal = Calendar.current
+        if cal.isDateInToday(d) { return "Due today" }
+        if cal.isDateInTomorrow(d) { return "Due tomorrow" }
+        return "Due \(d.formatted(.dateTime.month(.abbreviated).day()))"
+    }
+
+    /// Preselect the protocol a tapped dose reminder pointed to (if it's still worth logging today),
+    /// then clear the router so it fires only once.
+    private func consumeReminder(_ id: UUID?) {
+        guard let id else { return }
+        if loggableProtocols.contains(where: { $0.id == id }) {
+            mode = .protocolBased
+            selectedProtocolID = id
+        }
+        reminderRouter.pendingProtocolID = nil
     }
 
     private func doseMetric(_ label: String, _ value: String, _ color: Color) -> some View {

@@ -13,6 +13,7 @@ enum AppTab: Hashable {
 struct RootTabView: View {
     @State private var selected: AppTab = .home
     @State private var scrollCoordinator = TabScrollCoordinator()
+    @State private var reminderRouter = DoseReminderRouter.shared
     @State private var showMenu = false
     @State private var showAssistant = false
     @Query(sort: \SavedProtocol.startDate) private var protocols: [SavedProtocol]
@@ -47,6 +48,9 @@ struct RootTabView: View {
         .task(id: reminderSignature) {
             await NotificationManager.reschedule(protocols: protocols, vials: vials)
         }
+        // A tapped dose reminder (even a cold launch) jumps to Log; LogView consumes the ID.
+        .onChange(of: reminderRouter.pendingProtocolID) { _, id in if id != nil { selected = .log } }
+        .task { if reminderRouter.pendingProtocolID != nil { selected = .log } }
         // Available to every screen AND the tab bar (overlay) so a re-tap can request a scroll.
         .environment(scrollCoordinator)
     }

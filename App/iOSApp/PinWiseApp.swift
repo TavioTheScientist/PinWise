@@ -39,6 +39,26 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
                                 willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .list, .sound]
     }
+
+    // Tapping a dose reminder routes to the Log tab with that protocol preselected (see DoseReminderRouter).
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse) async {
+        let info = response.notification.request.content.userInfo
+        guard let raw = info["protocolID"] as? String, let id = UUID(uuidString: raw) else { return }
+        await MainActor.run { DoseReminderRouter.shared.route(to: id) }
+    }
+}
+
+/// Bridges a tapped dose reminder into SwiftUI: the notification-center delegate sets
+/// `pendingProtocolID`; RootTabView switches to the Log tab and LogView preselects that protocol,
+/// then clears it. Minimizes barrier to entry — you land ready to log the exact dose you were reminded of.
+@MainActor
+@Observable
+final class DoseReminderRouter {
+    static let shared = DoseReminderRouter()
+    private init() {}
+    var pendingProtocolID: UUID?
+    func route(to id: UUID) { pendingProtocolID = id }
 }
 
 /// Gates the app behind sign-in, then one-time onboarding + disclaimer acceptance.
