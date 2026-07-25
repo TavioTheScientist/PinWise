@@ -40,7 +40,7 @@ struct SettingsView: View {
                     Card {
                         VStack(alignment: .leading, spacing: Space.sm) {
                             SectionHeader(title: "Notifications")
-                            Text("Dose reminders are set per protocol — open a protocol to turn its reminder on and pick a time. System permission and delivery style are managed in iOS Settings.")
+                            Text("Open any protocol to turn on its dose reminder and pick a time. Manage the system permission and delivery style in iOS Settings.")
                                 .font(.caption).foregroundStyle(BrandColor.textSecondary)
                             Button {
                                 if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
@@ -90,7 +90,7 @@ struct SettingsView: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Unlock with \(BiometricLock.biometryName)")
                                             .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                                        Text("Off by default. When on, PinWise asks for \(BiometricLock.biometryName) each time you open it.")
+                                        Text("Require \(BiometricLock.biometryName) each time you open PinWise. Off by default.")
                                             .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                                     }
                                 }
@@ -101,7 +101,7 @@ struct SettingsView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Share Apple Health with Natt")
                                         .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                                    Text("Turns on when you start using Natt (you agree to it at the assistant's disclosure). When on, the Apple Health metrics PinWise reads (weight, resting heart rate, HRV, sleep, steps) are sent to Natt so it can personalize answers. Turn it off here anytime.")
+                                    Text("Let Natt use your Apple Health metrics — weight, heart rate, HRV, sleep, steps — to personalize answers. You agree to this when you start using Natt; turn it off here anytime.")
                                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                                 }
                             }
@@ -136,7 +136,7 @@ struct SettingsView: View {
             .alert("Backup isn't available yet", isPresented: $showBackupNote) {
                 Button("Got it", role: .cancel) {}
             } message: {
-                Text("Your data is stored on this device. Cloud backup arrives with account sync — you'll be able to back up and restore across devices then.")
+                Text("Your data stays on this device. Cross-device backup and restore arrive with account sync.")
             }
         }
     }
@@ -203,7 +203,7 @@ struct MembershipView: View {
                         Spacer()
                         Text("Free trial").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
                     }
-                    Text("Subscriptions aren't live yet — this is where you'll see whether you're on the free trial, monthly, or yearly plan, and manage or cancel it, once they're enabled.")
+                    Text("Subscriptions aren't live yet. Once they are, manage your plan here — trial, monthly, or yearly.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                 }
             }
@@ -212,7 +212,7 @@ struct MembershipView: View {
                     SectionHeader(title: "Plans")
                     planRow("Monthly", "$7.99 / month")
                     planRow("Yearly", "$4.20 / month")
-                    Text("Yearly is billed once a year at $50.40 — about 47% off monthly. A 3-week free trial starts you off; after the trial, a subscription keeps the app and Natt unlocked.")
+                    Text("Yearly bills once at $50.40 — about 47% off monthly. Your 3-week free trial comes first; after it, a subscription keeps the app and Natt unlocked.")
                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                 }
             }
