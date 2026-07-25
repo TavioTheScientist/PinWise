@@ -42,8 +42,17 @@ struct LogView: View {
             let loggedToday = recent.contains { cal.isDateInToday($0.timestamp) && p.compoundNames.contains($0.compoundName) }
             return !(dueToday && loggedToday)
         }
-        // Most-needed first: soonest next dose leads; as-needed (no next dose) sinks to the bottom.
-        .sorted { ($0.nextDose() ?? .distantFuture) < ($1.nextDose() ?? .distantFuture) }
+        // Closest to being logged first: order by the next dose's DATE + its reminder time-of-day, so
+        // among today's protocols the soonest (or most-overdue) leads; as-needed sinks to the bottom.
+        .sorted { nextDueDateTime($0) < nextDueDateTime($1) }
+    }
+
+    /// The next dose's full datetime: its scheduled day (`nextDose`) at the protocol's reminder time.
+    /// `nextDose` is day-granular, so folding in reminderHour/Minute is what separates same-day doses.
+    private func nextDueDateTime(_ p: SavedProtocol) -> Date {
+        let cal = Calendar.current
+        guard let day = p.nextDose() else { return .distantFuture }   // as-needed / none upcoming → bottom
+        return cal.date(bySettingHour: p.reminderHour, minute: p.reminderMinute, second: 0, of: day) ?? day
     }
     private var selectedProtocol: SavedProtocol? { activeProtocols.first { $0.id == selectedProtocolID } }
     private var doseValue: Double? {
