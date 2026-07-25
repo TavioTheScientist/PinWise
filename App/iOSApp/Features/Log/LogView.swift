@@ -94,17 +94,26 @@ struct LogView: View {
     private var suggestedSite: InjectionSite? {
         SiteRotationAdvisor.suggestNext(for: activeCompound, history: recent.map { $0.asDomain() })
     }
-    private var siteRationale: String {
+    /// Compound-SPECIFIC site note — always names the compound so it's unmistakably about what the
+    /// user is logging, not injections in general.
+    private var compoundSiteNote: String {
+        let name = activeCompound.name
         switch activeCompound.category {
         case .glp1:
-            return "Inject subcutaneously. The abdomen absorbs fastest and most consistently; the thigh and upper arm are the other label sites — rotate between them to avoid lipohypertrophy."
-        case .healingRecovery:
-            return "Often placed subcutaneously near the area you're treating; the abdomen works for systemic use. Rotate sites to protect the tissue."
+            return "\(name) is a GLP-1 — inject subcutaneously in the abdomen, thigh, or upper arm (its approved sites)."
         case .growthHormoneSecretagogue:
-            return "Inject subcutaneously. The abdomen gives the most consistent absorption; thigh and upper arm are good alternates — rotate each time."
+            return "\(name) is injected subcutaneously — abdomen, thigh, or upper arm."
+        case .healingRecovery:
+            return "\(name) is often injected subcutaneously near the area you're treating; the abdomen works for systemic use."
         default:
-            return "Inject subcutaneously. The abdomen absorbs most consistently; thigh, upper arm, and flank are alternates — rotate to avoid lipohypertrophy."
+            return "\(name) is injected subcutaneously — abdomen, thigh, upper arm, or flank."
         }
+    }
+
+    /// GENERAL injection guidance — explicitly framed as general so the user never mistakes it for a
+    /// compound-specific instruction.
+    private var generalSiteNote: String {
+        "In general — the abdomen absorbs fastest and most consistently, and rotating sites each time helps avoid lipohypertrophy."
     }
 
     /// Compact value shown in the collapsed "When" header: "Now" while it's ~current, else the time.
@@ -475,7 +484,12 @@ struct LogView: View {
                             .font(.caption).foregroundStyle(BrandColor.accentText)
                     }
                 }
-                Text(siteRationale).font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                // Two clearly-scoped footnotes: one names the compound (specific), one is flagged general.
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(compoundSiteNote)
+                    Text(generalSiteNote)
+                }
+                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                 // Collapsible "When" — defaults to now, so it stays collapsed; the header shows the
                 // chosen time so it's never ambiguous. Expand only to log an earlier dose.
                 VStack(alignment: .leading, spacing: Space.xs) {
