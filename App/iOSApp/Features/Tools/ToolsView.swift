@@ -17,28 +17,28 @@ struct ToolsView: View {
                         ToolCard(title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data) {
                             CompoundsView()
                         }
-                        ToolCard(title: "Dose calculator", subtitle: "How much to draw into your syringe", systemImage: "syringe.fill", hue: BrandColor.accentText) {
+                        ToolCard(title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.accentText) {
                             ReconstitutionCalculatorView()
                         }
-                        ToolCard(title: "Check a dose", subtitle: "What a draw equals", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText) {
+                        ToolCard(title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText) {
                             ReverseDoseView()
                         }
-                        ToolCard(title: "Ramp-up plan", subtitle: "Build a dose ladder for a protocol", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText) {
+                        ToolCard(title: "Ramp-up plan", subtitle: "Build a titration ladder", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText) {
                             RampUpPlannerView()
                         }
-                        ToolCard(title: "Dose history", subtitle: "Review or undo logged doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText) {
+                        ToolCard(title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText) {
                             DoseHistoryView()
                         }
-                        ToolCard(title: "Injection map", subtitle: "Where you've been pinning", systemImage: "figure.stand", hue: BrandColor.success) {
+                        ToolCard(title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success) {
                             BodyMapView()
                         }
-                        ToolCard(title: "Progress photos", subtitle: "Track your physique over time", systemImage: "camera.fill", hue: BrandColor.success) {
+                        ToolCard(title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success) {
                             PhysiqueView()
                         }
-                        ToolCard(title: "How you feel", subtitle: "Track side effects over time", systemImage: "heart.text.square", hue: BrandColor.warning) {
+                        ToolCard(title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: BrandColor.warning) {
                             SymptomsView()
                         }
-                        ToolCard(title: "Labs & metrics", subtitle: "Weight, A1c, lipids, blood pressure trends", systemImage: "chart.xyaxis.line", hue: BrandColor.data) {
+                        ToolCard(title: "Labs & metrics", subtitle: "Track weight, labs, and vitals", systemImage: "chart.xyaxis.line", hue: BrandColor.data) {
                             BiomarkersView()
                         }
                     }
