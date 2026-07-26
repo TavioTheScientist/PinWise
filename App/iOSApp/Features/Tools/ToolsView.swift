@@ -3,11 +3,19 @@ import SwiftData
 import PeptideKit
 
 /// The Tools tab — a grid of plain-language calculators, each backed by verified PeptideKit.
+/// Push destinations from the Tools grid. Value-based so the stack is path-driven — which lets a
+/// Tools-tab re-tap pop back to the grid (view-based NavigationLinks can't be popped programmatically).
+enum ToolRoute: Hashable {
+    case doseCalc, doseHistory, rampUp, compounds, activeLevels, injectionMap, symptoms, biomarkers, physique, reverseDose
+}
+
 struct ToolsView: View {
     private let columns = [GridItem(.flexible(), spacing: Space.md), GridItem(.flexible(), spacing: Space.md)]
+    @State private var path = NavigationPath()
+    @Environment(TabScrollCoordinator.self) private var scrollCoordinator
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     header
@@ -16,36 +24,16 @@ struct ToolsView: View {
                     // then titration + the compound/evidence reference, then the per-session and
                     // outcome tools; the reverse "check a dose" sanity-check sits last (most niche).
                     LazyVGrid(columns: columns, spacing: Space.md) {
-                        ToolCard(title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.accentText) {
-                            ReconstitutionCalculatorView()
-                        }
-                        ToolCard(title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText) {
-                            DoseHistoryView()
-                        }
-                        ToolCard(title: "Ramp-up plan", subtitle: "Build a titration ladder", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText) {
-                            RampUpPlannerView()
-                        }
-                        ToolCard(title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data) {
-                            CompoundsView()
-                        }
-                        ToolCard(title: "Active levels", subtitle: "See your stack's body load", systemImage: "waveform.path.ecg", hue: BrandColor.data) {
-                            ActiveLevelsView()
-                        }
-                        ToolCard(title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success) {
-                            BodyMapView()
-                        }
-                        ToolCard(title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: BrandColor.warning) {
-                            SymptomsView()
-                        }
-                        ToolCard(title: "Labs & metrics", subtitle: "Track weight, labs, and vitals", systemImage: "chart.xyaxis.line", hue: BrandColor.data) {
-                            BiomarkersView()
-                        }
-                        ToolCard(title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success) {
-                            PhysiqueView()
-                        }
-                        ToolCard(title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText) {
-                            ReverseDoseView()
-                        }
+                        ToolCard(title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.accentText, route: .doseCalc)
+                        ToolCard(title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText, route: .doseHistory)
+                        ToolCard(title: "Ramp-up plan", subtitle: "Build a titration ladder", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText, route: .rampUp)
+                        ToolCard(title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data, route: .compounds)
+                        ToolCard(title: "Active levels", subtitle: "See your stack's body load", systemImage: "waveform.path.ecg", hue: BrandColor.data, route: .activeLevels)
+                        ToolCard(title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success, route: .injectionMap)
+                        ToolCard(title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: BrandColor.warning, route: .symptoms)
+                        ToolCard(title: "Labs & metrics", subtitle: "Track weight, labs, and vitals", systemImage: "chart.xyaxis.line", hue: BrandColor.data, route: .biomarkers)
+                        ToolCard(title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success, route: .physique)
+                        ToolCard(title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText, route: .reverseDose)
                     }
                 }
                 .padding(Space.lg)
@@ -53,6 +41,27 @@ struct ToolsView: View {
             .heroScreen()
             .scrollsToTopOnReselect(.tools)
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: ToolRoute.self) { toolDestination($0) }
+        }
+        // Re-tapping the Tools tab pops back to the grid (in addition to the top-left back arrow).
+        .onChange(of: scrollCoordinator.token) {
+            if scrollCoordinator.target == .tools, !path.isEmpty { path.removeLast(path.count) }
+        }
+    }
+
+    @ViewBuilder
+    private func toolDestination(_ route: ToolRoute) -> some View {
+        switch route {
+        case .doseCalc:     ReconstitutionCalculatorView()
+        case .doseHistory:  DoseHistoryView()
+        case .rampUp:       RampUpPlannerView()
+        case .compounds:    CompoundsView()
+        case .activeLevels: ActiveLevelsView()
+        case .injectionMap: BodyMapView()
+        case .symptoms:     SymptomsView()
+        case .biomarkers:   BiomarkersView()
+        case .physique:     PhysiqueView()
+        case .reverseDose:  ReverseDoseView()
         }
     }
 
@@ -66,7 +75,7 @@ struct ToolsView: View {
     }
 }
 
-private struct ToolCard<Destination: View>: View {
+private struct ToolCard: View {
     let title: String
     let subtitle: String
     let systemImage: String
@@ -74,10 +83,10 @@ private struct ToolCard<Destination: View>: View {
     /// warning = subjective tracking, data = objective health data. Tints the icon chip
     /// and icon only — text stays neutral. No default: every tool declares its domain.
     let hue: Color
-    @ViewBuilder let destination: () -> Destination
+    let route: ToolRoute
 
     var body: some View {
-        NavigationLink { destination() } label: {
+        NavigationLink(value: route) {
             Card {
                 VStack(alignment: .leading, spacing: 0) {
                     // Tinted icon chip — the Apple Health container register (an icon
