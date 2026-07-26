@@ -90,11 +90,7 @@ struct ProtocolCard: View {
     }
 
     private var accessibilityValueText: String {
-        var value = "\(statusLabel), \(perShot.map { "per shot \($0)" } ?? "dose \(doseText)"), \(proto.cadenceText), next pin \(nextPin.text)"
-        if let supply {
-            value += ", \(supply.dosesLeft) of \(supply.total) doses left"
-        }
-        return value
+        "\(statusLabel), \(perShot.map { "per shot \($0)" } ?? "dose \(doseText)"), \(proto.cadenceText), next pin \(nextPin.text)"
     }
 
     var body: some View {
@@ -135,14 +131,12 @@ struct ProtocolCard: View {
                 Divider().overlay(BrandColor.stroke)
 
                 // Only cadence + next pin as stats now; the dose is on the scope line above.
+                // (Doses-remaining lives on the vials in Stack — a protocol can draw from several,
+                // so a single supply bar here would be ambiguous and redundant.)
                 HStack(alignment: .top, spacing: Space.md) {
                     ProtocolStat(label: "Cadence", value: proto.cadenceText, compresses: true)
                     ProtocolStat(label: "Next pin", value: nextPin.text,
                                  tint: nextPin.isToday ? BrandColor.warning : BrandColor.textPrimary)
-                }
-
-                if let supply {
-                    ProtocolSupplyRow(supply: supply)
                 }
             }
             .opacity(status == .paused ? 0.55 : 1)

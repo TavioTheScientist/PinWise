@@ -40,36 +40,41 @@ struct SettingsView: View {
 
                     // ── Notifications ──────────────────────────────────────────
                     Card {
-                        VStack(alignment: .leading, spacing: Space.sm) {
+                        VStack(alignment: .leading, spacing: Space.md) {
                             SectionHeader(title: "Notifications")
-                            Text("Open any protocol to turn on its dose reminder and pick a time. Manage the system permission and delivery style in iOS Settings.")
+                            Text("Turn on a reminder on each protocol. These settings apply to all of them.")
                                 .font(.caption).foregroundStyle(BrandColor.textSecondary)
 
+                            // Timing.
+                            FieldRow("Remind me", hint: "When a dose is due, or a little ahead.") {
+                                Picker("Remind me", selection: $reminderLeadMinutes) {
+                                    Text("At dose time").tag(0)
+                                    Text("15 min early").tag(15)
+                                    Text("30 min early").tag(30)
+                                }
+                                .pickerStyle(.segmented)
+                            }
+
+                            Divider().overlay(BrandColor.stroke)
+
+                            // Compound-name discretion — short title so it never runs into the switch.
                             Toggle(isOn: $showCompoundNames) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("Show compound names in notifications")
+                                    Text("Show compound names")
                                         .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                                    Text("On, a reminder names the compound and dose (e.g. \"Retatrutide · 4 mg\"). Off, it just says \"Dose due now\" — private on your lock screen.")
+                                    Text("Off keeps doses private — reminders just say “Dose due now.”")
                                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
                             .tint(BrandColor.accent)
 
                             Divider().overlay(BrandColor.stroke)
 
-                            FieldRow("Remind me", hint: "When a dose is due, or a little ahead.") {
-                                Picker("Remind me", selection: $reminderLeadMinutes) {
-                                    Text("At dose time").tag(0)
-                                    Text("15 min before").tag(15)
-                                    Text("30 min before").tag(30)
-                                }
-                                .pickerStyle(.segmented)
-                            }
-
                             Button {
                                 if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                             } label: {
-                                Label("Open notification settings", systemImage: "bell.badge")
+                                Label("Open iOS notification settings", systemImage: "bell.badge")
                                     .font(.footnote.weight(.semibold)).foregroundStyle(BrandColor.accentText)
                             }
                             .buttonStyle(.plain)

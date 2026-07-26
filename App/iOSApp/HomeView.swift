@@ -280,11 +280,13 @@ struct HomeView: View {
                             StatusDot(color: statusTint(p), glows: status(p) == .dueToday)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
-                                (Text("\(p.cadenceText) · ") + nextPinShort(p))
+                                // Cadence + stack size — a single dose is meaningless for a multi-compound protocol.
+                                Text(p.compoundNames.count > 1 ? "\(p.cadenceText) · \(p.compoundNames.count) compounds" : p.cadenceText)
                                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                             }
                             Spacer()
-                            Text(p.effectiveDose.displayString(in: p.doseUnit(vials: vials))).font(Typo.statValue).foregroundStyle(BrandColor.accentText)
+                            // Due-state — the one protocol-specific value that's unambiguous for any stack.
+                            dueChip(p).font(.caption.weight(.semibold)).lineLimit(1)
                         }
                     }
                     if activeProtocols.count > 4 {
@@ -315,14 +317,20 @@ struct HomeView: View {
     /// Compact next-pin fragment for stack rows: "Today" carries the warning tint (the one
     /// urgency signal on the card), then "Tomorrow", then an abbreviated date; "—" as-needed.
     /// Once today's dose is logged the pin advances past today, so it never lingers on "Today".
-    private func nextPinShort(_ p: SavedProtocol) -> Text {
-        let logged = p.loggedToday(in: recent)
-        guard let next = p.upcomingDose(loggedToday: logged) else { return Text("—") }
-        if !logged && Calendar.current.isDateInToday(next) {
-            return Text("Today").foregroundStyle(BrandColor.warning)
+    /// The protocol's due-state for the Home list — replaces the (stack-ambiguous) dose. Reads
+    /// "Logged" once done today, "Due today" (amber) when due, else the next pin ("Tomorrow" / "Fri").
+    private func dueChip(_ p: SavedProtocol) -> Text {
+        switch status(p) {
+        case .doneToday: return Text("Logged").foregroundStyle(BrandColor.success)
+        case .paused:    return Text("Paused").foregroundStyle(BrandColor.textSecondary)
+        case .dueToday:  return Text("Due today").foregroundStyle(BrandColor.warning)
+        case .active:
+            guard let next = p.upcomingDose(loggedToday: p.loggedToday(in: recent)) else {
+                return Text("As needed").foregroundStyle(BrandColor.textSecondary)
+            }
+            if Calendar.current.isDateInTomorrow(next) { return Text("Tomorrow").foregroundStyle(BrandColor.accentText) }
+            return Text(next, format: .dateTime.weekday(.abbreviated)).foregroundStyle(BrandColor.accentText)
         }
-        if Calendar.current.isDateInTomorrow(next) { return Text("Tomorrow") }
-        return Text(next, format: .dateTime.weekday(.abbreviated).month().day())
     }
 
     // MARK: Empty
