@@ -30,6 +30,8 @@ struct LogView: View {
     /// "When" is collapsed by default (defaults to now); expand only to backdate a dose.
     @State private var showWhen = false
     @State private var savedCount = 0
+    /// Brief on-screen confirmation after a save — so an off-schedule/early log is never silent.
+    @State private var confirmation: String?
     /// One-time mode: the vial the user chose to log from (nil = pick any compound).
     @State private var selectedVialID: UUID?
     /// Set when the user tapped a dose reminder — preselect that protocol on open.
@@ -170,6 +172,26 @@ struct LogView: View {
             .scrollsToTopOnReselect(.log)
             .toolbar(.hidden, for: .navigationBar)
             .sensoryFeedback(.success, trigger: savedCount)
+            // Visible confirmation for every log (especially off-schedule ones that stay in the picker).
+            .overlay(alignment: .bottom) {
+                if let confirmation {
+                    HStack(spacing: Space.sm) {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(BrandColor.success)
+                        Text(confirmation).font(.subheadline.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(2)
+                    }
+                    .padding(.horizontal, Space.lg).padding(.vertical, Space.md)
+                    .background(BrandColor.surfaceElevated, in: Capsule())
+                    .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
+                    .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
+                    .padding(.bottom, Space.xxxl)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .task(id: confirmation) {
+                guard confirmation != nil else { return }
+                try? await Task.sleep(for: .seconds(2.5))
+                withAnimation(.easeInOut) { confirmation = nil }
+            }
             .onAppear {
                 // Protocol-first, always opening on the "Which protocol?" picker with nothing
                 // pre-selected — a one-time pin only when there are no protocols at all.
@@ -590,6 +612,7 @@ struct LogView: View {
                    vial: vial, decrement: vial != nil)
         try? context.save()
         doseText = ""
+        confirm("Logged · \(compound.name)")
         finishSave()
     }
 
@@ -606,7 +629,18 @@ struct LogView: View {
                        vial: vial, decrement: firstForThisVial, protocolID: p.id)
         }
         try? context.save()
+        // Off-schedule/early logs stay in the picker unchanged, so an explicit confirmation is what
+        // tells the user it worked.
+        let today = Calendar.current.isDateInToday(p.nextDose() ?? .distantPast)
+        let names = p.compoundNames.joined(separator: " + ")
+        let head = p.items.count > 1 ? "Logged \(p.items.count) doses" : "Logged"
+        confirm(today ? "\(head) · \(names)" : "\(head) early · \(names)")
         finishSave()
+    }
+
+    /// Show a brief confirmation banner (auto-dismisses via the .task in the body).
+    private func confirm(_ message: String) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { confirmation = message }
     }
 
     /// The vial a logged compound draws from: the newest non-depleted vial containing that API.
