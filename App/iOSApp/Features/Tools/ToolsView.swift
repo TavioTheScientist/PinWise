@@ -362,6 +362,8 @@ struct RampUpPlannerView: View {
 
     private var activeProtocols: [SavedProtocol] { protocols.filter(\.isActive) }
     private var selected: SavedProtocol? { activeProtocols.first { $0.id == selectedID } }
+    /// Protocols that already have a ramp-up plan — listed up top so they can be edited or removed.
+    private var plannedProtocols: [SavedProtocol] { activeProtocols.filter(\.hasRampPlan) }
 
     private var canSave: Bool {
         selected != nil && !phases.isEmpty && phases.allSatisfy {
@@ -382,6 +384,8 @@ struct RampUpPlannerView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
+                    if !plannedProtocols.isEmpty { existingPlansCard }
+                    SectionHeader(title: selected?.hasRampPlan == true ? "Edit plan" : "Build a plan")
                     protocolPickerCard
                     if selected != nil {
                         phasesCard
@@ -410,6 +414,43 @@ struct RampUpPlannerView: View {
         .navigationTitle("Ramp-up plan")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: selectedID) { _, _ in loadForSelection() }
+    }
+
+    /// Existing ramp-up plans, up top: tap Edit to load one into the builder below, or trash to remove it.
+    private var existingPlansCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: Space.md) {
+                SectionHeader(title: "Your ramp-up plans")
+                ForEach(Array(plannedProtocols.enumerated()), id: \.element.id) { i, p in
+                    if i > 0 { Divider().overlay(BrandColor.stroke) }
+                    HStack(spacing: Space.sm) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+                            Text(planSummary(p)).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        }
+                        Spacer(minLength: Space.sm)
+                        Button { withAnimation { selectedID = p.id } } label: {
+                            Text("Edit").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                        }
+                        .buttonStyle(.plain)
+                        Button(role: .destructive) { withAnimation { removePlanFromList(p) } } label: {
+                            Image(systemName: "trash").font(.callout).foregroundStyle(BrandColor.danger)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Concise plan summary: "2.5 → 15 mg · 5 phases", plus the current step.
+    private func planSummary(_ p: SavedProtocol) -> String {
+        let u = unit(for: p)
+        let doses = p.rampPhases.map { Mass(micrograms: $0.doseMicrograms).value(in: u) }
+        guard let first = doses.first, let last = doses.last else { return "No phases" }
+        let range = first == last ? "\(Self.numText(first)) \(u.rawValue)" : "\(Self.numText(first)) → \(Self.numText(last)) \(u.rawValue)"
+        let count = p.rampPhases.count
+        return "\(range) · \(count) phase\(count == 1 ? "" : "s") · now \(p.effectiveDose.displayString(in: u))"
     }
 
     private var protocolPickerCard: some View {
@@ -531,6 +572,14 @@ struct RampUpPlannerView: View {
         p.rampStartDate = nil
         try? context.save()
         dismiss()
+    }
+
+    /// Remove a specific plan from the top list (stays on screen to manage the others).
+    private func removePlanFromList(_ p: SavedProtocol) {
+        p.rampPhases = []
+        p.rampStartDate = nil
+        if selectedID == p.id { selectedID = nil; phases = [] }
+        try? context.save()
     }
 
     private static func numText(_ v: Double) -> String {
