@@ -89,8 +89,10 @@ struct NewsView: View {
     @State private var category: NewsCategory?
     @State private var myStack = false
     @State private var searchActive = false
+    @State private var path = NavigationPath()
     @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(TabScrollCoordinator.self) private var scrollCoordinator
     @Query private var protocols: [SavedProtocol]
     @Query private var vials: [StoredVial]
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var logs: [LoggedDose]
@@ -145,7 +147,7 @@ struct NewsView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     masthead
@@ -169,6 +171,11 @@ struct NewsView: View {
             .scrollsToTopOnReselect(.news)
             .toolbar(.hidden, for: .navigationBar)
             .task { await loader.load() }
+            .navigationDestination(for: NewsItem.self) { NewsDetailView(item: $0) }
+        }
+        // Re-tapping the News tab pops back to the feed (in addition to the top-left back arrow).
+        .onChange(of: scrollCoordinator.token) {
+            if scrollCoordinator.target == .news, !path.isEmpty { path.removeLast(path.count) }
         }
     }
 
@@ -295,7 +302,7 @@ struct NewsView: View {
     }
 
     private func newsLink<Label: View>(_ item: NewsItem, @ViewBuilder label: () -> Label) -> some View {
-        NavigationLink { NewsDetailView(item: item) } label: { label() }.buttonStyle(PressableStyle())
+        NavigationLink(value: item) { label() }.buttonStyle(PressableStyle())
     }
 
     /// A list-row link with the shared scroll-edge treatment (rows only — the featured card
