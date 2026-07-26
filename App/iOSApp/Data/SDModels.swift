@@ -180,6 +180,30 @@ extension SavedProtocol {
         return names.isEmpty ? "No compounds" : names.joined(separator: " · ")
     }
 
+    /// Per-compound "Name dose" lines for a notification, e.g. ["Retatrutide 4 mg", "BPC-157 250 mcg"].
+    /// The primary item uses the (ramp-aware) effectiveDose; others use their own dose.
+    func compoundDoseLines(vials: [StoredVial]) -> [String] {
+        items.enumerated().map { idx, item in
+            let mcg = idx == 0 ? effectiveDose.micrograms : item.doseMicrograms
+            let dose = Mass(micrograms: mcg).displayString(in: doseUnit(forItemAt: idx, vials: vials))
+            return "\(item.compoundName) \(dose)"
+        }
+    }
+
+    /// A single-compound reminder line, e.g. "Retatrutide · 4 mg (40 units)" — the syringe units are
+    /// appended only when a linked vial can compute the draw.
+    func singleDoseLine(vials: [StoredVial]) -> String {
+        let compound = primaryItem?.compoundName.isEmpty == false ? primaryItem!.compoundName : name
+        let dose = effectiveDose.displayString(in: doseUnit(vials: vials))
+        if let vid = primaryItem?.vialID, let v = vials.first(where: { $0.id == vid }),
+           let draw = v.draw(forDose: effectiveDose) {
+            let u = draw.units
+            let uStr = u == u.rounded() ? String(Int(u)) : String(format: "%.1f", u)
+            return "\(compound) · \(dose) (\(uStr) units)"
+        }
+        return "\(compound) · \(dose)"
+    }
+
     /// The dose to show/use. Normally the fixed dose the user set — but when a user-built ramp-up
     /// plan is attached, it auto-advances to the phase active today, so cards, the draw calc, and
     /// logging all follow the ramp without any manual edit.

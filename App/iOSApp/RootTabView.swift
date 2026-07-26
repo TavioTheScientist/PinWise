@@ -18,10 +18,13 @@ struct RootTabView: View {
     @State private var showAssistant = false
     @Query(sort: \SavedProtocol.startDate) private var protocols: [SavedProtocol]
     @Query private var vials: [StoredVial]
+    @AppStorage("showCompoundNamesInNotifications") private var showCompoundNames = true
+    @AppStorage("reminderLeadMinutes") private var reminderLeadMinutes = 0
 
-    /// Changes whenever a reminder-relevant field changes, re-triggering scheduling.
+    /// Changes whenever a reminder-relevant field changes (incl. the notification prefs), re-scheduling.
     private var reminderSignature: String {
         protocols.map { "\($0.id.uuidString)|\($0.remindersOn)|\($0.isActive)|\($0.reminderHour):\($0.reminderMinute)|\($0.scheduleKindRaw)|\($0.intervalDays)|\($0.weekdays)" }.joined()
+        + "|names:\(showCompoundNames)|lead:\(reminderLeadMinutes)"
     }
 
     var body: some View {
