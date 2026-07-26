@@ -443,10 +443,8 @@ struct AdherenceRing: View {
     let fraction: Double
     var size: CGFloat = 88
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var progress: Double = 0
     private var clamped: Double { max(0, min(1, fraction)) }
-    private var pct: Int { Int((progress * 100).rounded()) }
+    private var pct: Int { Int((clamped * 100).rounded()) }
 
     // Value-driven single hue: the color carries the adherence verdict, not decoration.
     private var ringColor: Color {
@@ -460,34 +458,23 @@ struct AdherenceRing: View {
     var body: some View {
         ZStack {
             Circle().stroke(ringColor.opacity(0.22), lineWidth: 10)
+            // Renders at its value immediately — no entrance sweep. (A data change still transitions
+            // the number subtly via contentTransition, but opening Home no longer animates it in.)
             Circle()
-                .trim(from: 0, to: max(0.0001, progress))
+                .trim(from: 0, to: max(0.0001, clamped))
                 .stroke(ringColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             VStack(spacing: 0) {
                 Text("\(pct)%")
                     .font(.system(size: 20, weight: .black, design: .rounded)).monospacedDigit()
-                    .contentTransition(.numericText(value: progress))
+                    .contentTransition(.numericText(value: clamped))
                     .foregroundStyle(BrandColor.textPrimary)
-                // Domain label, not a verdict — the ring hue carries the verdict (amber
-                // behind / blue on pace / green ahead), so a static "ON TRACK" would lie.
                 Text("ADHERENCE")
                     .font(.system(size: 8.5, weight: .semibold)).tracking(0.5)
                     .foregroundStyle(BrandColor.textSecondary)
             }
         }
         .frame(width: size, height: size)
-        // Explicit withAnimation drives ONLY the trim + count-up — a value-scoped .animation
-        // here also animated the ring's initial layout position, making it fly in from
-        // offscreen. Under Reduce Motion the value is set directly, no sweep.
-        .onAppear {
-            if reduceMotion {
-                progress = clamped
-            } else {
-                progress = 0
-                withAnimation(Motion.reveal) { progress = clamped }
-            }
-        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Adherence")
         .accessibilityValue("\(pct) percent of your recent scheduled doses taken")
