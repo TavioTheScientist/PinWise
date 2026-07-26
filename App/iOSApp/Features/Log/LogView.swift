@@ -183,7 +183,8 @@ struct LogView: View {
                     .background(BrandColor.surfaceElevated, in: Capsule())
                     .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                     .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
-                    .padding(.bottom, Space.xxxl)
+                    // Clear the floating tab bar (~90pt reserved, see tabBarClearance) plus a gap.
+                    .padding(.bottom, 108)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
