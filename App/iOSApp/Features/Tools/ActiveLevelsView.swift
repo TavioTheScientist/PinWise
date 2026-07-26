@@ -369,12 +369,23 @@ struct ActiveLevelsView: View {
                 currentPct >= 75 ? .nearPeak :
                 (current > prior * 1.02 ? .rising : (currentPct <= 20 ? .low : .tapering))
 
+            let lastDose = entry.doses.map(\.time).filter { $0 <= now }.max()
+            let nextDose = entry.doses.map(\.time).filter { $0 > now }.min()
+
+            // Drop a compound once it's essentially CLEARED and not continuing: >5 half-lives since the
+            // last dose (~<3% remaining — the clinical "effectively eliminated" convention) AND no
+            // upcoming protocol dose. Otherwise a one-off dose would sit at "Low" forever until it
+            // ages out of the 30-day lookback, even though it's long gone.
+            let clearedAfter = 5 * entry.halfLife * 3_600
+            let cleared = lastDose.map { now.timeIntervalSince($0) > clearedAfter } ?? true
+            if nextDose == nil && cleared { continue }
+
             out.append(CompoundModel(
                 name: entry.display, color: stableColor(for: entry.display),
                 halfLifeHours: entry.halfLife, isLong: entry.halfLife >= longThresholdHours,
                 doses: entry.doses,
-                lastDose: entry.doses.map(\.time).filter { $0 <= now }.max(),
-                nextDose: entry.doses.map(\.time).filter { $0 > now }.min(),
+                lastDose: lastDose,
+                nextDose: nextDose,
                 currentPercent: currentPct, status: status))
         }
         out.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
