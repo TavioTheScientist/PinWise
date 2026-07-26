@@ -46,13 +46,16 @@ struct ActiveLevelsView: View {
     }
 
     private enum LevelStatus {
-        case rising, nearPeak, tapering, low
+        case rising, nearPeak, settling, low
+        /// Plain-language status word (no pharmacology jargon).
         var label: String {
             switch self {
             case .rising: return "Rising"; case .nearPeak: return "Near peak"
-            case .tapering: return "Tapering"; case .low: return "Low"
+            case .settling: return "Settling"; case .low: return "Low"
             }
         }
+        /// "elevated" groups near-peak + rising for the top briefing.
+        var isElevated: Bool { self == .nearPeak || self == .rising }
     }
 
     /// One plotted point (carries its compound name so Charts keeps series separate).
@@ -61,8 +64,9 @@ struct ActiveLevelsView: View {
     }
 
     /// A compound aggregate, independent of the selected range. Range-specific curves are derived on the fly.
+    /// Identified by NAME (stable across renders) so ForEach can diff and fade rows in/out.
     private struct CompoundModel: Identifiable {
-        let id = UUID()
+        var id: String { name }
         let name: String
         let color: Color
         let halfLifeHours: Double
@@ -72,6 +76,7 @@ struct ActiveLevelsView: View {
         let nextDose: Date?
         let currentPercent: Double   // scale-free snapshot (natural window)
         let status: LevelStatus
+        let implication: String      // short plain-language "what's next" line
     }
 
     var body: some View {
@@ -88,12 +93,16 @@ struct ActiveLevelsView: View {
                                          message: emptyMessage(omitted: result.omitted))
                     }
                 } else {
+                    // Summary before control: a plain-language briefing, then gauges, then the timeline;
+                    // legend / omitted notes sit last.
+                    briefingCard(result.models)
                     rightNowCard(result.models)
                     timelineCard(models: result.models, now: now, ws: ws, we: we)
                     legendCard(result.models)
 
                     if !result.omitted.isEmpty {
-                        Text("Not shown: \(result.omitted.joined(separator: ", ")) — no known half-life to model.")
+                        let names = result.omitted.joined(separator: ", ")
+                        Text("\(names) \(result.omitted.count == 1 ? "isn't" : "aren't") modeled — no reliable half-life data yet.")
                             .font(.caption2).foregroundStyle(BrandColor.textSecondary).padding(.horizontal, Space.xs)
                     }
                     DisclaimerBanner(text: "An estimated relative level from a simple half-life model — not a plasma concentration, and not medical or dosing advice. Talk to a clinician about your protocol.")
@@ -107,6 +116,36 @@ struct ActiveLevelsView: View {
         .sheet(item: $selected) { LevelDetailSheet(series: $0, palette: palette) }
     }
 
+    // MARK: - Briefing (plain-language, scan-first)
+
+    @ViewBuilder
+    private func briefingCard(_ models: [CompoundModel]) -> some View {
+        Card {
+            HStack(alignment: .top, spacing: Space.sm) {
+                Image(systemName: "waveform.path.ecg").font(.title3).foregroundStyle(BrandColor.accentText)
+                Text(briefing(models))
+                    .font(.title3.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    /// One or two plain sentences answering "what matters right now?" — no jargon, no chart needed.
+    private func briefing(_ models: [CompoundModel]) -> String {
+        func phrase(_ s: LevelStatus) -> String { s.label.lowercased() }   // "near peak" / "rising" / "settling" / "low"
+        if models.count == 1 { return "\(models[0].name) is \(phrase(models[0].status))" }
+        if models.count <= 3 { return models.map { "\($0.name) is \(phrase($0.status))" }.joined(separator: " · ") }
+        // Many compounds → aggregate by band.
+        let elevated = models.filter { $0.status.isElevated }.count
+        let settling = models.filter { $0.status == .settling }.count
+        let low = models.filter { $0.status == .low }.count
+        var parts: [String] = []
+        if elevated > 0 { parts.append("\(elevated) \(elevated == 1 ? "compound is" : "compounds are") elevated") }
+        if settling > 0 { parts.append("\(settling) settling") }
+        if low > 0 { parts.append("\(low) low") }
+        return parts.joined(separator: " · ")
+    }
+
     // MARK: - Right now (scale-free snapshot)
 
     @ViewBuilder
@@ -116,8 +155,10 @@ struct ActiveLevelsView: View {
                 Text("Right now").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Text("Where each compound sits between its own trough and peak this moment.")
                     .font(.caption).foregroundStyle(BrandColor.textSecondary)
-                ForEach(models) { gaugeRow($0) }
+                ForEach(models) { gaugeRow($0).transition(.opacity) }
             }
+            // Logging a dose (or a compound clearing) fades the row in/out rather than hard-cutting.
+            .animation(.easeInOut(duration: 0.35), value: models.map(\.id))
         }
     }
 
@@ -130,16 +171,20 @@ struct ActiveLevelsView: View {
                     Text(m.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
                     Spacer()
                     Text(m.status.label).font(.caption.weight(.semibold))
-                        .foregroundStyle(m.status == .nearPeak ? m.color : BrandColor.textSecondary)
+                        .foregroundStyle(m.status.isElevated ? m.color : BrandColor.textSecondary)
                     Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule().fill(BrandColor.stroke.opacity(0.4))
+                        // Status is shown by fill POSITION + label — never by changing the compound's hue.
                         Capsule().fill(m.color).frame(width: max(6, geo.size.width * m.currentPercent / 100))
                     }
                 }
                 .frame(height: 6)
+                if !m.implication.isEmpty {
+                    Text(m.implication).font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                }
             }
             .contentShape(Rectangle())
         }
@@ -166,7 +211,7 @@ struct ActiveLevelsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                Text("Curves show *shape* — each scaled to its own peak so different compounds compare. Tap a compound for actual amounts and dose changes.")
+                Text("Curves show timing and shape, not exact amount. Tap a compound for precise levels.")
                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
 
                 if hasLong {
@@ -367,7 +412,7 @@ struct ActiveLevelsView: View {
             let currentPct = current / peak * 100
             let status: LevelStatus =
                 currentPct >= 75 ? .nearPeak :
-                (current > prior * 1.02 ? .rising : (currentPct <= 20 ? .low : .tapering))
+                (current > prior * 1.02 ? .rising : (currentPct <= 20 ? .low : .settling))
 
             let lastDose = entry.doses.map(\.time).filter { $0 <= now }.max()
             let nextDose = entry.doses.map(\.time).filter { $0 > now }.min()
@@ -380,24 +425,72 @@ struct ActiveLevelsView: View {
             let cleared = lastDose.map { now.timeIntervalSince($0) > clearedAfter } ?? true
             if nextDose == nil && cleared { continue }
 
+            // Short "what's next" line: prefer the upcoming dose; else how long until it clears; else last dose.
+            let implication: String
+            if let next = nextDose {
+                implication = "next dose \(relShort(next, now: now))"
+            } else if currentPct > 25 {
+                implication = "clears in \(friendlyDuration(entry.halfLife * log2(currentPct / 5)))"
+            } else if let last = lastDose {
+                implication = "last dose \(relShort(last, now: now))"
+            } else {
+                implication = ""
+            }
+
             out.append(CompoundModel(
                 name: entry.display, color: stableColor(for: entry.display),
                 halfLifeHours: entry.halfLife, isLong: entry.halfLife >= longThresholdHours,
                 doses: entry.doses,
                 lastDose: lastDose,
                 nextDose: nextDose,
-                currentPercent: currentPct, status: status))
+                currentPercent: currentPct, status: status, implication: implication))
         }
         out.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         return (out, omittedByKey.values.sorted())
     }
 
+    // Short relative time ("in 2d" / "18h ago") for the gauge implication line.
+    private func relShort(_ d: Date, now: Date) -> String {
+        let s = d.timeIntervalSince(now), past = s < 0, a = abs(s)
+        let v: Double, u: String
+        if a < 3_600 { v = a / 60; u = "m" } else if a < 86_400 { v = a / 3_600; u = "h" } else { v = a / 86_400; u = "d" }
+        let n = max(1, Int(v.rounded()))
+        return past ? "\(n)\(u) ago" : "in \(n)\(u)"
+    }
+
+    private func friendlyDuration(_ hours: Double) -> String {
+        if hours < 1 { return "under an hour" }
+        if hours < 36 { return "~\(Int(hours.rounded())) h" }
+        let days = Int((hours / 24).rounded())
+        return "~\(days) day\(days == 1 ? "" : "s")"
+    }
+
+    /// Stable color by compound IDENTITY, grouped into a hue FAMILY by drug class for mild category
+    /// recognition (blues = GLP-1, greens = healing, purples = GH, ambers = other). Within a class the
+    /// shade is fixed by the compound's catalog position, so a compound's color never changes and never
+    /// reshuffles when others are added. Custom compounds hash into a shared pool. Pure red/magenta are
+    /// deliberately NOT identity colors — reserved for alerts.
     private func stableColor(for name: String) -> Color {
         let key = name.lowercased()
-        if let i = CompoundCatalog.all.firstIndex(where: { $0.name.lowercased() == key }) { return palette[i % palette.count] }
+        if let compound = CompoundCatalog.all.first(where: { $0.name.lowercased() == key }) {
+            let fam = family(for: compound.category)
+            let peers = CompoundCatalog.all.filter { $0.category == compound.category }
+            let idx = peers.firstIndex(where: { $0.name.lowercased() == key }) ?? 0
+            return fam[idx % fam.count]
+        }
         let h = key.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
-        return palette[h % palette.count]
+        return customPool[h % customPool.count]
     }
+
+    private func family(for category: CompoundCategory) -> [Color] {
+        switch category {
+        case .glp1:                     return [0x4F8CFF, 0x3B82F6, 0x00B4D8, 0x5AA0FF].map { Color(hex: UInt($0)) }
+        case .healingRecovery:          return [0x18E39A, 0x6BD44F, 0x2FB37A, 0x8BD450].map { Color(hex: UInt($0)) }
+        case .growthHormoneSecretagogue:return [0x9B7DFF, 0x7C5CFF, 0xB18CFF, 0x8A97FF].map { Color(hex: UInt($0)) }
+        default:                        return [0xFFB020, 0xFF8A3D, 0xF2C14E, 0xE0A030].map { Color(hex: UInt($0)) }
+        }
+    }
+    private let customPool: [Color] = [0x4F8CFF, 0x18E39A, 0x9B7DFF, 0xFFB020, 0x00B4D8, 0x6BD44F, 0x7C5CFF, 0xFF8A3D].map { Color(hex: UInt($0)) }
 
     private func halfLife(for name: String) -> Double? {
         let key = name.lowercased()
@@ -408,7 +501,7 @@ struct ActiveLevelsView: View {
         if omitted.isEmpty {
             return "Log a dose or start a protocol for a compound with a known half-life, and its level over time shows up here."
         }
-        return "We can't model \(omitted.joined(separator: ", ")) — no known half-life for \(omitted.count == 1 ? "it" : "them"). Levels appear once you're taking a compound we can model (most GLP-1s and GH peptides)."
+        return "\(omitted.joined(separator: ", ")) \(omitted.count == 1 ? "isn't" : "aren't") modeled — no reliable half-life data yet. Levels appear once you're taking a compound we can model (most GLP-1s and GH peptides)."
     }
 
     // MARK: - Tap-in detail
