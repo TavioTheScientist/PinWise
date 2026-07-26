@@ -42,12 +42,9 @@ struct LogView: View {
     /// ALREADY been logged today — you've done them, so they shouldn't clutter the picker.
     /// (A protocol due another day, or as-needed, always stays available for an off-schedule log.)
     private var loggableProtocols: [SavedProtocol] {
-        let cal = Calendar.current
-        return activeProtocols.filter { p in
-            let dueToday = cal.isDateInToday(p.nextDose() ?? .distantPast)
-            let loggedToday = recent.contains { cal.isDateInToday($0.timestamp) && p.compoundNames.contains($0.compoundName) }
-            return !(dueToday && loggedToday)
-        }
+        // Once you've logged a protocol today — on schedule OR early — it drops off the picker.
+        // (loggedToday matches by the dose's source protocol, else its compound names.)
+        activeProtocols.filter { !$0.loggedToday(in: recent) }
         // Closest to being logged first: order by the next dose's DATE + its reminder time-of-day, so
         // among today's protocols the soonest (or most-overdue) leads; as-needed sinks to the bottom.
         .sorted { nextDueDateTime($0) < nextDueDateTime($1) }
