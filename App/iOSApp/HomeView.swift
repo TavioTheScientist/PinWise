@@ -3,6 +3,10 @@ import SwiftData
 import Charts
 import PeptideKit
 
+/// Push destinations from Home. Value-based so the stack is path-driven — which lets a Home-tab
+/// re-tap pop back to the root (view-based NavigationLinks can't be popped programmatically).
+enum HomeRoute: Hashable { case labs }
+
 /// The dashboard — a personalized overview of *your* setup: how on-track you are, the stack
 /// you're running, and your connected health metrics. Actions (logging, calculators) live in
 /// their own tabs; Home is about what the app understands about you.
@@ -24,6 +28,9 @@ struct HomeView: View {
     @AppStorage("celebratedStreakMilestone") private var celebratedMilestone = 0
     @AppStorage("didSeedStreakMilestone") private var didSeedStreakMilestone = false
     @State private var celebratingMilestone: Int?
+    // Navigation path so re-tapping the Home tab can pop back to the Home root (not just scroll).
+    @State private var path = NavigationPath()
+    @Environment(TabScrollCoordinator.self) private var scrollCoordinator
 
     private var activeProtocols: [SavedProtocol] { protocols.filter(\.isActive) }
     private var thisWeekCount: Int {
@@ -72,7 +79,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.xl) {
                     header.entrance(0)
@@ -98,6 +105,11 @@ struct HomeView: View {
             .heroScreen()
             .scrollsToTopOnReselect(.home)
             .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: HomeRoute.self) { _ in BiomarkersView() }
+        }
+        // Re-tapping the Home tab pops back to the Home root (in addition to the top-left back arrow).
+        .onChange(of: scrollCoordinator.token) {
+            if scrollCoordinator.target == .home, !path.isEmpty { path.removeLast(path.count) }
         }
     }
 
@@ -499,7 +511,7 @@ struct HomeHealthCard: View {
                             }
                             .buttonStyle(.plain).disabled(requesting)
                         }
-                        NavigationLink { BiomarkersView() } label: {
+                        NavigationLink(value: HomeRoute.labs) {
                             HStack(spacing: 4) {
                                 Text("Log a metric")
                                 Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
@@ -510,7 +522,7 @@ struct HomeHealthCard: View {
                         .buttonStyle(.plain)
                     }
                 } else {
-                    NavigationLink { BiomarkersView() } label: {
+                    NavigationLink(value: HomeRoute.labs) {
                         VStack(alignment: .leading, spacing: Space.md) {
                             // A weight plot lives right in the card when there's a logged trend —
                             // the headline metric people watch on a GLP-1/peptide protocol.
