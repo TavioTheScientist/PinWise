@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        NotificationManager.registerCategories()   // Log / Snooze / Skip quick actions
         return true
     }
 
@@ -40,11 +41,21 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         [.banner, .list, .sound]
     }
 
-    // Tapping a dose reminder routes to the Log tab with that protocol preselected (see DoseReminderRouter).
+    // Dose-reminder actions: Snooze re-fires it later; Skip dismisses; Log/tap opens the Log tab with
+    // the (first) protocol preselected (see DoseReminderRouter).
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse) async {
-        let info = response.notification.request.content.userInfo
-        guard let raw = info["protocolID"] as? String, let id = UUID(uuidString: raw) else { return }
+        let request = response.notification.request
+        switch response.actionIdentifier {
+        case NotificationManager.actionSnooze15: await NotificationManager.snooze(request, minutes: 15); return
+        case NotificationManager.actionSnooze30: await NotificationManager.snooze(request, minutes: 30); return
+        case NotificationManager.actionSnooze60: await NotificationManager.snooze(request, minutes: 60); return
+        case NotificationManager.actionSkip: return   // just dismiss
+        default: break                                // Log action or default tap
+        }
+        let info = request.content.userInfo
+        let ids = (info["protocolIDs"] as? [String]) ?? (info["protocolID"] as? String).map { [$0] } ?? []
+        guard let first = ids.first, let id = UUID(uuidString: first) else { return }
         await MainActor.run { DoseReminderRouter.shared.route(to: id) }
     }
 }

@@ -9,6 +9,8 @@ struct SettingsView: View {
     @AppStorage("appearance") private var appearanceRaw = AppearanceMode.dark.rawValue
     @AppStorage(BiometricLock.prefKey) private var faceIDLock = false
     @AppStorage("shareHealthWithNatt") private var shareHealthWithNatt = false
+    @AppStorage("showCompoundNamesInNotifications") private var showCompoundNames = true
+    @AppStorage("reminderLeadMinutes") private var reminderLeadMinutes = 0
 
     private var suggestsPounds: Bool { Locale.current.measurementSystem != .metric }
     private var suggestedUnitLabel: String { suggestsPounds ? "pounds (lb)" : "kilograms (kg)" }
@@ -42,6 +44,28 @@ struct SettingsView: View {
                             SectionHeader(title: "Notifications")
                             Text("Open any protocol to turn on its dose reminder and pick a time. Manage the system permission and delivery style in iOS Settings.")
                                 .font(.caption).foregroundStyle(BrandColor.textSecondary)
+
+                            Toggle(isOn: $showCompoundNames) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Show compound names in notifications")
+                                        .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                                    Text("On, a reminder names the compound and dose (e.g. \"Retatrutide · 4 mg\"). Off, it just says \"Dose due now\" — private on your lock screen.")
+                                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                }
+                            }
+                            .tint(BrandColor.accent)
+
+                            Divider().overlay(BrandColor.stroke)
+
+                            FieldRow("Remind me", hint: "When a dose is due, or a little ahead.") {
+                                Picker("Remind me", selection: $reminderLeadMinutes) {
+                                    Text("At dose time").tag(0)
+                                    Text("15 min before").tag(15)
+                                    Text("30 min before").tag(30)
+                                }
+                                .pickerStyle(.segmented)
+                            }
+
                             Button {
                                 if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                             } label: {
