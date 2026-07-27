@@ -250,7 +250,8 @@ struct ActiveLevelsView: View {
         .chartForegroundStyleScale(domain: models.map(\.name), range: models.map(\.color))
         .chartLegend(.hidden)
         .chartXScale(domain: ws...we)
-        .chartYScale(domain: 0...100)
+        // Curves cap at 100; the extra headroom to 112 is where the "NOW" chip sits, clear of them.
+        .chartYScale(domain: 0...112)
         .chartYAxis { AxisMarks(values: [0, 50, 100]) { v in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(BrandColor.stroke)
             AxisValueLabel { if let i = v.as(Int.self) { Text("\(i)%").font(.system(size: 10)).foregroundStyle(BrandColor.textSecondary) } }
@@ -290,11 +291,21 @@ struct ActiveLevelsView: View {
 
     private func nowRule(_ now: Date, labeled: Bool) -> some ChartContent {
         RuleMark(x: .value("Now", now))
-            .foregroundStyle(BrandColor.textSecondary.opacity(0.55))
-            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-            .annotation(position: .top, alignment: .center) {
+            // More noticeable than before (brighter, slightly thicker) while staying a neutral
+            // reference line that doesn't compete with the compound hues.
+            .foregroundStyle(BrandColor.textSecondary.opacity(0.9))
+            .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+            .annotation(position: .top, alignment: .center, spacing: 0,
+                        overflowResolution: AnnotationOverflowResolution(x: .fit(to: .chart), y: .fit(to: .plot))) {
                 if labeled {
-                    Text("Now").font(.system(size: 9, weight: .semibold)).foregroundStyle(BrandColor.textSecondary)
+                    // A small chip pinned INSIDE the plot's top headroom (curves cap at 100, the plot
+                    // runs to 112) — so it clears the caption above and never sits on a curve.
+                    Text("NOW")
+                        .font(.system(size: 8, weight: .bold)).tracking(0.6)
+                        .foregroundStyle(BrandColor.textSecondary)
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(BrandColor.surfaceElevated, in: Capsule())
+                        .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 0.5))
                 }
             }
     }
