@@ -134,8 +134,8 @@ struct ActiveLevelsView: View {
     private func briefing(_ models: [CompoundModel]) -> String {
         func phrase(_ s: LevelStatus) -> String { s.label.lowercased() }   // "near peak" / "rising" / "settling" / "low"
         if models.count == 1 { return "\(models[0].name) is \(phrase(models[0].status))" }
-        if models.count <= 3 { return models.map { "\($0.name) is \(phrase($0.status))" }.joined(separator: " · ") }
-        // Many compounds → aggregate by band.
+        if models.count == 2 { return models.map { "\($0.name) is \(phrase($0.status))" }.joined(separator: " · ") }
+        // 3+ compounds → aggregate by band so the briefing stays to 1–2 lines.
         let elevated = models.filter { $0.status.isElevated }.count
         let settling = models.filter { $0.status == .settling }.count
         let low = models.filter { $0.status == .low }.count
@@ -217,17 +217,18 @@ struct ActiveLevelsView: View {
                 if hasLong {
                     Text("Long-acting · scaled to each compound's own peak")
                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                    lineChart(longs, ws: ws, we: we, now: now, height: 200)
+                    lineChart(longs, ws: ws, we: we, now: now, height: 200, labeled: true)
                 }
 
                 if hasShort {
                     Divider().overlay(BrandColor.stroke)
                     Text(range == .day ? "Short-acting · levels over the day" : "Short-acting · when each was active")
                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    // Label "Now" only on the first chart shown, so the tag isn't repeated down the stack.
                     if range == .day {
-                        lineChart(shorts, ws: ws, we: we, now: now, height: 120)
+                        lineChart(shorts, ws: ws, we: we, now: now, height: 120, labeled: !hasLong)
                     } else {
-                        activeWindowChart(shorts, ws: ws, we: we, now: now)
+                        activeWindowChart(shorts, ws: ws, we: we, now: now, labeled: !hasLong)
                     }
                 }
             }
@@ -236,7 +237,7 @@ struct ActiveLevelsView: View {
 
     /// Multi-line normalized curves on a shared window. Tapping the plot opens nothing; use the legend/gauge.
     @ViewBuilder
-    private func lineChart(_ models: [CompoundModel], ws: Date, we: Date, now: Date, height: CGFloat) -> some View {
+    private func lineChart(_ models: [CompoundModel], ws: Date, we: Date, now: Date, height: CGFloat, labeled: Bool) -> some View {
         let points = models.flatMap { m in samples(m, from: ws, to: we).map { PlotPoint(name: m.name, time: $0.time, percent: $0.percent) } }
         Chart {
             ForEach(points) { p in
@@ -244,7 +245,7 @@ struct ActiveLevelsView: View {
                     .foregroundStyle(by: .value("Compound", p.name))
                     .lineStyle(StrokeStyle(lineWidth: 2)).interpolationMethod(.monotone)
             }
-            nowRule(now)
+            nowRule(now, labeled: labeled)
         }
         .chartForegroundStyleScale(domain: models.map(\.name), range: models.map(\.color))
         .chartLegend(.hidden)
@@ -263,7 +264,7 @@ struct ActiveLevelsView: View {
 
     /// Gantt-style "active window" bars per short compound: horizontal bars while it's above threshold.
     @ViewBuilder
-    private func activeWindowChart(_ models: [CompoundModel], ws: Date, we: Date, now: Date) -> some View {
+    private func activeWindowChart(_ models: [CompoundModel], ws: Date, we: Date, now: Date, labeled: Bool) -> some View {
         let minWidth = we.timeIntervalSince(ws) / 120
         Chart {
             ForEach(models) { m in
@@ -274,7 +275,7 @@ struct ActiveLevelsView: View {
                         .cornerRadius(6)
                 }
             }
-            nowRule(now)
+            nowRule(now, labeled: labeled)
         }
         .chartXScale(domain: ws...we)
         .chartXAxis { AxisMarks(values: .automatic(desiredCount: 4)) { _ in
@@ -287,12 +288,14 @@ struct ActiveLevelsView: View {
         .frame(height: CGFloat(max(1, models.count)) * 34 + 24)
     }
 
-    private func nowRule(_ now: Date) -> some ChartContent {
+    private func nowRule(_ now: Date, labeled: Bool) -> some ChartContent {
         RuleMark(x: .value("Now", now))
             .foregroundStyle(BrandColor.textSecondary.opacity(0.55))
             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
             .annotation(position: .top, alignment: .center) {
-                Text("Now").font(.system(size: 9, weight: .semibold)).foregroundStyle(BrandColor.textSecondary)
+                if labeled {
+                    Text("Now").font(.system(size: 9, weight: .semibold)).foregroundStyle(BrandColor.textSecondary)
+                }
             }
     }
 
