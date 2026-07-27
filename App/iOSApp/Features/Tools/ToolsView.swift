@@ -350,10 +350,103 @@ private struct TitrationLadderBar: View {
 
 // MARK: - Ramp-up plan (user-built, attached to a protocol)
 
-/// Build a custom dose ladder for one of your protocols. Each phase is a dose held for a number
-/// of weeks; once saved, the protocol's dose auto-advances to the next phase as time passes, so
-/// logging always uses the current step. Informational planning aid — not a prescription.
+/// Landing for ramp-up plans: build a new one (top), or manage existing plans below (swipe a row
+/// to edit or delete). The builder opens as a dismissible sheet, so it never blocks this page.
 struct RampUpPlannerView: View {
+    @Environment(\.modelContext) private var context
+    @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
+    @State private var builderTarget: RampBuilderTarget?
+
+    private var activeProtocols: [SavedProtocol] { protocols.filter(\.isActive) }
+    private var plannedProtocols: [SavedProtocol] { activeProtocols.filter(\.hasRampPlan) }
+
+    var body: some View {
+        List {
+            // Build a new plan — top.
+            Section {
+                Button { builderTarget = RampBuilderTarget(protocolID: nil) } label: {
+                    Label("Build a new ramp-up plan", systemImage: "plus.circle.fill")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(activeProtocols.isEmpty ? BrandColor.textSecondary : BrandColor.accentText)
+                }
+                .buttonStyle(.plain)
+                .disabled(activeProtocols.isEmpty)
+            } footer: {
+                Text(activeProtocols.isEmpty
+                     ? "Add an active protocol first, then build its ramp-up plan."
+                     : "Set a dose ladder; your protocol's dose steps up on its own as each phase ends.")
+                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+            }
+            .listRowBackground(BrandColor.surface)
+
+            // Existing plans — below. Swipe a row to edit or delete.
+            if !plannedProtocols.isEmpty {
+                Section("Your ramp-up plans") {
+                    ForEach(plannedProtocols) { p in
+                        Button { builderTarget = RampBuilderTarget(protocolID: p.id) } label: {
+                            HStack(spacing: Space.sm) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
+                                    Text(planSummary(p)).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                                }
+                                Spacer(minLength: Space.sm)
+                                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) { removePlan(p) } label: { Label("Delete", systemImage: "trash") }
+                            Button { builderTarget = RampBuilderTarget(protocolID: p.id) } label: { Label("Edit", systemImage: "pencil") }
+                                .tint(BrandColor.accent)
+                        }
+                        .listRowBackground(BrandColor.surface)
+                    }
+                }
+            }
+
+            Section {
+                Text("Informational planning aid, not medical advice. Discuss any dose change with your clinician.")
+                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+            }
+            .listRowBackground(Color.clear)
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .heroScreen()
+        .navigationTitle("Ramp-up plan")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $builderTarget) { RampBuilderSheet(protocolID: $0.protocolID) }
+    }
+
+    /// Concise plan summary: "2.5 → 15 mg · 5 phases · now 5 mg".
+    private func planSummary(_ p: SavedProtocol) -> String {
+        let u = p.primaryItem?.doseUnit ?? .milligram
+        let doses = p.rampPhases.map { Mass(micrograms: $0.doseMicrograms).value(in: u) }
+        guard let first = doses.first, let last = doses.last else { return "No phases" }
+        let range = first == last ? "\(numText(first)) \(u.rawValue)" : "\(numText(first)) → \(numText(last)) \(u.rawValue)"
+        let count = p.rampPhases.count
+        return "\(range) · \(count) phase\(count == 1 ? "" : "s") · now \(p.effectiveDose.displayString(in: u))"
+    }
+
+    private func removePlan(_ p: SavedProtocol) {
+        p.rampPhases = []
+        p.rampStartDate = nil
+        try? context.save()
+    }
+
+    private func numText(_ v: Double) -> String { v == v.rounded() ? String(Int(v)) : String(format: "%.2f", v) }
+}
+
+/// Identifies which plan the builder sheet targets (nil protocolID = build a new one).
+struct RampBuilderTarget: Identifiable {
+    let protocolID: UUID?
+    var id: String { protocolID?.uuidString ?? "new" }
+}
+
+/// The ramp-up builder as a dismissible SHEET — Cancel/Save in the nav bar, so it can be backed out
+/// of and never blocks the list page behind it.
+private struct RampBuilderSheet: View {
+    let protocolID: UUID?   // nil = build a new plan
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
@@ -371,8 +464,7 @@ struct RampUpPlannerView: View {
 
     private var activeProtocols: [SavedProtocol] { protocols.filter(\.isActive) }
     private var selected: SavedProtocol? { activeProtocols.first { $0.id == selectedID } }
-    /// Protocols that already have a ramp-up plan — listed up top so they can be edited or removed.
-    private var plannedProtocols: [SavedProtocol] { activeProtocols.filter(\.hasRampPlan) }
+    private var isEditing: Bool { protocolID != nil }
 
     private var canSave: Bool {
         selected != nil && !phases.isEmpty && phases.allSatisfy {
@@ -381,85 +473,38 @@ struct RampUpPlannerView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Space.lg) {
-                Text("Build your own ramp-up. Pick a protocol, set each dose and how long it lasts — your protocol's dose steps up on its own as each phase ends, so logging always uses the right amount.")
-                    .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
-
-                if activeProtocols.isEmpty {
-                    Card {
-                        Text("Add an active protocol first, then come back to build its ramp-up plan.")
-                            .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.lg) {
+                    if isEditing {
+                        if let p = selected {
+                            Text(p.name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                        }
+                    } else {
+                        protocolPickerCard
                     }
-                } else {
-                    if !plannedProtocols.isEmpty { existingPlansCard }
-                    SectionHeader(title: selected?.hasRampPlan == true ? "Edit plan" : "Build a plan")
-                    protocolPickerCard
                     if selected != nil {
                         phasesCard
                         if !phases.isEmpty { previewCard }
-                        PrimaryButton(title: (selected?.hasRampPlan ?? false) ? "Update ramp-up plan" : "Start ramp-up plan",
-                                      systemImage: "chart.line.uptrend.xyaxis") { save() }
-                            .disabled(!canSave).opacity(canSave ? 1 : 0.5)
-                        if selected?.hasRampPlan == true {
-                            Button(role: .destructive) { removePlan() } label: {
-                                Label("Remove ramp-up plan", systemImage: "trash")
-                                    .font(.body.weight(.semibold))
-                                    .frame(maxWidth: .infinity).padding(.vertical, Space.sm)
-                                    .foregroundStyle(BrandColor.danger)
-                            }
-                        }
                     }
+                    Text("Informational planning aid, not medical advice. Discuss any dose change with your clinician.")
+                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                 }
-
-                Text("Informational planning aid, not medical advice. Discuss any dose change with your clinician.")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                .padding(Space.lg)
             }
-            .padding(Space.lg)
-        }
-        .heroScreen()
-        .scrollDismissesKeyboard(.interactively)
-        .navigationTitle("Ramp-up plan")
-        .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: selectedID) { _, _ in loadForSelection() }
-    }
-
-    /// Existing ramp-up plans, up top: tap Edit to load one into the builder below, or trash to remove it.
-    private var existingPlansCard: some View {
-        Card {
-            VStack(alignment: .leading, spacing: Space.md) {
-                SectionHeader(title: "Your ramp-up plans")
-                ForEach(Array(plannedProtocols.enumerated()), id: \.element.id) { i, p in
-                    if i > 0 { Divider().overlay(BrandColor.stroke) }
-                    HStack(spacing: Space.sm) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
-                            Text(planSummary(p)).font(.caption).foregroundStyle(BrandColor.textSecondary)
-                        }
-                        Spacer(minLength: Space.sm)
-                        Button { withAnimation { selectedID = p.id } } label: {
-                            Text("Edit").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
-                        }
-                        .buttonStyle(.plain)
-                        Button(role: .destructive) { withAnimation { removePlanFromList(p) } } label: {
-                            Image(systemName: "trash").font(.callout).foregroundStyle(BrandColor.danger)
-                        }
-                        .buttonStyle(.plain)
-                    }
+            .background(BrandColor.background.ignoresSafeArea())
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle(isEditing ? "Edit ramp-up plan" : "New ramp-up plan")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }.disabled(!canSave).fontWeight(.semibold)
                 }
             }
+            .onAppear { selectedID = protocolID; loadForSelection() }
+            .onChange(of: selectedID) { _, _ in loadForSelection() }
         }
-    }
-
-    /// Concise plan summary: "2.5 → 15 mg · 5 phases", plus the current step.
-    private func planSummary(_ p: SavedProtocol) -> String {
-        let u = unit(for: p)
-        let doses = p.rampPhases.map { Mass(micrograms: $0.doseMicrograms).value(in: u) }
-        guard let first = doses.first, let last = doses.last else { return "No phases" }
-        let range = first == last ? "\(Self.numText(first)) \(u.rawValue)" : "\(Self.numText(first)) → \(Self.numText(last)) \(u.rawValue)"
-        let count = p.rampPhases.count
-        return "\(range) · \(count) phase\(count == 1 ? "" : "s") · now \(p.effectiveDose.displayString(in: u))"
     }
 
     private var protocolPickerCard: some View {
@@ -526,7 +571,6 @@ struct RampUpPlannerView: View {
         }
     }
 
-    /// Cumulative date ranges for the phases as currently edited (for the preview).
     private var computedRanges: [(dose: String, range: String)] {
         let cal = Calendar.current
         var cursor = cal.startOfDay(for: startDate)
@@ -573,22 +617,6 @@ struct RampUpPlannerView: View {
         p.rampStartDate = Calendar.current.startOfDay(for: startDate)
         try? context.save()
         dismiss()
-    }
-
-    private func removePlan() {
-        guard let p = selected else { return }
-        p.rampPhases = []
-        p.rampStartDate = nil
-        try? context.save()
-        dismiss()
-    }
-
-    /// Remove a specific plan from the top list (stays on screen to manage the others).
-    private func removePlanFromList(_ p: SavedProtocol) {
-        p.rampPhases = []
-        p.rampStartDate = nil
-        if selectedID == p.id { selectedID = nil; phases = [] }
-        try? context.save()
     }
 
     private static func numText(_ v: Double) -> String {
