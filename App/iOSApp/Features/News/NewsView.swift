@@ -31,10 +31,20 @@ private extension NewsCategory {
         switch self {
         case .safety: return BrandColor.warning
         case .regulatory: return BrandColor.accentText
-        case .trialResults, .newCompound: return BrandColor.success
+        case .trialResults: return BrandColor.success
+        case .earlyResearch: return BrandColor.data       // distinct from trial results (has data)
         case .guidance, .general: return BrandColor.textSecondary
         }
     }
+}
+
+/// The category to DISPLAY as a ribbon. Guards against a mis-tag: an FDA-approved compound is never
+/// "Early research", so a loose/stale tag (e.g. a Tirzepatide article tagged early-research) is shown
+/// as Trial results instead. Once the feed is rebuilt with the tightened classifier this rarely fires.
+func displayCategory(_ item: NewsItem) -> NewsCategory {
+    guard item.category == .earlyResearch else { return item.category }
+    let approved = Set(CompoundCatalog.all.filter { $0.regulatoryStatus == .fdaApproved }.map { $0.name.lowercased() })
+    return item.compounds.contains { approved.contains($0.lowercased()) } ? .trialResults : .earlyResearch
 }
 
 /// Parses a feed item's `publishedAt` into a Date. Delegates to `NewsFeed.parseDate`, which
@@ -107,6 +117,7 @@ struct NewsView: View {
     @State private var searchText = ""
     @State private var category: NewsCategory?
     @State private var myStack = false
+    @State private var newOnly = false
     @State private var searchActive = false
     @State private var path = NavigationPath()
     @FocusState private var searchFocused: Bool
@@ -138,7 +149,7 @@ struct NewsView: View {
     // that are both recently published and popular; everything flows newest-leaning from there.
     private var items: [NewsItem] { feed.ranked() }
     private var isFiltering: Bool {
-        !searchText.trimmingCharacters(in: .whitespaces).isEmpty || category != nil || myStack
+        !searchText.trimmingCharacters(in: .whitespaces).isEmpty || category != nil || myStack || newOnly
     }
 
     /// Featured lead — personalized. If the user is on compounds and any story mentions one of
@@ -161,7 +172,8 @@ struct NewsView: View {
         items.filter { item in
             (category == nil || item.category == category) &&
             (searchText.isEmpty || matches(item, searchText)) &&
-            (!myStack || matchesStack(item))
+            (!myStack || matchesStack(item)) &&
+            (!newOnly || isRecentNews(item.publishedAt))
         }
     }
 
@@ -287,6 +299,7 @@ struct NewsView: View {
     private var categoryFilter: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Space.sm) {
+                SelectableChip(title: "New", isSelected: newOnly) { newOnly.toggle() }
                 SelectableChip(title: "All", isSelected: category == nil) { category = nil }
                 ForEach(NewsCategory.allCases, id: \.self) { c in
                     SelectableChip(title: c.rawValue, isSelected: category == c) {
@@ -304,7 +317,7 @@ struct NewsView: View {
             Text("\(results.count) result\(results.count == 1 ? "" : "s")")
                 .font(.caption).foregroundStyle(BrandColor.textSecondary)
             Spacer()
-            Button("Clear filters") { searchText = ""; category = nil; myStack = false }
+            Button("Clear filters") { searchText = ""; category = nil; myStack = false; newOnly = false }
                 .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
         }
         if results.isEmpty {
@@ -369,7 +382,7 @@ struct FeaturedNewsCard: View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
                 HStack(spacing: Space.sm) {
-                    TagChip(text: item.category.rawValue, color: item.category.tint)
+                    TagChip(text: displayCategory(item).rawValue, color: displayCategory(item).tint)
                     if item.isMajorUpdate { TagChip(text: "Major", color: BrandColor.accentText) }
                     Spacer()
                     if isRecentNews(item.publishedAt) && seenStore.isUnreadToday(item.id) { NewBadge() }
@@ -410,13 +423,13 @@ struct NewsRow: View {
     var body: some View {
         Card {
             HStack(alignment: .top, spacing: Space.md) {
-                FeedImage(urlString: item.imageURL, tint: item.category.tint)
+                FeedImage(urlString: item.imageURL, tint: displayCategory(item).tint)
                     .frame(width: 66, height: 66)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
 
                 VStack(alignment: .leading, spacing: Space.xs) {
                     HStack {
-                        TagChip(text: item.category.rawValue, color: item.category.tint)
+                        TagChip(text: displayCategory(item).rawValue, color: displayCategory(item).tint)
                         Spacer()
                         if isRecentNews(item.publishedAt) && seenStore.isUnreadToday(item.id) { NewBadge() }
                         Text(newsRelativeDate(item.publishedAt))
@@ -454,12 +467,12 @@ struct NewsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
-                FeedImage(urlString: item.imageURL, tint: item.category.tint)
+                FeedImage(urlString: item.imageURL, tint: displayCategory(item).tint)
                     .frame(height: 180)
                     .clipShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     // The one sanctioned on-image badge — frosted, over real photo pixels.
                     .overlay(alignment: .topLeading) {
-                        FrostedTagChip(text: item.category.rawValue)
+                        FrostedTagChip(text: displayCategory(item).rawValue)
                             .padding(Space.md)
                     }
 

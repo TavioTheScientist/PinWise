@@ -140,8 +140,11 @@ function classify(text, sourceKind) {
     return "Regulatory";
   if (/\b(guideline\w*|clinical practice recommendation|consensus statement|position statement|expert consensus)\b/.test(t))
     return "Guidance";
-  if (/\b(first-in-human|first in human|phase\s*1\b|novel (agent|compound|analog|analogue|peptide)|investigational new drug)\b/.test(t))
-    return "New compound";
+  // "Early research" is only for genuinely early-stage agents — first-in-human / phase 1 / IND.
+  // (Dropped the broad "novel …" match: an approved compound studied for a NEW indication kept
+  // getting mis-tagged, e.g. a phase-2 tirzepatide trial labeled a "new compound".)
+  if (/\b(first-in-human|first in human|phase\s*1\b|investigational new drug)\b/.test(t))
+    return "Early research";
   if (
     sourceKind === "trial" ||
     /\b(phase\s*[234]|trial\w*|randomi[sz]\w*|placebo|efficacy|endpoint\w*|primary outcome|meta-analysis|network meta|cohort\w*)\b/.test(t)
