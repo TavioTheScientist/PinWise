@@ -279,14 +279,14 @@ struct HomeView: View {
                         HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
                             StatusDot(color: statusTint(p), glows: status(p) == .dueToday)
                             VStack(alignment: .leading, spacing: 1) {
-                                Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
+                                Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
                                 // Cadence + stack size — a single dose is meaningless for a multi-compound protocol.
                                 Text(p.compoundNames.count > 1 ? "\(p.cadenceText) · \(p.compoundNames.count) compounds" : p.cadenceText)
-                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                             }
-                            Spacer()
+                            Spacer(minLength: Space.sm)
                             // Due-state — the one protocol-specific value that's unambiguous for any stack.
-                            dueChip(p).font(.caption.weight(.semibold)).lineLimit(1)
+                            dueChip(p).font(.caption.weight(.semibold)).lineLimit(1).layoutPriority(1)
                         }
                     }
                     if activeProtocols.count > 4 {
@@ -318,19 +318,26 @@ struct HomeView: View {
     /// urgency signal on the card), then "Tomorrow", then an abbreviated date; "—" as-needed.
     /// Once today's dose is logged the pin advances past today, so it never lingers on "Today".
     /// The protocol's due-state for the Home list — replaces the (stack-ambiguous) dose. Reads
-    /// "Logged" once done today, "Due today" (amber) when due, else the next pin ("Tomorrow" / "Fri").
+    /// "Logged" once done today, else the next pin. The dose TIME is shown only for today/tomorrow
+    /// (when it's actually useful); further out just names the weekday.
     private func dueChip(_ p: SavedProtocol) -> Text {
         switch status(p) {
         case .doneToday: return Text("Logged").foregroundStyle(BrandColor.success)
         case .paused:    return Text("Paused").foregroundStyle(BrandColor.textSecondary)
-        case .dueToday:  return Text("Due today").foregroundStyle(BrandColor.warning)
+        case .dueToday:  return Text("Today, \(doseTime(p))").foregroundStyle(BrandColor.warning)
         case .active:
             guard let next = p.upcomingDose(loggedToday: p.loggedToday(in: recent)) else {
                 return Text("As needed").foregroundStyle(BrandColor.textSecondary)
             }
-            if Calendar.current.isDateInTomorrow(next) { return Text("Tomorrow").foregroundStyle(BrandColor.accentText) }
+            if Calendar.current.isDateInTomorrow(next) { return Text("Tomorrow, \(doseTime(p))").foregroundStyle(BrandColor.accentText) }
             return Text(next, format: .dateTime.weekday(.abbreviated)).foregroundStyle(BrandColor.accentText)
         }
+    }
+
+    /// The protocol's set dose time-of-day (its reminder time), e.g. "8:00 AM".
+    private func doseTime(_ p: SavedProtocol) -> String {
+        let d = Calendar.current.date(bySettingHour: p.reminderHour, minute: p.reminderMinute, second: 0, of: Date()) ?? Date()
+        return d.formatted(date: .omitted, time: .shortened)
     }
 
     // MARK: Empty
