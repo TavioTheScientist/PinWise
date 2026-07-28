@@ -14,9 +14,17 @@ public enum NewsCategory: String, Codable, CaseIterable, Sendable {
     case trialResults = "Trial results"
     case regulatory = "Regulatory"
     case safety = "Safety"
-    case newCompound = "New compound"
+    case earlyResearch = "Early research"   // renamed from the ambiguous "New compound"
     case guidance = "Guidance"
     case general = "General"
+
+    /// Tolerant decode: legacy "New compound" maps to Early research, and any UNKNOWN value falls
+    /// back to General — so a future taxonomy change can never break feed decoding.
+    public init(from decoder: any Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        if raw == "New compound" { self = .earlyResearch }
+        else { self = NewsCategory(rawValue: raw) ?? .general }
+    }
 }
 
 /// A citation backing a news item — the transparency guarantee.
@@ -223,7 +231,7 @@ public extension NewsFeed {
           "id": "sema-oral-pill-2025",
           "headline": "FDA approves first oral GLP-1 pill for weight loss",
           "summary": "In December 2025 the FDA approved an oral form of Wegovy (once-daily semaglutide 25 mg tablet), the first oral GLP-1 receptor agonist approved for weight management. In the OASIS program the pill produced roughly 14–17% average weight loss versus about 2–3% for placebo, and its label also covers cardiovascular risk reduction in adults with established cardiovascular disease. It is the same active drug as injectable Wegovy in a new oral form.",
-          "category": "New compound",
+          "category": "Regulatory",
           "compounds": ["Semaglutide"],
           "sources": [
             {"name": "Novo Nordisk / PR Newswire (approval announcement, Dec 2025)", "url": "https://www.prnewswire.com/news-releases/fda-approves-novo-nordisks-wegovy-pill-the-first-and-only-oral-glp-1-for-weight-loss-in-adults-302648344.html", "kind": "news"},
