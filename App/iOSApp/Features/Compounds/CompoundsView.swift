@@ -618,13 +618,15 @@ struct CompoundDetailView: View {
 
     /// A caller-state accordion for one section. Renders nothing extra when the id isn't in
     /// `expanded`; toggling flips it (multi-open allowed, choice persists for the session).
-    @ViewBuilder private func disclosure(_ id: String, _ title: String, scent: String? = nil,
-                                         @ViewBuilder content: () -> some View) -> some View {
-        DisclosureSection(title: title, scent: scent, isExpanded: expanded.contains(id)) {
-            if expanded.contains(id) { expanded.remove(id) } else { expanded.insert(id) }
-        } content: {
-            content()
-        }
+    private func disclosure<C: View>(_ id: String, _ title: String, scent: String? = nil,
+                                     @ViewBuilder content: @escaping () -> C) -> some View {
+        DisclosureSection(
+            title: title,
+            scent: scent,
+            isExpanded: expanded.contains(id),
+            toggle: { if expanded.contains(id) { expanded.remove(id) } else { expanded.insert(id) } },
+            content: content
+        )
     }
 
     private func proseText(_ t: String) -> some View {
