@@ -522,6 +522,12 @@ do {
     // profile(for:) round-trips a known entry.
     check(CompoundProfiles.profile(for: CompoundCatalog.semaglutide)?.tagline.isEmpty == false,
           "profile(for: semaglutide) resolves")
+    // Evidence grade always has a letter + word (badge renders "A · Strong"; never color-only).
+    check(EvidenceTier.allCases.allSatisfy { !$0.letter.isEmpty && !$0.shortLabel.isEmpty },
+          "every evidence tier has a letter and a shortLabel")
+    // safetyFlag is either absent or meaningful — never an empty always-visible caution strip.
+    check(CompoundProfiles.all.allSatisfy { $0.safetyFlag.map { !$0.isEmpty } ?? true },
+          "no empty safetyFlag strings")
 }
 
 // MARK: - DoseDrawResult protocol

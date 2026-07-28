@@ -36,6 +36,18 @@ public enum EvidenceTier: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// A one-word strength descriptor paired with the letter (e.g. "A · Strong") so the grade
+    /// never relies on color alone (WCAG 1.4.1) and reads at a glance. Describes how much we can
+    /// trust the compound works/is safe *in people* — deliberately separate from effect size.
+    public var shortLabel: String {
+        switch self {
+        case .fdaApproved: return "Strong"
+        case .humanTrialsUnapproved: return "Moderate"
+        case .preclinicalOrFailed: return "Limited"
+        case .precursorOffLabel: return "Indirect"
+        }
+    }
+
     /// Whether the app should surface the strong research-use disclaimer for this tier.
     public var needsStrongDisclaimer: Bool { self != .fdaApproved }
 }
