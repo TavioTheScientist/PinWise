@@ -9,10 +9,9 @@ struct CompoundsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \CustomCompound.name) private var custom: [CustomCompound]
     @State private var search = ""
-    /// Goal-based browse is the primary axis ("what am I trying to do?"). nil = all goals.
+    /// Optional goal filter, tucked into a toolbar menu (not an always-on chip rail) so the page
+    /// opens on the compounds themselves, not on a stack of controls. nil = the whole library.
     @State private var selectedGoal: CompoundGoal?
-    /// Evidence-grade facet (the third filter alongside goal + class-grouping). nil = all grades.
-    @State private var selectedTier: EvidenceTier?
     @State private var showLegend = false
     @State private var showAdd = false
 
@@ -25,29 +24,17 @@ struct CompoundsView: View {
     ]
 
     private var results: [Compound] {
-        CompoundCatalog.allSorted.filter { matchesQuery($0) && matchesGoal($0) && matchesTier($0) }
+        CompoundCatalog.allSorted.filter { matchesQuery($0) && matchesGoal($0) }
     }
 
-    /// Library grouped by class, best-evidence-first within each class (Examine's matrix logic).
+    /// Library grouped by class, plain alphabetical within each class. No evidence-first ranking —
+    /// evidence lives on the compound page, not in how the list is ordered, so browsing stays neutral.
     private var grouped: [(category: CompoundCategory, compounds: [Compound])] {
         let items = results
         return classOrder.compactMap { cat in
-            let inCat = items.filter { $0.category == cat }.sorted(by: byEvidenceThenName)
+            let inCat = items.filter { $0.category == cat }
+                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
             return inCat.isEmpty ? nil : (cat, inCat)
-        }
-    }
-
-    private func byEvidenceThenName(_ a: Compound, _ b: Compound) -> Bool {
-        let ra = tierRank(a.evidenceTier), rb = tierRank(b.evidenceTier)
-        if ra != rb { return ra < rb }
-        return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
-    }
-    private func tierRank(_ t: EvidenceTier) -> Int {
-        switch t {
-        case .fdaApproved: return 0
-        case .humanTrialsUnapproved: return 1
-        case .preclinicalOrFailed: return 2
-        case .precursorOffLabel: return 3
         }
     }
 
@@ -62,25 +49,21 @@ struct CompoundsView: View {
         guard let goal = selectedGoal else { return true }
         return CompoundProfiles.goals(for: c).contains(goal)
     }
-    private func matchesTier(_ c: Compound) -> Bool { selectedTier == nil || c.evidenceTier == selectedTier }
 
     private var customResults: [CustomCompound] {
-        // Custom compounds carry no authored goals or evidence grade — hide them when either facet
-        // is active (they'd never legitimately match).
-        guard selectedGoal == nil, selectedTier == nil else { return [] }
+        // Custom compounds carry no authored goals — hide them when a goal filter is active.
+        guard selectedGoal == nil else { return [] }
         guard !query.isEmpty else { return custom }
         return custom.filter { $0.name.lowercased().contains(query) || $0.categoryRaw.lowercased().contains(query) }
     }
 
-    private var isFiltering: Bool { selectedGoal != nil || selectedTier != nil || !query.isEmpty }
+    private var isFiltering: Bool { selectedGoal != nil || !query.isEmpty }
     private var resultCount: Int { results.count + customResults.count }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
-                searchBar
-                goalFilterBar
-                filterSummary
+                if isFiltering { activeFilterBar }
 
                 if resultCount == 0 {
                     Card {
@@ -119,89 +102,65 @@ struct CompoundsView: View {
             .padding(Space.lg)
         }
         .heroScreen()
+        .searchable(text: $search, prompt: "Search by name or alias (e.g. “sema”)")
         .navigationTitle("Compound library")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { goalMenu }
             ToolbarItem(placement: .topBarTrailing) {
-                Button { showAdd = true } label: { Image(systemName: "plus") }
-                    .tint(BrandColor.accentText)
-                    .accessibilityLabel("Add your own compound")
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { showLegend = true } label: { Image(systemName: "questionmark.circle") }
-                    .tint(BrandColor.accentText)
-                    .accessibilityLabel("What the grades and labels mean")
+                Menu {
+                    Button { showAdd = true } label: { Label("Add your own compound", systemImage: "plus") }
+                    Button { showLegend = true } label: { Label("What the grades & labels mean", systemImage: "questionmark.circle") }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .tint(BrandColor.accentText)
             }
         }
         .sheet(isPresented: $showLegend) { CompoundLegendView() }
         .sheet(isPresented: $showAdd) { AddCustomCompoundView() }
     }
 
-    private var searchBar: some View {
-        SearchField(placeholder: "Search by name or alias (e.g. “sema”)", text: $search)
-    }
-
-    /// Browse by goal — a horizontal chip rail, "All goals" first. Tapping the active chip clears it.
-    private var goalFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Space.sm) {
-                SelectableChip(title: "All goals", isSelected: selectedGoal == nil) { selectedGoal = nil }
-                ForEach(CompoundGoal.allCases) { goal in
-                    SelectableChip(title: goal.displayName,
-                                   isSelected: selectedGoal == goal,
-                                   systemImage: goalIcon(goal)) {
-                        selectedGoal = (selectedGoal == goal) ? nil : goal
-                    }
-                }
-            }
-            .padding(.horizontal, 2)
-        }
-        .scrollClipDisabled()
-        .sensoryFeedback(.selection, trigger: selectedGoal)
-    }
-
-    /// Result count + active-facet summary + a grade menu + Clear (faceted-filter best practice:
-    /// always show how many match and what's applied).
-    private var filterSummary: some View {
-        HStack(spacing: Space.md) {
-            Text("\(resultCount) compound\(resultCount == 1 ? "" : "s")\(activeFilterSuffix)")
-                .font(.caption).foregroundStyle(BrandColor.textSecondary)
-                .lineLimit(1).minimumScaleFactor(0.85)
-            Spacer(minLength: Space.sm)
-            gradeMenu
-            if isFiltering {
-                Button("Clear") { search = ""; selectedGoal = nil; selectedTier = nil }
-                    .font(.caption.weight(.semibold))
-                    .tint(BrandColor.accentText)
-            }
-        }
-    }
-
-    private var gradeMenu: some View {
+    /// Goal filter lives here — a single tap in the toolbar, so the body isn't crowded by a chip
+    /// rail. The icon fills in when a goal is active.
+    private var goalMenu: some View {
         Menu {
-            Button { selectedTier = nil } label: {
-                Label("All grades", systemImage: selectedTier == nil ? "checkmark" : "")
+            Button { selectedGoal = nil } label: {
+                Label("All goals", systemImage: selectedGoal == nil ? "checkmark" : "square.grid.2x2")
             }
-            ForEach(EvidenceTier.allCases, id: \.self) { tier in
-                Button { selectedTier = tier } label: {
-                    Label("\(tier.letter) · \(tier.shortLabel)", systemImage: selectedTier == tier ? "checkmark" : "")
+            ForEach(CompoundGoal.allCases) { goal in
+                Button { selectedGoal = goal } label: {
+                    Label(goal.displayName, systemImage: selectedGoal == goal ? "checkmark" : goalIcon(goal))
                 }
             }
         } label: {
-            HStack(spacing: 3) {
-                Image(systemName: "line.3.horizontal.decrease.circle")
-                Text(selectedTier == nil ? "Grade" : "Grade \(selectedTier!.letter)")
-            }
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(BrandColor.accentText)
+            Image(systemName: selectedGoal == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
         }
+        .tint(BrandColor.accentText)
+        .accessibilityLabel("Filter by goal")
     }
 
-    private var activeFilterSuffix: String {
-        var parts: [String] = []
-        if let g = selectedGoal { parts.append(g.displayName) }
-        if let t = selectedTier { parts.append("Grade \(t.letter)") }
-        return parts.isEmpty ? "" : " · " + parts.joined(separator: " · ")
+    /// Only appears while a filter/search is active — a removable goal chip and a quiet result count.
+    private var activeFilterBar: some View {
+        HStack(spacing: Space.sm) {
+            if let g = selectedGoal {
+                Button { selectedGoal = nil } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: goalIcon(g))
+                        Text(g.displayName)
+                        Image(systemName: "xmark").font(.caption2)
+                    }
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, Space.md).padding(.vertical, Space.xs)
+                    .background(BrandColor.accent, in: Capsule())
+                    .foregroundStyle(BrandColor.onAccent)
+                }
+                .buttonStyle(.plain)
+            }
+            Text("\(resultCount) result\(resultCount == 1 ? "" : "s")")
+                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+            Spacer(minLength: 0)
+        }
     }
 
     private var addYourOwnButton: some View {
@@ -220,7 +179,7 @@ struct CompoundsView: View {
     }
 
     private var emptyMessage: String {
-        "No compounds match your filters. Try a different name, or clear the goal and grade filters to see the full library."
+        "No compounds match. Try a different name, or clear the goal filter to see the whole library."
     }
 }
 
@@ -297,45 +256,34 @@ struct CompoundLegendView: View {
     }
 }
 
+/// A calm lookup row: name + one standardized "what it is, for what" descriptor + a chevron.
+/// No evidence grade, half-life, or WADA flag here by design — those live on the compound page,
+/// so browsing doesn't feel weighted by evidence. Every row has a descriptor (the authored
+/// tagline, else the class name) so the list reads consistently.
 struct CompoundRow: View {
     let compound: Compound
     var isCustom: Bool = false
 
-    private var tagline: String? { isCustom ? nil : CompoundProfiles.profile(for: compound)?.tagline }
+    private var descriptor: String {
+        if isCustom { return "Added by you" }
+        return CompoundProfiles.profile(for: compound)?.tagline ?? compound.category.displayName
+    }
 
     var body: some View {
         Card {
-            HStack(alignment: .top) {
+            HStack(alignment: .center, spacing: Space.sm) {
                 VStack(alignment: .leading, spacing: Space.xs) {
-                    Text(compound.name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                    if let tagline {
-                        Text(tagline).font(.caption).foregroundStyle(BrandColor.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: Space.sm) {
+                        Text(compound.name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                        if isCustom { TagChip(text: "Custom", color: BrandColor.accentText) }
                     }
-                    Text(subtitle).font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    Text(descriptor).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: Space.sm)
-                VStack(alignment: .trailing, spacing: Space.xs) {
-                    if isCustom {
-                        TagChip(text: "Custom", color: BrandColor.accentText)
-                    } else {
-                        EvidenceBadge(tier: compound.evidenceTier)
-                        if compound.wadaProhibited { TagChip(text: "WADA", color: BrandColor.warning) }
-                    }
-                }
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
-    }
-
-    private var subtitle: String {
-        var parts = [compound.category.displayName]
-        if let h = compound.halfLifeHours { parts.append(halfLifeShort(h)) }
-        return parts.joined(separator: " · ")
-    }
-    private func halfLifeShort(_ h: Double) -> String {
-        if h >= 24 { return "t½ ~\(Int((h / 24).rounded())) d" }
-        if h >= 1 { return "t½ ~\(Int(h.rounded())) h" }
-        return "t½ <1 h"
     }
 }
 
@@ -410,7 +358,6 @@ struct CompoundDetailView: View {
                 } else {
                     EvidenceBadge(tier: compound.evidenceTier)
                     TagChip(text: regulatoryShort, color: regulatoryColor)
-                    if compound.wadaProhibited { TagChip(text: "WADA", color: BrandColor.warning) }
                 }
             }
             if let tagline = profile?.tagline {
@@ -431,6 +378,9 @@ struct CompoundDetailView: View {
         .scrollClipDisabled()
     }
 
+    /// Standardized: the SAME rows on every compound page, in the same order, so pages read
+    /// consistently. Half-life shows "Not well established" rather than dropping the row, and
+    /// anti-doping status is always stated (it lives here now, not on the list rows).
     private var atAGlance: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
@@ -438,10 +388,9 @@ struct CompoundDetailView: View {
                 if isCustom {
                     detailRow("Source", "Added by you")
                 } else {
-                    detailRow("Regulatory status", regulatoryLabel)
-                    detailRow("Evidence", "\(compound.evidenceTier.letter) · \(compound.evidenceTier.shortLabel)")
+                    detailRow("Anti-doping", compound.wadaProhibited ? "Prohibited (WADA)" : "Not on the WADA list")
                 }
-                if let h = compound.halfLifeHours { detailRow("Half-life", halfLifeLong(h)) }
+                detailRow("Half-life", compound.halfLifeHours.map(halfLifeLong) ?? "Not well established")
                 detailRow("Dosed in", compound.preferredDoseUnit.rawValue)
             }
         }
@@ -593,7 +542,6 @@ struct CompoundDetailView: View {
                                     }
                                 }
                                 Spacer(minLength: Space.sm)
-                                EvidenceBadge(tier: c.evidenceTier, compact: true)
                                 Image(systemName: "chevron.right").font(.caption2).foregroundStyle(BrandColor.textSecondary)
                             }
                         }
@@ -641,13 +589,6 @@ struct CompoundDetailView: View {
     /// no seller (the trust-killer on commercial peptide sites); teaches what a real COA shows.
     static let coaLiteracy = "A certificate of analysis (COA) is a third-party lab report on a specific batch. A trustworthy one names an independent lab (not the seller), lists the batch/lot number, and reports identity and purity — typically by mass spectrometry (confirms it's the right molecule) and HPLC (reports % purity, ideally ≥98%). Match the lot on the COA to the lot on your vial; a COA for a different batch tells you nothing about yours. Be skeptical of a bare \"99% pure\" claim with no lab named, no method, and no date. PinWise names no vendors and does not verify supply — this is general literacy so you can read a COA yourself."
 
-    private var regulatoryLabel: String {
-        switch compound.regulatoryStatus {
-        case .fdaApproved: return "FDA-approved"
-        case .compoundedOnly: return "Compounded only"
-        case .researchOnly: return "Research only"
-        }
-    }
     private var regulatoryShort: String {
         switch compound.regulatoryStatus {
         case .fdaApproved: return "FDA-approved"
