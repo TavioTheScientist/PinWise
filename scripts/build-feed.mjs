@@ -93,10 +93,11 @@ function headlineTrim(s, n = HEADLINE_CAP) {
     .trim();
 }
 
-// Dot-free teaser cap: a teaser is a full sentence, so when the text overruns, prefer the first
-// COMPLETE sentence; otherwise cut to a word boundary and strip a trailing filler word — never
-// append "…" (which reads as a cut-off sentence). Kept under the feed validator's 110-char ceiling.
-function teaserTrim(s, n = 108) {
+// Dot-free teaser cap: a teaser is a full SENTENCE and must never read as cut off. The cap is
+// generous (the detail view wraps it fully; the list card truncates with its own lineLimit), so a
+// normal one-sentence key finding is returned untouched. Only a genuine run-on past the cap is
+// word-boundary trimmed (filler word stripped, no "…").
+function teaserTrim(s, n = 180) {
   s = clean(s);
   if (s.length <= n) return s;
   const firstSent = (s.match(/^[^.!?]*[.!?]/) || [])[0];
@@ -392,10 +393,10 @@ Hard rules:
 - Plain language: explain or avoid jargon.
 Return ONLY a JSON object (no prose, no code fences) with exactly these keys:
 {"headline": string, a punchy specific title of AT MOST 52 characters — count them, and if longer cut qualifiers (like the study population) until it fits; lead with the subject and the finding (e.g. "Semaglutide slows type-2 diabetes progression"), never "A study of…"; do not end on a preposition; no trailing period and no ellipsis;
- "keyFinding": string, ONE complete sentence, AT MOST 90 characters and ideally ~75 — this is a HARD limit; a longer sentence gets cut off, so write a genuinely short one (state the finding, drop qualifiers) and END IT WITH A PERIOD; no ellipsis; the single most important takeaway in plain language;
+ "keyFinding": string, ONE complete sentence stating the single most important takeaway in plain language; keep it tight (aim ~90-130 characters) but ALWAYS a whole grammatical sentence that END WITH A PERIOD — never trail off, never use an ellipsis, never stop mid-clause (e.g. do not end on "…women with early");
  "summary": string, 2-4 sentences expanding on the findings or on what the study is}
 
-LENGTH IS STRICT: a keyFinding or headline over its limit gets cut off and looks broken, so keep them short and complete. For a trial with no results yet, state what it TESTS in a short line — not a long "Study evaluates whether…" run-on.
+The keyFinding must be a COMPLETE sentence — a half-finished one reads as broken. Prefer short, but completeness wins over brevity. For a trial with no results yet, state what it TESTS in one line — not a long "Study evaluates whether…" run-on. The headline is the one hard length limit (52 chars).
 Good keyFinding examples (short, complete, punchy — copy this style and length):
 - "Retatrutide drove about 24% weight loss at 48 weeks."
 - "Phase 3 trial is testing tirzepatide for sleep apnea."
@@ -428,9 +429,9 @@ Raw summary: ${item.summary}`;
   const keyFinding = clean(obj.keyFinding || "");
   const summary = clean(obj.summary || "");
   if (!headline || !keyFinding || !summary) throw new Error("empty rewritten field");
-  // Safety caps in case the model overruns: headline stays short; teaser MUST be <=110 chars or the
-  // feed validator hard-fails and refuses to publish (wordCap returns the string unchanged when it's
-  // already within the limit, so a well-behaved one-sentence finding is untouched).
+  // Safety caps for an overrunning model: the headline stays short; the teaser keeps the WHOLE key
+  // finding sentence (teaserTrim only touches a genuine run-on), so a descriptor is never cropped
+  // mid-sentence in the article view.
   return {
     ...item,
     headline: headlineTrim(headline),
