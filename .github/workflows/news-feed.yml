@@ -7,8 +7,12 @@ name: News feed
 #
 # Published URL: https://raw.githubusercontent.com/TavioTheScientist/PinWise-NewsFeed/main/feed.json
 on:
-  schedule:
-    - cron: "0 13 * * *"   # daily 13:00 UTC
+  # ⏸ PAUSED until launch. The daily auto-rebuild (which fetches + LLM-rewrites + republishes the
+  # feed) is OFF so the published feed stays frozen while we hand-craft article copy, page
+  # structure, and voice. The app keeps showing the last published feed. Re-enable at launch by
+  # uncommenting the schedule below. `workflow_dispatch` stays on for manual test rebuilds.
+  # schedule:
+  #   - cron: "0 13 * * *"   # daily 13:00 UTC
   workflow_dispatch:
 
 permissions:
