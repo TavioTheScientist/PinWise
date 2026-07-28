@@ -500,6 +500,30 @@ do {
           "displayName currently matches rawValue for every case")
 }
 
+// MARK: - Compound profiles (authored library content)
+section("Compound profiles")
+do {
+    let catalogIDs = Set(CompoundCatalog.all.map(\.id))
+    // Every authored profile must point at a real catalog compound (ids reference the catalog
+    // directly, but a bad copy/paste would silently orphan a profile).
+    check(CompoundProfiles.all.allSatisfy { catalogIDs.contains($0.compoundID) },
+          "every profile's compoundID exists in the catalog")
+    // No two profiles for the same compound (the byID dictionary is built with uniqueKeys, which
+    // would trap at runtime on a dup — assert it up front here instead).
+    check(Set(CompoundProfiles.all.map(\.compoundID)).count == CompoundProfiles.all.count,
+          "no duplicate profiles for the same compound")
+    check(CompoundProfiles.byID.count == CompoundProfiles.all.count, "byID indexes every profile")
+    // Content invariants: a tagline and at least one goal on every profile.
+    check(CompoundProfiles.all.allSatisfy { !$0.tagline.isEmpty }, "every profile has a tagline")
+    check(CompoundProfiles.all.allSatisfy { !$0.goals.isEmpty }, "every profile has ≥1 goal")
+    // goals(for:) always resolves to something (authored or category default) — browse stays complete.
+    check(CompoundCatalog.all.allSatisfy { !CompoundProfiles.goals(for: $0).isEmpty || $0.category == .blend },
+          "goals(for:) is non-empty for every non-blend compound")
+    // profile(for:) round-trips a known entry.
+    check(CompoundProfiles.profile(for: CompoundCatalog.semaglutide)?.tagline.isEmpty == false,
+          "profile(for: semaglutide) resolves")
+}
+
 // MARK: - DoseDrawResult protocol
 section("DoseDrawResult protocol")
 do {
