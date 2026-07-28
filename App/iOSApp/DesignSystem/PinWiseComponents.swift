@@ -414,9 +414,12 @@ struct AdvisoryRow: View {
     }
 }
 
-/// Evidence-tier badge (A/B/C/D) — solid semantic fill per tier, `BrandColor.onBadge` ink.
+/// Evidence-tier badge — solid semantic fill per tier, `BrandColor.onBadge` ink. Shows the
+/// grade LETTER + a one-word strength ("A · Strong") so meaning never rides on color alone
+/// (WCAG 1.4.1); `compact` drops to the bare letter for tight rows (e.g. the Log picker menu).
 struct EvidenceBadge: View {
     let tier: EvidenceTier
+    var compact: Bool = false
     private var color: Color {
         switch tier {
         case .fdaApproved: return BrandColor.mint
@@ -426,12 +429,58 @@ struct EvidenceBadge: View {
         }
     }
     var body: some View {
-        Text("TIER \(tier.letter)")
+        Text(compact ? tier.letter : "\(tier.letter) · \(tier.shortLabel)")
             .font(.caption2.weight(.bold))
             .padding(.horizontal, Space.sm)
             .padding(.vertical, Space.xs)
             .background(color, in: Capsule())
             .foregroundStyle(BrandColor.onBadge)
+            .accessibilityLabel("Evidence grade \(tier.letter), \(tier.shortLabel)")
+    }
+}
+
+/// A premium expandable section for long reference content: a tappable header (title + a
+/// scent-bearing subtitle that stays visible while collapsed + a rotating chevron) over
+/// collapsible content, wrapped in a `Card`. Expansion state is OWNED BY THE CALLER (a `Set`
+/// of section ids) so a page can default some sections open and keep the rest closed, and the
+/// choice persists for the session. This is the "accordion = table of contents" pattern:
+/// a mostly-collapsed page is scannable, and each header answers a quick question on its own.
+struct DisclosureSection<Content: View>: View {
+    let title: String
+    var scent: String? = nil
+    let isExpanded: Bool
+    let toggle: () -> Void
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        Card {
+            VStack(alignment: .leading, spacing: isExpanded ? Space.md : 0) {
+                Button(action: toggle) {
+                    HStack(alignment: .top, spacing: Space.sm) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                            if let scent, !isExpanded {
+                                Text(scent).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        Spacer(minLength: Space.sm)
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(BrandColor.textSecondary)
+                            .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                            .padding(.top, 2)
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+
+                if isExpanded {
+                    content().frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .animation(.easeInOut(duration: 0.22), value: isExpanded)
+        }
     }
 }
 

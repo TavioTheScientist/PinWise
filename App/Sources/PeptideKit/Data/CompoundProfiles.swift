@@ -45,6 +45,10 @@ public struct CompoundProfile: Sendable {
     public var goals: [CompoundGoal]
     /// One-line "what is this" for the list row and detail header.
     public var tagline: String
+    /// A single acute caution worth surfacing ABOVE the fold (never buried) when one exists —
+    /// e.g. the GLP-1 thyroid contraindication, PT-141's blood-pressure effect, MT-2 and moles.
+    /// nil when there's no one-line flag that rises to always-visible.
+    public var safetyFlag: String?
     /// Plain-language "what it is" — no jargon.
     public var whatItIs: String?
     /// The mechanism, for readers who want the pharmacology.
@@ -76,6 +80,7 @@ public struct CompoundProfile: Sendable {
         compoundID: UUID,
         goals: [CompoundGoal],
         tagline: String,
+        safetyFlag: String? = nil,
         whatItIs: String? = nil,
         howItWorks: String? = nil,
         whatToExpect: String? = nil,
@@ -93,6 +98,7 @@ public struct CompoundProfile: Sendable {
         self.compoundID = compoundID
         self.goals = goals
         self.tagline = tagline
+        self.safetyFlag = safetyFlag
         self.whatItIs = whatItIs
         self.howItWorks = howItWorks
         self.whatToExpect = whatToExpect
@@ -128,6 +134,7 @@ public enum CompoundProfiles {
             compoundID: CompoundCatalog.semaglutide.id,
             goals: [.fatLoss],
             tagline: "The best-studied GLP-1 for weight loss and type 2 diabetes.",
+            safetyFlag: "Boxed warning for thyroid C-cell tumors — do not use with a personal or family history of medullary thyroid carcinoma or MEN 2. Stop and seek care for severe, persistent abdominal pain (possible pancreatitis).",
             whatItIs: "Semaglutide is a GLP-1 receptor agonist — a lab-made copy of a gut hormone your body already releases after eating. It's the active drug in Ozempic and Rybelsus (diabetes) and Wegovy (weight loss). It's one of the very few compounds in this library that is FDA-approved and backed by large, multi-year human trials.",
             howItWorks: "It mimics GLP-1, a hormone released by the gut after meals. That slows how fast the stomach empties, tells the brain you're full sooner, and prompts the pancreas to release insulin only when blood sugar is high. The net effect is less hunger, smaller portions, and better blood-sugar control.",
             whatToExpect: "In trials: roughly 15% average body-weight loss over ~68 weeks at the top dose (STEP program), with meaningful improvements in blood sugar. In practice, appetite suppression usually shows up within the first week or two; visible weight loss builds over months, not days. Effects are dose-dependent, which is why the label ramps up slowly.",
@@ -150,6 +157,7 @@ public enum CompoundProfiles {
             compoundID: CompoundCatalog.tirzepatide.id,
             goals: [.fatLoss],
             tagline: "Dual GIP/GLP-1 agonist — the most effective approved weight-loss drug to date.",
+            safetyFlag: "Boxed warning for thyroid C-cell tumors — do not use with a personal or family history of medullary thyroid carcinoma or MEN 2. Stop and seek care for severe, persistent abdominal pain (possible pancreatitis).",
             whatItIs: "Tirzepatide is a \"twincretin\": it activates two gut-hormone receptors (GIP and GLP-1) instead of one. It's the active drug in Mounjaro (diabetes) and Zepbound (weight loss), and in head-to-head data it produces more weight loss than semaglutide.",
             howItWorks: "It's a dual agonist of the GIP and GLP-1 receptors. GLP-1 activation slows gastric emptying and curbs appetite; adding GIP activation appears to improve how the body handles fat and sugar and may blunt nausea somewhat. Together they drive stronger appetite suppression and metabolic effect than a GLP-1 alone.",
             whatToExpect: "In trials: about 20–22% average body-weight loss over ~72 weeks at the top dose (SURMOUNT-1). Like semaglutide, appetite drops early and weight comes off over months. Effect scales with dose across the titration.",
@@ -384,6 +392,7 @@ public enum CompoundProfiles {
             compoundID: CompoundCatalog.mk677.id,
             goals: [.muscleAndGH],
             tagline: "An oral (not injected) ghrelin agonist that raises GH and IGF-1 all day.",
+            safetyFlag: "Can raise blood sugar and reduce insulin sensitivity — the effect worth monitoring, especially if you're prediabetic or stacking other things that raise glucose.",
             whatItIs: "MK-677 (ibutamoren) is an orally active ghrelin-receptor agonist — a pill, not an injection. It raises GH and IGF-1 continuously rather than in pulses, which is both its appeal (convenience, one dose a day) and its main critique.",
             howItWorks: "It mimics ghrelin at the GH-secretagogue receptor, sustaining elevated GH/IGF-1 across the day. Because the elevation is continuous rather than pulsatile, it departs from the body's natural GH rhythm more than the injectable secretagogues.",
             whatToExpect: "Users very commonly report a big appetite increase, deeper sleep, water retention (fuller look), and slow body-composition changes over months. It was studied in humans for conditions like frailty and muscle wasting.",
@@ -407,6 +416,7 @@ public enum CompoundProfiles {
             compoundID: CompoundCatalog.pt141.id,
             goals: [.sexualHealth],
             tagline: "FDA-approved melanocortin agonist for low sexual desire.",
+            safetyFlag: "Can transiently raise blood pressure and lower heart rate — the label cautions against use with uncontrolled hypertension or known cardiovascular disease.",
             whatItIs: "PT-141 (bremelanotide, brand Vyleesi) is a melanocortin-receptor agonist that acts on the brain's arousal pathways — not on blood flow like Viagra. It's FDA-approved for premenopausal women with hypoactive sexual desire disorder (HSDD), and used off-label more broadly.",
             howItWorks: "It activates melanocortin receptors (mainly MC4R) in the central nervous system, influencing sexual desire centrally. Because it's brain-mediated rather than vascular, it works differently from PDE5 inhibitors.",
             whatToExpect: "Increased sexual desire/arousal, typically taken before anticipated activity. Onset is roughly within a couple of hours. Nausea and flushing are common enough to be expected rather than surprising.",
@@ -446,6 +456,7 @@ public enum CompoundProfiles {
             compoundID: CompoundCatalog.melanotan2.id,
             goals: [.skinAndHair, .sexualHealth],
             tagline: "Tanning/libido peptide with real safety concerns — not approved.",
+            safetyFlag: "Can darken and change existing moles. New or changing moles are exactly the melanoma warning sign — dermatologists advise skin/mole monitoring while using it.",
             whatItIs: "Melanotan II (MT-2) is a non-selective melanocortin agonist used to darken skin (tanning) and, as a side effect, boost libido. It's not approved anywhere, and it's the compound behind most \"peptide tanning\" content.",
             howItWorks: "It activates multiple melanocortin receptors — MC1R drives melanin production (tanning), while MC4R activity explains the libido effect and much of the nausea. Being non-selective is exactly why it has more side effects than PT-141.",
             whatToExpect: "Users report noticeable tanning (especially with UV exposure) within weeks, appetite suppression, and spontaneous erections/libido. Nausea and facial flushing are near-universal early on.",

@@ -11,14 +11,44 @@ struct CompoundsView: View {
     @State private var search = ""
     /// Goal-based browse is the primary axis ("what am I trying to do?"). nil = all goals.
     @State private var selectedGoal: CompoundGoal?
+    /// Evidence-grade facet (the third filter alongside goal + class-grouping). nil = all grades.
+    @State private var selectedTier: EvidenceTier?
     @State private var showLegend = false
     @State private var showAdd = false
 
     private var query: String { search.trimmingCharacters(in: .whitespaces).lowercased() }
 
-    /// Alphabetical, filtered by search text and (optionally) the selected goal.
+    /// Class order for grouping — mirrors the catalog's own ordering so the library reads the same
+    /// way every time. Blends never appear here (catalog is single-compound), but kept for totality.
+    private let classOrder: [CompoundCategory] = [
+        .glp1, .growthHormoneSecretagogue, .healingRecovery, .cosmeticLongevity, .metabolic, .blend,
+    ]
+
     private var results: [Compound] {
-        CompoundCatalog.allSorted.filter { matchesQuery($0) && matchesGoal($0) }
+        CompoundCatalog.allSorted.filter { matchesQuery($0) && matchesGoal($0) && matchesTier($0) }
+    }
+
+    /// Library grouped by class, best-evidence-first within each class (Examine's matrix logic).
+    private var grouped: [(category: CompoundCategory, compounds: [Compound])] {
+        let items = results
+        return classOrder.compactMap { cat in
+            let inCat = items.filter { $0.category == cat }.sorted(by: byEvidenceThenName)
+            return inCat.isEmpty ? nil : (cat, inCat)
+        }
+    }
+
+    private func byEvidenceThenName(_ a: Compound, _ b: Compound) -> Bool {
+        let ra = tierRank(a.evidenceTier), rb = tierRank(b.evidenceTier)
+        if ra != rb { return ra < rb }
+        return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+    }
+    private func tierRank(_ t: EvidenceTier) -> Int {
+        switch t {
+        case .fdaApproved: return 0
+        case .humanTrialsUnapproved: return 1
+        case .preclinicalOrFailed: return 2
+        case .precursorOffLabel: return 3
+        }
     }
 
     private func matchesQuery(_ c: Compound) -> Bool {
@@ -32,63 +62,59 @@ struct CompoundsView: View {
         guard let goal = selectedGoal else { return true }
         return CompoundProfiles.goals(for: c).contains(goal)
     }
+    private func matchesTier(_ c: Compound) -> Bool { selectedTier == nil || c.evidenceTier == selectedTier }
 
     private var customResults: [CustomCompound] {
-        // Custom compounds carry no authored goals — hide them when a goal filter is active.
-        guard selectedGoal == nil else { return [] }
+        // Custom compounds carry no authored goals or evidence grade — hide them when either facet
+        // is active (they'd never legitimately match).
+        guard selectedGoal == nil, selectedTier == nil else { return [] }
         guard !query.isEmpty else { return custom }
         return custom.filter { $0.name.lowercased().contains(query) || $0.categoryRaw.lowercased().contains(query) }
     }
+
+    private var isFiltering: Bool { selectedGoal != nil || selectedTier != nil || !query.isEmpty }
+    private var resultCount: Int { results.count + customResults.count }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
                 searchBar
                 goalFilterBar
+                filterSummary
 
-                if !customResults.isEmpty {
-                    SectionHeader(title: "Your compounds")
-                    ForEach(customResults, id: \.id) { cc in
-                        NavigationLink { CompoundDetailView(compound: cc.asCompound, isCustom: true) } label: {
-                            CompoundRow(compound: cc.asCompound, isCustom: true)
-                        }
-                        .buttonStyle(PressableStyle())
-                        .contextMenu {
-                            Button(role: .destructive) { context.delete(cc); try? context.save() } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-                    if !results.isEmpty { SectionHeader(title: "Library") }
-                }
-
-                if results.isEmpty && customResults.isEmpty {
+                if resultCount == 0 {
                     Card {
                         Text(emptyMessage)
                             .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 } else {
-                    ForEach(results, id: \.id) { compound in
-                        NavigationLink { CompoundDetailView(compound: compound) } label: {
-                            CompoundRow(compound: compound)
+                    if !customResults.isEmpty {
+                        SectionHeader(title: "Your compounds")
+                        ForEach(customResults, id: \.id) { cc in
+                            NavigationLink { CompoundDetailView(compound: cc.asCompound, isCustom: true) } label: {
+                                CompoundRow(compound: cc.asCompound, isCustom: true)
+                            }
+                            .buttonStyle(PressableStyle())
+                            .contextMenu {
+                                Button(role: .destructive) { context.delete(cc); try? context.save() } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
-                        .buttonStyle(PressableStyle())
+                    }
+                    ForEach(grouped, id: \.category) { group in
+                        SectionHeader(title: group.category.displayName)
+                        ForEach(group.compounds) { compound in
+                            NavigationLink { CompoundDetailView(compound: compound) } label: {
+                                CompoundRow(compound: compound)
+                            }
+                            .buttonStyle(PressableStyle())
+                        }
                     }
                 }
 
-                Button { showAdd = true } label: {
-                    HStack {
-                        Image(systemName: "plus.circle.fill").foregroundStyle(BrandColor.accentText)
-                        Text("Add your own compound").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
-                    }
-                    .padding(Space.lg)
-                    .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(BrandColor.stroke, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
+                addYourOwnButton
             }
             .padding(Space.lg)
         }
@@ -104,7 +130,7 @@ struct CompoundsView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { showLegend = true } label: { Image(systemName: "questionmark.circle") }
                     .tint(BrandColor.accentText)
-                    .accessibilityLabel("What the tiers and labels mean")
+                    .accessibilityLabel("What the grades and labels mean")
             }
         }
         .sheet(isPresented: $showLegend) { CompoundLegendView() }
@@ -112,7 +138,7 @@ struct CompoundsView: View {
     }
 
     private var searchBar: some View {
-        SearchField(placeholder: "Search compounds", text: $search)
+        SearchField(placeholder: "Search by name or alias (e.g. “sema”)", text: $search)
     }
 
     /// Browse by goal — a horizontal chip rail, "All goals" first. Tapping the active chip clears it.
@@ -134,11 +160,67 @@ struct CompoundsView: View {
         .sensoryFeedback(.selection, trigger: selectedGoal)
     }
 
-    private var emptyMessage: String {
-        if let goal = selectedGoal, query.isEmpty {
-            return "No compounds tagged “\(goal.displayName)” yet. Clear the goal filter to see the full library."
+    /// Result count + active-facet summary + a grade menu + Clear (faceted-filter best practice:
+    /// always show how many match and what's applied).
+    private var filterSummary: some View {
+        HStack(spacing: Space.md) {
+            Text("\(resultCount) compound\(resultCount == 1 ? "" : "s")\(activeFilterSuffix)")
+                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                .lineLimit(1).minimumScaleFactor(0.85)
+            Spacer(minLength: Space.sm)
+            gradeMenu
+            if isFiltering {
+                Button("Clear") { search = ""; selectedGoal = nil; selectedTier = nil }
+                    .font(.caption.weight(.semibold))
+                    .tint(BrandColor.accentText)
+            }
         }
-        return "No compounds match “\(search)”. Try a different name, clear the goal filter, or add your own below."
+    }
+
+    private var gradeMenu: some View {
+        Menu {
+            Button { selectedTier = nil } label: {
+                Label("All grades", systemImage: selectedTier == nil ? "checkmark" : "")
+            }
+            ForEach(EvidenceTier.allCases, id: \.self) { tier in
+                Button { selectedTier = tier } label: {
+                    Label("\(tier.letter) · \(tier.shortLabel)", systemImage: selectedTier == tier ? "checkmark" : "")
+                }
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                Text(selectedTier == nil ? "Grade" : "Grade \(selectedTier!.letter)")
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(BrandColor.accentText)
+        }
+    }
+
+    private var activeFilterSuffix: String {
+        var parts: [String] = []
+        if let g = selectedGoal { parts.append(g.displayName) }
+        if let t = selectedTier { parts.append("Grade \(t.letter)") }
+        return parts.isEmpty ? "" : " · " + parts.joined(separator: " · ")
+    }
+
+    private var addYourOwnButton: some View {
+        Button { showAdd = true } label: {
+            HStack {
+                Image(systemName: "plus.circle.fill").foregroundStyle(BrandColor.accentText)
+                Text("Add your own compound").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
+            }
+            .padding(Space.lg)
+            .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(BrandColor.stroke, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var emptyMessage: String {
+        "No compounds match your filters. Try a different name, or clear the goal and grade filters to see the full library."
     }
 }
 
@@ -152,8 +234,8 @@ struct CompoundLegendView: View {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     Card {
                         VStack(alignment: .leading, spacing: Space.md) {
-                            SectionHeader(title: "Evidence tiers")
-                            Text("How much human evidence backs a compound. Higher tiers mean stronger proof it works and is safe in people.")
+                            SectionHeader(title: "Evidence grades")
+                            Text("The grade rates how much you can trust that a compound works and is safe in people — the strength of the research, not how big the effect is or whether you should take it. Strong evidence can back a small effect, and a high grade is never a recommendation.")
                                 .font(.caption).foregroundStyle(BrandColor.textSecondary)
                             tierRow(.fdaApproved, "Approved by the FDA for use in people — the strongest evidence.")
                             tierRow(.humanTrialsUnapproved, "Studied in human trials, but not FDA-approved.")
@@ -261,9 +343,19 @@ struct CompoundRow: View {
 /// (what it is → what to expect → evidence → doses seen → route → timing → side effects →
 /// stacking → storage → misconceptions), then regulatory notes and an educational footer.
 /// Sections render only when authored, so not-yet-profiled compounds still show cleanly.
+/// The individual compound page. Structured to the community's own task-timeline (r/tirzecompound
+/// wiki), front-loaded per NN/g, and mobile-navigable via "accordion = table of contents": the
+/// identity, at-a-glance, any safety flag, and the plain "what it does" answer are always visible;
+/// everything deeper is a scent-bearing accordion (dosing default-open), so a mostly-collapsed page
+/// is scannable and each header answers a quick question on its own.
 struct CompoundDetailView: View {
     let compound: Compound
     var isCustom: Bool = false
+
+    /// Which accordions are open. Owned here so it defaults sensibly and persists for the session.
+    @State private var expanded: Set<String> = ["dosing"]
+    @State private var showCalculator = false
+    @State private var showLegend = false
 
     private var profile: CompoundProfile? { isCustom ? nil : CompoundProfiles.profile(for: compound) }
     private var goals: [CompoundGoal] { isCustom ? [] : CompoundProfiles.goals(for: compound) }
@@ -274,11 +366,17 @@ struct CompoundDetailView: View {
                 header
                 if !goals.isEmpty { goalRow }
                 atAGlance
-                if let p = profile { profileSections(p) }
-                if !compound.notes.isEmpty { notesSection }
+                if let flag = profile?.safetyFlag { safetyStrip(flag) }
+
+                if let p = profile {
+                    profileSections(p)
+                }
+                notesBlock
+
                 if isCustom {
                     DisclaimerBanner(text: Self.customCompoundNote, systemImage: "exclamationmark.triangle")
                 } else {
+                    relatedSection
                     footer
                 }
             }
@@ -287,9 +385,17 @@ struct CompoundDetailView: View {
         .screenBackground()
         .navigationTitle(compound.name)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showCalculator) {
+            NavigationStack {
+                ReconstitutionCalculatorView()
+                    .navigationTitle("Dose calculator")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+        .sheet(isPresented: $showLegend) { CompoundLegendView() }
     }
 
-    // MARK: Header
+    // MARK: Always-visible top
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
@@ -303,6 +409,7 @@ struct CompoundDetailView: View {
                     TagChip(text: "Custom", color: BrandColor.accentText)
                 } else {
                     EvidenceBadge(tier: compound.evidenceTier)
+                    TagChip(text: regulatoryShort, color: regulatoryColor)
                     if compound.wadaProhibited { TagChip(text: "WADA", color: BrandColor.warning) }
                 }
             }
@@ -327,12 +434,12 @@ struct CompoundDetailView: View {
     private var atAGlance: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
-                detailRow("Category", compound.category.displayName)
+                detailRow("Class", compound.category.displayName)
                 if isCustom {
                     detailRow("Source", "Added by you")
                 } else {
                     detailRow("Regulatory status", regulatoryLabel)
-                    detailRow("Evidence", compound.evidenceTier.label)
+                    detailRow("Evidence", "\(compound.evidenceTier.letter) · \(compound.evidenceTier.shortLabel)")
                 }
                 if let h = compound.halfLifeHours { detailRow("Half-life", halfLifeLong(h)) }
                 detailRow("Dosed in", compound.preferredDoseUnit.rawValue)
@@ -340,44 +447,116 @@ struct CompoundDetailView: View {
         }
     }
 
-    // MARK: Authored sections
-
-    @ViewBuilder private func profileSections(_ p: CompoundProfile) -> some View {
-        prose("What it is", [p.whatItIs, p.howItWorks])
-        prose("What to expect", [p.whatToExpect])
-        prose("Evidence & research", [p.evidenceSummary])
-        dosingSection(p)
-        prose("Route & injection site", [p.route])
-        prose("Timing", [p.timing])
-        prose("Side effects & when to stop", [p.sideEffects])
-        prose("How it's stacked", [p.stacking])
-        prose("Storage & handling", [p.storageHandling])
-        misconceptionsSection(p)
+    private func safetyStrip(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: Space.sm) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(BrandColor.warning)
+            Text(text).font(.footnote).foregroundStyle(BrandColor.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(Space.md)
+        .background(BrandColor.warning.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 
-    /// A titled block of one or more paragraphs; renders nothing if every paragraph is empty/nil.
-    @ViewBuilder private func prose(_ title: String, _ paragraphs: [String?]) -> some View {
-        let items = paragraphs.compactMap { $0 }.filter { !$0.isEmpty }
-        if !items.isEmpty {
+    // MARK: Authored sections (plain answer visible, the rest as accordions)
+
+    @ViewBuilder private func profileSections(_ p: CompoundProfile) -> some View {
+        if let what = p.whatItIs, !what.isEmpty {
             VStack(alignment: .leading, spacing: Space.sm) {
-                SectionHeader(title: title)
-                ForEach(Array(items.enumerated()), id: \.offset) { _, text in
-                    Text(text).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                SectionHeader(title: "What it does")
+                proseText(what)
+            }
+        }
+        if let m = p.howItWorks, !m.isEmpty {
+            disclosure("mechanism", "How it works", scent: "The pharmacology, in brief") { proseText(m) }
+        }
+        if p.dosingStudied != nil || p.dosingCommunity != nil {
+            disclosure("dosing", "Reported dosing", scent: "Studied vs community — not a prescription") { dosingBody(p) }
+        }
+        if let s = p.sideEffects, !s.isEmpty {
+            disclosure("sides", "Side effects & when to stop", scent: "Common vs serious — and the red flags") { proseText(s) }
+        }
+        if let e = p.whatToExpect, !e.isEmpty {
+            disclosure("expect", "What to expect", scent: "Timeline, and expectations vs reality") { proseText(e) }
+        }
+        if let ev = p.evidenceSummary, !ev.isEmpty {
+            disclosure("evidence", "Evidence & research",
+                       scent: "Why it's graded \(compound.evidenceTier.letter) · \(compound.evidenceTier.shortLabel)") { evidenceBody(ev) }
+        }
+        if let r = p.route, !r.isEmpty {
+            disclosure("route", "Route & injection site", scent: "How and where it's given") { proseText(r) }
+        }
+        if let t = p.timing, !t.isEmpty {
+            disclosure("timing", "Timing", scent: "Half-life and when it's taken") { proseText(t) }
+        }
+        if let st = p.storageHandling, !st.isEmpty {
+            disclosure("storage", "Storage & beyond-use", scent: "Fridge, light, and the 28-day window") { proseText(st) }
+        }
+        // Vendor-neutral sourcing literacy — the community's #2 question, and PinWise's differentiator
+        // from the vendor-shilling reference sites. Shared content; shown for every catalog compound.
+        disclosure("legit", "How to tell it's legit", scent: "Reading a COA — no sellers named") { proseText(Self.coaLiteracy) }
+        if let stk = p.stacking, !stk.isEmpty {
+            disclosure("stack", "Stacking", scent: "What it's commonly combined with") { proseText(stk) }
+        }
+        if !p.misconceptions.isEmpty {
+            disclosure("myths", "Common misconceptions", scent: "Myths, corrected") { misconceptionsBody(p) }
+        }
+    }
+
+    @ViewBuilder private var notesBlock: some View {
+        if !compound.notes.isEmpty {
+            if profile == nil || isCustom {
+                VStack(alignment: .leading, spacing: Space.sm) {
+                    SectionHeader(title: isCustom ? "Notes" : "Regulatory & notes")
+                    proseText(compound.notes)
                 }
+            } else {
+                disclosure("notes", "Regulatory & notes", scent: "Status, corrections, and caveats") { proseText(compound.notes) }
             }
         }
     }
 
-    @ViewBuilder private func dosingSection(_ p: CompoundProfile) -> some View {
-        if p.dosingStudied != nil || p.dosingCommunity != nil {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                SectionHeader(title: "Typical doses seen")
-                if let s = p.dosingStudied { labeledDose("In studies / on the label", s) }
-                if let c = p.dosingCommunity { labeledDose("Reported by the community", c) }
-                Text("These are ranges reported in research or by users — not a recommendation or a prescription. You always set your own dose, ideally with a clinician. Use the reconstitution calculator to turn a target dose into syringe units.")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+    private func dosingBody(_ p: CompoundProfile) -> some View {
+        VStack(alignment: .leading, spacing: Space.md) {
+            if let s = p.dosingStudied { labeledDose("In studies / on the label", s) }
+            if let c = p.dosingCommunity { labeledDose("Reported by the community", c) }
+            // The community's #1 misconception, taught inline: units are volume, not dose.
+            Text("Units are volume, not dose — how much you draw depends on your vial's concentration. The calculator turns a target dose into exact syringe units for your vial.")
+                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button { showCalculator = true } label: {
+                Label("Open dose calculator", systemImage: "syringe.fill")
+                    .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+            }
+            Text("Reported ranges, not a recommendation. You set your own dose — ideally with a clinician.")
+                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func evidenceBody(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            HStack(spacing: Space.sm) {
+                EvidenceBadge(tier: compound.evidenceTier)
+                Text(compound.evidenceTier.label).font(.caption).foregroundStyle(BrandColor.textSecondary)
+            }
+            proseText(text)
+            Button { showLegend = true } label: {
+                Label("What do the grades mean?", systemImage: "info.circle")
+                    .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+            }
+        }
+    }
+
+    private func misconceptionsBody(_ p: CompoundProfile) -> some View {
+        VStack(alignment: .leading, spacing: Space.md) {
+            ForEach(Array(p.misconceptions.enumerated()), id: \.offset) { _, m in
+                HStack(alignment: .top, spacing: Space.sm) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.caption).foregroundStyle(BrandColor.mint).padding(.top, 2)
+                    Text(m).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -392,27 +571,36 @@ struct CompoundDetailView: View {
         }
     }
 
-    @ViewBuilder private func misconceptionsSection(_ p: CompoundProfile) -> some View {
-        if !p.misconceptions.isEmpty {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                SectionHeader(title: "Common misconceptions")
-                ForEach(Array(p.misconceptions.enumerated()), id: \.offset) { _, m in
-                    HStack(alignment: .top, spacing: Space.sm) {
-                        Image(systemName: "checkmark.seal")
-                            .font(.caption).foregroundStyle(BrandColor.mint).padding(.top, 2)
-                        Text(m).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-        }
+    // MARK: Related + footer
+
+    private var relatedCompounds: [Compound] {
+        CompoundCatalog.allSorted.filter { $0.category == compound.category && $0.id != compound.id }
     }
 
-    private var notesSection: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            SectionHeader(title: profile == nil ? "Notes" : "Regulatory & notes")
-            Text(compound.notes).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+    @ViewBuilder private var relatedSection: some View {
+        let related = Array(relatedCompounds.prefix(6))
+        if !related.isEmpty {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                SectionHeader(title: "Often compared with")
+                ForEach(related) { c in
+                    NavigationLink { CompoundDetailView(compound: c) } label: {
+                        Card {
+                            HStack(spacing: Space.sm) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(c.name).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                                    if let t = CompoundProfiles.profile(for: c)?.tagline {
+                                        Text(t).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                                    }
+                                }
+                                Spacer(minLength: Space.sm)
+                                EvidenceBadge(tier: c.evidenceTier, compact: true)
+                                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(PressableStyle())
+                }
+            }
         }
     }
 
@@ -428,14 +616,50 @@ struct CompoundDetailView: View {
 
     // MARK: Helpers
 
+    /// A caller-state accordion for one section. Renders nothing extra when the id isn't in
+    /// `expanded`; toggling flips it (multi-open allowed, choice persists for the session).
+    private func disclosure<C: View>(_ id: String, _ title: String, scent: String? = nil,
+                                     @ViewBuilder content: @escaping () -> C) -> some View {
+        DisclosureSection(
+            title: title,
+            scent: scent,
+            isExpanded: expanded.contains(id),
+            toggle: { if expanded.contains(id) { expanded.remove(id) } else { expanded.insert(id) } },
+            content: content
+        )
+    }
+
+    private func proseText(_ t: String) -> some View {
+        Text(t).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
     /// The one place a strong warning stays by design: compounds the user added themselves.
     static let customCompoundNote = "You're adding this compound yourself, so PinWise has no verified data on it. Confirm its identity, purity, and handling against your supplier's certificate of analysis. PinWise makes no assurances for user-added compounds and takes no responsibility for them."
+
+    /// Vendor-neutral certificate-of-analysis literacy — shared across compounds. Deliberately names
+    /// no seller (the trust-killer on commercial peptide sites); teaches what a real COA shows.
+    static let coaLiteracy = "A certificate of analysis (COA) is a third-party lab report on a specific batch. A trustworthy one names an independent lab (not the seller), lists the batch/lot number, and reports identity and purity — typically by mass spectrometry (confirms it's the right molecule) and HPLC (reports % purity, ideally ≥98%). Match the lot on the COA to the lot on your vial; a COA for a different batch tells you nothing about yours. Be skeptical of a bare \"99% pure\" claim with no lab named, no method, and no date. PinWise names no vendors and does not verify supply — this is general literacy so you can read a COA yourself."
 
     private var regulatoryLabel: String {
         switch compound.regulatoryStatus {
         case .fdaApproved: return "FDA-approved"
         case .compoundedOnly: return "Compounded only"
         case .researchOnly: return "Research only"
+        }
+    }
+    private var regulatoryShort: String {
+        switch compound.regulatoryStatus {
+        case .fdaApproved: return "FDA-approved"
+        case .compoundedOnly: return "Compounded"
+        case .researchOnly: return "Research only"
+        }
+    }
+    private var regulatoryColor: Color {
+        switch compound.regulatoryStatus {
+        case .fdaApproved: return BrandColor.success
+        case .compoundedOnly: return BrandColor.warning
+        case .researchOnly: return BrandColor.textSecondary
         }
     }
     private func detailRow(_ key: String, _ value: String) -> some View {
