@@ -1,6 +1,25 @@
 import SwiftUI
 import SwiftData
+import SafariServices
 import PeptideKit
+
+/// A source link tapped in an article — drives the in-app browser sheet (Identifiable for .sheet(item:)).
+private struct WebLink: Identifiable { let url: URL; var id: String { url.absoluteString } }
+
+/// In-app browser (SFSafariViewController) presented as a bottom sheet, so reading a source never
+/// kicks the user out to Safari. Keeps PinWise's reading flow intact.
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let config = SFSafariViewController.Configuration()
+        config.entersReaderIfAvailable = true
+        let vc = SFSafariViewController(url: url, configuration: config)
+        vc.preferredControlTintColor = UIColor(BrandColor.accent)
+        vc.dismissButtonStyle = .close
+        return vc
+    }
+    func updateUIViewController(_ vc: SFSafariViewController, context: Context) {}
+}
 
 // The News tab — PinWise as the hub for sources of truth on peptides and performance medicine.
 // Editorial layout (Apple-News style): a masthead, search + category filters, a popular lead
@@ -430,6 +449,7 @@ struct NewsRow: View {
 /// fuller summary → tappable sources → per-item disclaimer.
 struct NewsDetailView: View {
     let item: NewsItem
+    @State private var webLink: WebLink?
 
     var body: some View {
         ScrollView {
@@ -484,14 +504,16 @@ struct NewsDetailView: View {
                 VStack(alignment: .leading, spacing: Space.sm) {
                     ForEach(item.sources) { source in
                         if let url = URL(string: source.url) {
-                            Link(destination: url) {
+                            Button { webLink = WebLink(url: url) } label: {
                                 HStack(spacing: Space.sm) {
                                     Image(systemName: "link").foregroundStyle(BrandColor.accentText)
                                     Text(source.name).foregroundStyle(BrandColor.accentText)
                                     Spacer()
                                     Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
                                 }
+                                .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -505,6 +527,8 @@ struct NewsDetailView: View {
             .padding(Space.lg)
         }
         .screenBackground()
+        // Sources open in an in-app browser sheet — the user stays inside PinWise.
+        .sheet(item: $webLink) { SafariView(url: $0.url).ignoresSafeArea() }
         .navigationTitle("Article")
         .navigationBarTitleDisplayMode(.inline)
     }
