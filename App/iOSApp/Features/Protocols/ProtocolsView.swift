@@ -3,7 +3,8 @@ import SwiftData
 import PeptideKit
 
 /// The Stack tab: your vials and your protocols (a "Your vials / Your protocols" segmented
-/// control, vials default), plus a link into the compound library under Your vials.
+/// control), plus a link into the compound library under Your vials. Landing panel is
+/// data-backed: vials for onboarding (no protocols yet), protocols once you have one.
 struct ProtocolsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
@@ -11,7 +12,8 @@ struct ProtocolsView: View {
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var logs: [LoggedDose]
     @State private var showBuilder = false
     @State private var editTarget: EditTarget?
-    @State private var panel: Panel = .inventory   // vials lead — protocols schedule from them
+    @State private var panel: Panel = .inventory
+    @State private var didSetInitialPanel = false
     private enum Panel: Hashable { case inventory, protocols }
     /// Identifiable wrapper so a tapped protocol can drive `.sheet(item:)` without relying on
     /// the model's own identity semantics.
@@ -45,11 +47,19 @@ struct ProtocolsView: View {
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showBuilder) { ProtocolBuilderView() }
             .sheet(item: $editTarget) { ProtocolBuilderView(editing: $0.proto) }
-            // Consume a one-shot deep-link (e.g. Home's "Your protocols" card) targeting a panel.
+            // Consume a one-shot deep-link (e.g. Home's "Your protocols" card) targeting a panel, else
+            // pick the data-backed default landing: onboarding (no protocols yet) opens on Your vials —
+            // the vial→protocol pipeline — but once you have a protocol you're a returning user
+            // checking what you're running, so open on Your protocols. Set once, so a manual switch
+            // sticks for the session.
             .onAppear {
                 if UserDefaults.standard.string(forKey: "stackRequestedPanel") == "protocols" {
                     panel = .protocols
                     UserDefaults.standard.removeObject(forKey: "stackRequestedPanel")
+                    didSetInitialPanel = true
+                } else if !didSetInitialPanel {
+                    panel = active.isEmpty ? .inventory : .protocols
+                    didSetInitialPanel = true
                 }
             }
         }
