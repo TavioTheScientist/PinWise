@@ -24,8 +24,8 @@ const CATEGORIES = new Set(["Trial results", "Regulatory", "Safety", "New compou
 const KINDS = new Set(["trial", "journal", "preprint", "regulatory", "news"]);
 // Compounds worth covering in news that are intentionally NOT in the on-device catalog.
 const EXTRA_COMPOUNDS = new Set(["Orforglipron"]);
-const TEASER_WARN = 100; // editorial target
-const TEASER_MAX = 110; // hard ceiling (matches pk-verify)
+const TEASER_WARN = 130; // editorial target — keep teasers tight when it doesn't force a mid-sentence cut
+const TEASER_MAX = 180; // hard ceiling — high enough that a complete key-finding sentence is never cropped (matches pk-verify)
 // Neutrality lint — the app informs, it never recommends or hypes.
 const HYPE = [
   /\bmiracle\b/i, /\bcure[sd]?\b/i, /\bguarantee/i, /\bbreakthrough\b/i,

@@ -422,7 +422,7 @@ do {
     check(Set(feed.items.map(\.id)).count == feed.items.count, "item ids are unique")
     // Editorial: every item now ships a crafted, scannable teaser (drives list/card copy).
     check(feed.items.allSatisfy { $0.teaser != nil }, "EVERY item carries a teaser")
-    check(feed.items.allSatisfy { ($0.teaser?.count ?? 0) <= 110 }, "every teaser is ≤110 chars")
+    check(feed.items.allSatisfy { ($0.teaser?.count ?? 0) <= 180 }, "every teaser is ≤180 chars (complete sentence, never cropped)")
     // The bundled sample omits imageURL app-wide (branded-gradient fallback is the premium look).
     check(feed.items.allSatisfy { $0.imageURL == nil }, "sample omits imageURL (uses gradient fallback)")
 
