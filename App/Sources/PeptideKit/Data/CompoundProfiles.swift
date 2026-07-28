@@ -133,7 +133,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.semaglutide.id,
             goals: [.fatLoss],
-            tagline: "The best-studied GLP-1 for weight loss and type 2 diabetes.",
+            tagline: "A GLP-1 agonist for weight loss and type 2 diabetes.",
             safetyFlag: "Boxed warning for thyroid C-cell tumors — do not use with a personal or family history of medullary thyroid carcinoma or MEN 2. Stop and seek care for severe, persistent abdominal pain (possible pancreatitis).",
             whatItIs: "Semaglutide is a GLP-1 receptor agonist — a lab-made copy of a gut hormone your body already releases after eating. It's the active drug in Ozempic and Rybelsus (diabetes) and Wegovy (weight loss). It's one of the very few compounds in this library that is FDA-approved and backed by large, multi-year human trials.",
             howItWorks: "It mimics GLP-1, a hormone released by the gut after meals. That slows how fast the stomach empties, tells the brain you're full sooner, and prompts the pancreas to release insulin only when blood sugar is high. The net effect is less hunger, smaller portions, and better blood-sugar control.",
@@ -156,7 +156,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.tirzepatide.id,
             goals: [.fatLoss],
-            tagline: "Dual GIP/GLP-1 agonist — the most effective approved weight-loss drug to date.",
+            tagline: "A dual GIP/GLP-1 agonist for weight loss and type 2 diabetes.",
             safetyFlag: "Boxed warning for thyroid C-cell tumors — do not use with a personal or family history of medullary thyroid carcinoma or MEN 2. Stop and seek care for severe, persistent abdominal pain (possible pancreatitis).",
             whatItIs: "Tirzepatide is a \"twincretin\": it activates two gut-hormone receptors (GIP and GLP-1) instead of one. It's the active drug in Mounjaro (diabetes) and Zepbound (weight loss), and in head-to-head data it produces more weight loss than semaglutide.",
             howItWorks: "It's a dual agonist of the GIP and GLP-1 receptors. GLP-1 activation slows gastric emptying and curbs appetite; adding GIP activation appears to improve how the body handles fat and sugar and may blunt nausea somewhat. Together they drive stronger appetite suppression and metabolic effect than a GLP-1 alone.",
@@ -178,7 +178,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.retatrutide.id,
             goals: [.fatLoss],
-            tagline: "Investigational triple agonist showing the largest trial weight loss yet.",
+            tagline: "A triple GIP/GLP-1/glucagon agonist for weight loss.",
             whatItIs: "Retatrutide is an experimental \"triple G\" agonist — it hits GLP-1, GIP, and glucagon receptors. It is NOT FDA-approved. Phase 2 data drew huge attention for weight loss beyond what tirzepatide showed, and Phase 3 (TRIUMPH) is underway.",
             howItWorks: "Adds glucagon-receptor activation on top of the GIP/GLP-1 combo. Glucagon signaling can increase energy expenditure and mobilize liver fat, which may explain the larger effect seen in early trials — but also introduces effects (like heart-rate changes) still being characterized.",
             whatToExpect: "In Phase 2: up to ~24% average weight loss at 48 weeks at the highest dose — the largest reported for an incretin-class drug so far. Everything beyond Phase 2 is still being established; long-term safety is not yet known.",
@@ -198,7 +198,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.cagrilintide.id,
             goals: [.fatLoss],
-            tagline: "Long-acting amylin analog, usually studied alongside semaglutide.",
+            tagline: "A long-acting amylin analog, often paired with semaglutide.",
             whatItIs: "Cagrilintide is a long-acting analog of amylin, a hormone co-released with insulin that promotes fullness. It's investigational and best known as the partner to semaglutide in the combination \"CagriSema.\"",
             howItWorks: "Amylin slows gastric emptying and increases satiety through a different pathway than GLP-1. Pairing the two hits appetite from two angles, which is the rationale behind CagriSema.",
             whatToExpect: "On its own it produces moderate weight loss; combined with semaglutide the effect is larger in trials. Still investigational, so durable and long-term outcomes are not settled.",
@@ -217,7 +217,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.liraglutide.id,
             goals: [.fatLoss],
-            tagline: "The original daily GLP-1 — approved, but eclipsed by weekly agents.",
+            tagline: "A once-daily GLP-1 agonist for weight loss and diabetes.",
             whatItIs: "Liraglutide is an FDA-approved GLP-1 agonist (Saxenda for weight, Victoza for diabetes). It was the first of its kind for obesity and is dosed once daily rather than weekly.",
             howItWorks: "Same GLP-1 mechanism as semaglutide — slows gastric emptying, curbs appetite, improves insulin response — but with a much shorter half-life, hence daily dosing.",
             whatToExpect: "In trials: roughly 5–8% average weight loss — real, but less than the newer weekly drugs. Appetite effect is felt within days.",
@@ -236,7 +236,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.bpc157.id,
             goals: [.recovery, .muscleAndGH],
-            tagline: "The community's go-to \"healing\" peptide — popular, but thin on human proof.",
+            tagline: "A peptide used for tendon, joint, and gut recovery.",
             whatItIs: "BPC-157 (\"Body Protection Compound\") is a synthetic peptide derived from a protein found in stomach juice. It's the most-hyped recovery peptide online, used in hopes of speeding tendon, ligament, muscle, and gut healing. Important: the human evidence is very limited.",
             howItWorks: "In animal studies it appears to promote angiogenesis (new blood-vessel growth) and modulate growth-factor and nitric-oxide pathways, which could plausibly aid tissue repair. These mechanisms are largely worked out in rodents, not people.",
             whatToExpect: "Users widely report faster recovery from tendon/joint injuries and gut relief, often within 1–2 weeks. But there is no completed controlled human trial demonstrating this — the enthusiasm runs far ahead of the data, and placebo/natural-healing effects are impossible to rule out from anecdotes.",
@@ -257,7 +257,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.tb500.id,
             goals: [.recovery],
-            tagline: "A thymosin β-4 fragment used for recovery — often confused with the full protein.",
+            tagline: "A thymosin β-4 fragment used for recovery and repair.",
             whatItIs: "TB-500 is a synthetic fragment (Ac-LKKTETQ) of the natural protein thymosin β-4. It's used alongside BPC-157 in \"healing\" stacks. A key correction: TB-500 is NOT the full thymosin β-4 protein, though the two are often sold interchangeably.",
             howItWorks: "The fragment is thought to influence actin regulation and cell migration, which in theory supports tissue repair and reduced inflammation. As with BPC-157, this is preclinical reasoning, not human-proven.",
             whatToExpect: "Users report improved recovery and reduced injury pain over a few weeks, often stacked with BPC-157. No controlled human trials back this.",
@@ -277,7 +277,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.bpc157Arginate.id,
             goals: [.recovery],
-            tagline: "A more-stable salt form of BPC-157 — same evidence base.",
+            tagline: "A more-stable salt form of BPC-157, used for recovery.",
             whatItIs: "BPC-157 arginate is the arginine-salt version of BPC-157, marketed as more stable in solution than the usual acetate form. Everything about its evidence and status is the same as standard BPC-157.",
             evidenceSummary: "Tier C — preclinical only, same as BPC-157. WADA-prohibited. The \"more stable\" claim is about shelf chemistry, not about efficacy.",
             storageHandling: standardStorage,
@@ -352,7 +352,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.tesamorelin.id,
             goals: [.fatLoss, .muscleAndGH],
-            tagline: "The only FDA-approved GHRH analog — studied for visceral fat.",
+            tagline: "A GHRH analog used to reduce visceral belly fat.",
             whatItIs: "Tesamorelin (Egrifta) is a stabilized GHRH analog and the ONLY FDA-approved molecule among the injectable peptide-stack compounds. It's approved to reduce excess visceral (deep belly) fat in HIV-associated lipodystrophy.",
             howItWorks: "Like other GHRH analogs it stimulates natural, pulsatile GH release, which in turn raises IGF-1 and preferentially mobilizes visceral fat. Being an approved drug, its pharmacology and safety are far better characterized than the research-only secretagogues.",
             whatToExpect: "In trials: a meaningful reduction in visceral adipose tissue over ~6 months, with IGF-1 rising as expected. Visceral (not subcutaneous) fat is the specific target.",
@@ -372,7 +372,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.sermorelin.id,
             goals: [.muscleAndGH, .recovery],
-            tagline: "The original GHRH(1-29) analog — long used in clinics, now off-market.",
+            tagline: "A GHRH(1-29) analog that prompts natural GH release.",
             whatItIs: "Sermorelin is a GHRH(1-29) analog — historically the branded product Geref, used clinically to test GH secretion and in anti-aging clinics. The brand was discontinued, but the molecule has real human PK data behind it.",
             howItWorks: "Stimulates natural pulsatile GH release from the pituitary, the same GHRH mechanism as the CJC-1295 family, but with a very short duration.",
             whatToExpect: "Users report sleep and recovery benefits over weeks. Being GHRH-based, it preserves the body's own feedback control of GH.",
@@ -415,7 +415,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.pt141.id,
             goals: [.sexualHealth],
-            tagline: "FDA-approved melanocortin agonist for low sexual desire.",
+            tagline: "A melanocortin agonist for low sexual desire.",
             safetyFlag: "Can transiently raise blood pressure and lower heart rate — the label cautions against use with uncontrolled hypertension or known cardiovascular disease.",
             whatItIs: "PT-141 (bremelanotide, brand Vyleesi) is a melanocortin-receptor agonist that acts on the brain's arousal pathways — not on blood flow like Viagra. It's FDA-approved for premenopausal women with hypoactive sexual desire disorder (HSDD), and used off-label more broadly.",
             howItWorks: "It activates melanocortin receptors (mainly MC4R) in the central nervous system, influencing sexual desire centrally. Because it's brain-mediated rather than vascular, it works differently from PDE5 inhibitors.",
@@ -436,7 +436,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.ghkCu.id,
             goals: [.skinAndHair, .longevity, .recovery],
-            tagline: "Copper peptide with strong TOPICAL evidence — injectable use is off-label.",
+            tagline: "A copper peptide for skin, hair, and recovery.",
             whatItIs: "GHK-Cu is a copper-binding tripeptide famous in skincare for collagen support, wound healing, and anti-aging. The critical caveat: nearly all the good human evidence is for TOPICAL GHK-Cu. Injecting it is off-label and essentially unstudied.",
             howItWorks: "GHK-Cu delivers copper and signals skin cells to remodel the extracellular matrix — boosting collagen/elastin and dampening inflammation in topical studies. Whether injection reproduces those localized skin effects systemically is unknown.",
             whatToExpect: "Topically: improved skin firmness, texture, and healing in controlled studies. Injected: users report skin/hair and recovery benefits, but there's no human trial support for the injectable route, and copper dosing systemically carries its own considerations.",
@@ -455,7 +455,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.melanotan2.id,
             goals: [.skinAndHair, .sexualHealth],
-            tagline: "Tanning/libido peptide with real safety concerns — not approved.",
+            tagline: "A melanocortin peptide used for tanning and libido.",
             safetyFlag: "Can darken and change existing moles. New or changing moles are exactly the melanoma warning sign — dermatologists advise skin/mole monitoring while using it.",
             whatItIs: "Melanotan II (MT-2) is a non-selective melanocortin agonist used to darken skin (tanning) and, as a side effect, boost libido. It's not approved anywhere, and it's the compound behind most \"peptide tanning\" content.",
             howItWorks: "It activates multiple melanocortin receptors — MC1R drives melanin production (tanning), while MC4R activity explains the libido effect and much of the nausea. Being non-selective is exactly why it has more side effects than PT-141.",
@@ -476,7 +476,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.nadPlus.id,
             goals: [.longevity],
-            tagline: "A cellular coenzyme (not a peptide) injected for energy/longevity.",
+            tagline: "A cellular coenzyme (not a peptide) used for energy and longevity.",
             whatItIs: "NAD+ (nicotinamide adenine dinucleotide) is a coenzyme every cell uses to make energy. It's injected or infused off-label for energy, \"anti-aging,\" and recovery. Correction: it's a dinucleotide, NOT a peptide — it just travels in the same wellness circles.",
             howItWorks: "NAD+ is central to mitochondrial energy production and to enzymes (sirtuins, PARPs) involved in DNA repair and aging pathways. Levels decline with age, which is the theory behind supplementing it — though whether injected NAD+ meaningfully raises functional cellular NAD+ is still debated.",
             whatToExpect: "Users report energy and mental-clarity effects. The most reliable, immediate experience is the discomfort of a fast push (see below). Robust human longevity outcomes are not established.",
@@ -495,7 +495,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.motsc.id,
             goals: [.longevity, .fatLoss],
-            tagline: "A mitochondrial-derived peptide studied (in animals) for metabolism.",
+            tagline: "A mitochondrial-derived peptide for metabolism and energy.",
             whatItIs: "MOTS-c is a small peptide encoded in mitochondrial DNA, studied for its role in metabolism and exercise response. It's marketed for fat loss and \"metabolic health,\" but the evidence is preclinical.",
             howItWorks: "In animal studies MOTS-c influences metabolic regulators (like AMPK) and appears to improve insulin sensitivity and exercise capacity. These are mechanisms mapped mostly in mice and cells.",
             whatToExpect: "Users report energy and body-composition effects, sometimes framed as an \"exercise mimetic.\" No controlled human trials support these claims.",
@@ -513,7 +513,7 @@ public enum CompoundProfiles {
         CompoundProfile(
             compoundID: CompoundCatalog.glutathione.id,
             goals: [.skinAndHair, .longevity],
-            tagline: "The body's master antioxidant — injected off-label for skin/wellness.",
+            tagline: "An antioxidant tripeptide used for skin and wellness.",
             whatItIs: "Glutathione (GSH) is a naturally occurring antioxidant tripeptide. It's injected or infused off-label mostly for skin brightening and general \"detox/wellness.\" It's not a signaling peptide like the others here.",
             howItWorks: "Glutathione neutralizes oxidative stress and supports liver detox pathways. The skin-lightening claim is tied to its effect on melanin synthesis, but robust, durable human efficacy data (especially for injection) are limited.",
             whatToExpect: "Users report skin brightening and a general wellness effect over weeks of repeated dosing. Evidence quality is modest and effects tend to fade once dosing stops.",
