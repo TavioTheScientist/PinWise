@@ -256,7 +256,8 @@ enum Typo {
     // considered product choice rather than default system type.
     static let numberXL = Font.system(size: 40, weight: .black, design: .rounded).monospacedDigit()
     static let numberLG = Font.system(size: 30, weight: .black, design: .rounded).monospacedDigit()
-    static let numberMD = Font.system(size: 22, weight: .bold, design: .rounded).monospacedDigit()
+    /// `.title2` is exactly 22pt, so this is visually identical to the old fixed size but scales.
+    static let numberMD = Font.system(.title2, design: .rounded).weight(.bold).monospacedDigit()
     // Instrument data voice — uppercase micro-labels over tabular values (Whoop/Strava/Oura).
     static let microLabel = Font.system(size: 11, weight: .semibold)
     static let microTracking: CGFloat = 1.1          // pair with .tracking() at call sites
@@ -268,9 +269,14 @@ enum Typo {
     /// VALUE in the app stayed 17pt while `MicroLabel` scaled past it. This is the most-used
     /// value token (stat strips, ProtocolStat, hero stats), so it is the one that matters most.
     ///
-    /// KNOWN GAP: `numberMD`/`numberLG`/`numberXL`/`numberHero` below are still fixed-size and
-    /// do NOT scale. They are already large, so the harm is smaller, but converting them needs
-    /// every hero layout re-verified at accessibility sizes — deliberately left as its own pass.
+    /// `numberMD` below is likewise text-style-backed (`.title2` is exactly 22pt) and scales.
+    ///
+    /// `numberLG`/`numberXL`/`numberHero` are deliberately LEFT fixed-size, and that is a judgement
+    /// rather than an omission: the nearest text styles are `.title` (28) and `.largeTitle` (34),
+    /// so converting them would SHRINK the design — 30→28, 40→34, and the hero 48→34, which is a
+    /// visible downgrade to Home's headline figure. The accessibility cost of not scaling them is
+    /// small because they are already 30–48pt, i.e. larger than body text even at accessibility
+    /// sizes. The 17pt `statValue` was the one that genuinely needed to grow, and it now does.
     static let statValue = Font.system(.body, design: .rounded).weight(.bold).monospacedDigit()
     /// "The number is the headline" hero figure (Home activity hero).
     static let numberHero = Font.system(size: 48, weight: .black, design: .rounded).monospacedDigit()
@@ -313,7 +319,11 @@ enum Motion {
 //
 // Haptic vocabulary — one meaning per feedback kind, app-wide: `.selection` for segmented
 // controls, menus, slider detents, and range controls, attached ONCE per control GROUP at
-// the container (per-element duplicates double-fire); `.success` is RESERVED for saves;
+// the container (per-element duplicates double-fire); `.success` for a COMPLETED ACHIEVEMENT —
+// saves, and an earned streak milestone (`HomeView.celebratingMilestone`). Audited 2026-07-29:
+// this previously read "RESERVED for saves", which the milestone haptic contradicted. The rule's
+// real intent is that `.success` is never spent on a mere selection, and that holds — so the
+// wording is corrected rather than the (correct, celebratory) usage removed;
 // chart scrubbing gets NO haptic (the Strava rule — scrubbing is continuous visual
 // feedback, and a tick per data point reads as noise, not information).
 

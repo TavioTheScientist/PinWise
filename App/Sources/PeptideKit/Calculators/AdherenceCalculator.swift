@@ -72,6 +72,38 @@ public enum AdherenceCalculator {
         )
     }
 
+    /// The app-wide grace window: how many days late a dose may be logged and still count for its
+    /// scheduled day. People do not dose to the minute. Single tuning point — every surface that
+    /// judges "taken vs missed" must read this, or the adherence ring and the protocol rows will
+    /// quietly disagree about the same dose.
+    public static let defaultGraceDays = 2
+
+    /// The most recent scheduled day that is genuinely OVERDUE: its grace window has fully
+    /// elapsed and it still has no log.
+    ///
+    /// **This is deliberately NOT `evaluate(...).missedDates.last`.** `missedDates` contains every
+    /// expected day without a matching log, which includes (a) today's dose, not yet taken, and
+    /// (b) any day still inside its grace window. Driving an "overdue" state off that would flag
+    /// every protocol that simply has a dose due today — the opposite of the intended meaning.
+    /// A day only becomes overdue once `day + graceDays` is strictly in the past.
+    ///
+    /// Returns nil when nothing is overdue, which is the common case.
+    public static func lastOverdue(
+        schedule: DoseSchedule,
+        start: Date,
+        asOf now: Date,
+        logDates: [Date],
+        graceDays: Int = defaultGraceDays,
+        calendar: Calendar = .current
+    ) -> Date? {
+        let result = evaluate(schedule: schedule, start: start, end: now,
+                             logDates: logDates, graceDays: graceDays, calendar: calendar)
+        // A day is overdue iff day + graceDays < today, i.e. day < today - graceDays.
+        guard let cutoff = calendar.date(byAdding: .day, value: -graceDays,
+                                         to: calendar.startOfDay(for: now)) else { return nil }
+        return result.missedDates.last { $0 < cutoff }
+    }
+
     /// The concrete calendar days a schedule calls for a dose, within [start, end].
     public static func expectedDates(
         schedule: DoseSchedule,
