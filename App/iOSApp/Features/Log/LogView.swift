@@ -474,7 +474,7 @@ struct LogView: View {
                 }
                 HStack(spacing: Space.sm) {
                     EvidenceBadge(tier: compound.evidenceTier)
-                    if compound.wadaProhibited { TagChip(text: "WADA", color: BrandColor.warning) }
+                    if compound.wadaProhibited { TagChip(text: "WADA", style: .warning) }
                     Spacer()
                 }
                 FieldRow("How much?", hint: "The dose you took this time.") {

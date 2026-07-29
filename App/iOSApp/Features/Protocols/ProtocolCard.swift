@@ -105,9 +105,11 @@ struct ProtocolCard: View {
                     // A meaning-carrying icon does the explaining for users who don't know the terms:
                     // stacked layers = several shots; a single drop = one mixed shot. The per-shot line
                     // below reinforces it — so the distinction reads without a wordy descriptor.
-                    if proto.isStack { TagChip(text: "Stack", color: BrandColor.accentText, systemImage: "square.stack.3d.up.fill") }
-                    else if isBlend { TagChip(text: "Blend", color: BrandColor.accentText, systemImage: "drop.fill") }
-                    if proto.hasRampPlan { TagChip(text: "Titration", color: BrandColor.warning) }
+                    if proto.isStack { TagChip(text: "Stack", systemImage: "square.stack.3d.up.fill") }
+                    else if isBlend { TagChip(text: "Blend", systemImage: "drop.fill") }
+                    // No "Titration" chip here: the banner below (`rampBannerText`) says strictly
+                    // more ("Titration · next 175 mg on Aug 18") on a line of its own, and this
+                    // header already carries up to five elements.
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(BrandColor.textSecondary)
@@ -194,7 +196,7 @@ private struct ProtocolSupplyRow: View {
                 .foregroundStyle(BrandColor.textSecondary)
                 .layoutPriority(1)
             if supply.needsReorder {
-                TagChip(text: "Low", color: BrandColor.danger)
+                TagChip(text: "Low", style: .danger)
             }
         }
     }

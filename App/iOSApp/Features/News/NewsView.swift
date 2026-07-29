@@ -36,6 +36,14 @@ private extension NewsCategory {
         case .guidance, .general: return BrandColor.textSecondary
         }
     }
+
+    /// A category ribbon is TAXONOMY — what the story is about — so it reads neutral. The one
+    /// exception is `.safety`, which flags something a reader may need to act on, and keeps a
+    /// solid warning fill. (`tint` still colors the `FeedImage` placeholder, where hue is the
+    /// only signal available.)
+    var chipStyle: TagChip.Style {
+        self == .safety ? .warning : .neutral
+    }
 }
 
 /// The category to DISPLAY as a ribbon. Guards against a mis-tag: an FDA-approved compound is never
@@ -377,8 +385,8 @@ struct FeaturedNewsCard: View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
                 HStack(spacing: Space.sm) {
-                    TagChip(text: displayCategory(item).rawValue, color: displayCategory(item).tint)
-                    if item.isMajorUpdate { TagChip(text: "Major", color: BrandColor.accentText) }
+                    TagChip(text: displayCategory(item).rawValue, style: displayCategory(item).chipStyle)
+                    if item.isMajorUpdate { TagChip(text: "Major", systemImage: "bolt.fill") }
                     Spacer()
                     if isRecentNews(item.publishedAt) && seenStore.isUnreadToday(item.id) { NewBadge() }
                     Text(newsRelativeDate(item.publishedAt))
@@ -424,7 +432,7 @@ struct NewsRow: View {
 
                 VStack(alignment: .leading, spacing: Space.xs) {
                     HStack {
-                        TagChip(text: displayCategory(item).rawValue, color: displayCategory(item).tint)
+                        TagChip(text: displayCategory(item).rawValue, style: displayCategory(item).chipStyle)
                         Spacer()
                         if isRecentNews(item.publishedAt) && seenStore.isUnreadToday(item.id) { NewBadge() }
                         Text(newsRelativeDate(item.publishedAt))
@@ -487,7 +495,7 @@ struct NewsDetailView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: Space.sm) {
                             ForEach(item.compounds, id: \.self) { c in
-                                TagChip(text: c, color: BrandColor.accentText)
+                                TagChip(text: c)
                             }
                         }
                         .padding(.vertical, 1)

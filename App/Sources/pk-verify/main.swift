@@ -591,6 +591,52 @@ do {
     check(approx(series.last?.level ?? -1, 25), "last sample (48h) ⇒ 25")
 }
 
+// MARK: - Dose-due phrasing (the ONE "when is the next dose" string)
+section("Dose-due phrasing")
+do {
+    // Fixed reference "today" (a Wednesday) + a pinned UTC calendar and locale: no Date()-relative
+    // data, and no dependence on the machine's region. Assertions below are STRUCTURAL — the exact
+    // weekday/month spellings are the locale's business, not this harness's.
+    let today = day(2026, 7, 1)
+    let loc = Locale(identifier: "en_US")
+    func p(_ offset: Int) -> String {
+        DoseDuePhrase.phrase(for: cal.date(byAdding: .day, value: offset, to: today)!,
+                             asOf: today, calendar: cal, locale: loc)
+    }
+    func hasDigit(_ s: String) -> Bool { s.rangeOfCharacter(from: .decimalDigits) != nil }
+
+    check(DoseDuePhrase.phrase(for: nil, asOf: today, calendar: cal, locale: loc) == "As needed",
+          "nil next dose ⇒ \"As needed\"")
+    check(p(0) == "Today", "day 0 ⇒ \"Today\"")
+    check(p(1) == "Tomorrow", "+1 day ⇒ \"Tomorrow\"")
+    // Weekday form: no digits, and not one of the fixed literals.
+    check(!hasDigit(p(2)) && p(2) != "Today" && p(2) != "Tomorrow", "+2 days ⇒ bare weekday (no digits)")
+    check(!hasDigit(p(6)), "+6 days ⇒ still the weekday form (last day inside the horizon)")
+    // THE REGRESSION TEST: a dose 13 days out must NOT render identically to one 6 days out.
+    // Both land on the same weekday name, which is the exact ambiguity bug this type fixes.
+    check(p(13) != p(6), "REGRESSION: +13 does not read the same as +6 (bare-weekday ambiguity)")
+    // A dose exactly a week out would render TODAY'S weekday name, so it must NOT be a weekday.
+    check(hasDigit(p(7)), "+7 days ⇒ month/day, never today's own weekday name")
+    check(hasDigit(p(8)) && !hasDigit(p(3)), "+8 ⇒ month/day (has a digit); +3 ⇒ weekday (none)")
+    check(hasDigit(p(14)), "+14 days ⇒ month + day form")
+    // Cross-year: +200 days from 2026-07-01 lands in 2027 and must still be a month/day, not a weekday.
+    check(hasDigit(p(200)) && p(200) != p(6), "+200 days (crosses into 2027) ⇒ month/day form")
+    check(p(-1) == "Overdue", "past date ⇒ \"Overdue\" (defensive branch, unreachable from the UI)")
+
+    // daysAway — the raw offset callers use for non-text decisions.
+    check(DoseDuePhrase.daysAway(nil, asOf: today, calendar: cal) == nil, "daysAway(nil) ⇒ nil")
+    check(DoseDuePhrase.daysAway(today, asOf: today, calendar: cal) == 0, "daysAway(today) ⇒ 0")
+    check(DoseDuePhrase.daysAway(day(2026, 7, 15), asOf: today, calendar: cal) == 14, "daysAway(+14) ⇒ 14")
+    check((DoseDuePhrase.daysAway(day(2026, 6, 28), asOf: today, calendar: cal) ?? 0) < 0,
+          "daysAway(past) ⇒ negative")
+    // Start-of-day comparison: a dose late tonight is still "Today", one just after midnight is "Tomorrow".
+    let lateTonight = today.addingTimeInterval(23 * 3600 + 59 * 60)
+    check(DoseDuePhrase.phrase(for: lateTonight, asOf: today, calendar: cal, locale: loc) == "Today",
+          "11:59 PM tonight ⇒ \"Today\" (compared by start-of-day, not elapsed hours)")
+    check(DoseDuePhrase.phrase(for: today.addingTimeInterval(24 * 3600 + 60), asOf: today, calendar: cal, locale: loc) == "Tomorrow",
+          "12:01 AM tomorrow ⇒ \"Tomorrow\"")
+}
+
 // MARK: - Summary
 print("\n\(failures == 0 ? "✅ PASS" : "❌ FAIL") — \(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)
