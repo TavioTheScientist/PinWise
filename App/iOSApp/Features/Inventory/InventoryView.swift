@@ -401,7 +401,7 @@ struct VialBuilderView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.md)
         .background(BrandColor.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(BrandColor.accent.opacity(0.3), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(BrandColor.accent.opacity(0.22), lineWidth: 1))
     }
 
     var body: some View {
@@ -562,7 +562,9 @@ struct VialBuilderView: View {
                     Card {
                         DisclosureGroup(isExpanded: $expandExtras) {
                             VStack(alignment: .leading, spacing: Space.lg) {
-                                Toggle("Set a discard (beyond-use) date", isOn: $hasExpiration).tint(BrandColor.accent)
+                                // `controlOn`, not `accent`: the system draws the toggle knob in
+                                // white, and the chrome accent is light on dark.
+                                Toggle("Set a discard (beyond-use) date", isOn: $hasExpiration).tint(BrandColor.controlOn)
                                 if hasExpiration {
                                     FieldRow("Discard by") {
                                         DatePicker("", selection: $expiration, displayedComponents: [.date]).labelsHidden()

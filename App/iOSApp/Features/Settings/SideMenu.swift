@@ -269,7 +269,9 @@ struct HealthConnectionsView: View {
                             .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
-                .tint(BrandColor.accent)
+                // `controlOn`, not `accent`: the system draws the toggle knob in white, and the
+                // chrome accent is light on dark — white-on-accent would vanish.
+                .tint(BrandColor.controlOn)
             }
             Card {
                 VStack(alignment: .leading, spacing: Space.md) {

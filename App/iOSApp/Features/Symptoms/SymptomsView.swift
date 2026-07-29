@@ -114,7 +114,9 @@ struct SymptomsView: View {
                                 Spacer()
                                 Text("\(Int(severity)) / 10").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                             }
-                            Slider(value: $severity, in: 0...10, step: 1).tint(BrandColor.accent)
+                            // `controlOn`, not `accent`: the system draws the slider knob in white,
+                            // and the chrome accent is light on dark.
+                            Slider(value: $severity, in: 0...10, step: 1).tint(BrandColor.controlOn)
                                 .sensoryFeedback(.selection, trigger: Int(severity))
                         }
                         CollapsibleNoteField(text: $note, expanded: $showNote)

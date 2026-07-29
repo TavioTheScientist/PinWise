@@ -336,7 +336,7 @@ struct LogView: View {
             .background(isSelected ? BrandColor.accent.opacity(0.12) : BrandColor.surfaceElevated,
                         in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-                .strokeBorder(isSelected ? BrandColor.accent : BrandColor.stroke, lineWidth: isSelected ? 1.5 : 1))
+                .strokeBorder(isSelected ? BrandColor.accent.opacity(0.55) : BrandColor.stroke, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

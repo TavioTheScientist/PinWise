@@ -139,7 +139,9 @@ private struct NotificationsSettingsView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
-                        .tint(BrandColor.accent)
+                        // `controlOn`, not `accent`: the system draws the toggle knob in white, and
+                        // the chrome accent is light on dark — white-on-accent would vanish.
+                        .tint(BrandColor.controlOn)
                     }
                 }
 
@@ -217,7 +219,7 @@ private struct PrivacySecuritySettingsView: View {
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
-                            .tint(BrandColor.accent)
+                            .tint(BrandColor.controlOn)
                             Divider().overlay(BrandColor.stroke)
                         }
                         Toggle(isOn: $shareHealthWithNatt) {
@@ -229,7 +231,7 @@ private struct PrivacySecuritySettingsView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
-                        .tint(BrandColor.accent)
+                        .tint(BrandColor.controlOn)
                     }
                 }
             }

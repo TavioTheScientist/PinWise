@@ -47,7 +47,11 @@ struct RootTabView: View {
         .overlay {
             AssistantDrawer(isOpen: $showAssistant)
         }
-        .tint(BrandColor.accent)
+        // `controlOn`, NOT `accent`: this tint cascades to every Toggle, Slider, segmented
+        // Picker and swipe action in the app, and the SYSTEM draws those knobs and labels in
+        // white. The chrome `accent` is LIGHT on dark, so a white knob on it is 1.47:1 — the
+        // "on" state would lose its affordance app-wide. `controlOn` stays mid-dark (4.71:1).
+        .tint(BrandColor.controlOn)
         .task(id: reminderSignature) {
             await NotificationManager.reschedule(protocols: protocols, vials: vials)
         }
@@ -93,11 +97,11 @@ extension View {
     }
 }
 
-/// Floating glass island — a brand-tinted ultra-thin-material capsule inset from the
+/// Floating glass island — a charcoal-lifted ultra-thin-material capsule inset from the
 /// screen edges (Space.lg gutters, Space.sm above the safe-area bottom), with scroll
-/// content passing visibly beneath it. Five equal-width, center-aligned tabs; Log is a
-/// flat accent disc with a white glyph that crests above the capsule's top edge —
-/// visual emphasis only.
+/// content passing visibly beneath it. Five equal-width, center-aligned tabs, four of them
+/// strictly monochrome; Log is a metallic chrome disc with a near-black glyph that crests
+/// above the capsule's top edge — the single colored element in the app's chrome.
 private struct PinWiseTabBar: View {
     @Binding var selected: AppTab
     @Environment(TabScrollCoordinator.self) private var scrollCoordinator
@@ -135,8 +139,15 @@ private struct PinWiseTabBar: View {
         // gutters; scrolling content passes visibly beneath the glass, and the
         // tabBarClearance margin (derivation in Theme.swift) governs only where content
         // rests when scrolled to the end — not a hard stop at the bar's top edge.
-        .background { Capsule().strokeBorder(BrandColor.stroke, lineWidth: 0.5) }
-        .background(BrandColor.background.opacity(0.55), in: Capsule())
+        // The rim is 1pt (was 0.5): on a PURE-BLACK ground a half-point hairline is the only
+        // thing terminating the capsule, and it has to hold against the bright chrome disc.
+        .background { Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1) }
+        // `surfaceElevated`, NOT `background`: with the ground now #000000, tinting the glass
+        // with black-at-55% suppressed the material's brightening and made the bar DARKER than
+        // the canvas — the island dissolved into the page. A charcoal lift is what makes it read
+        // as floating glass, and it is now the bar's primary separation (dark `.chrome` shadow
+        // does nothing over bare black — it only works where a card scrolls beneath).
+        .background(BrandColor.surfaceElevated.opacity(0.55), in: Capsule())
         .background(.ultraThinMaterial, in: Capsule())
         // Flatten to one silhouette BEFORE the shadow so it follows the capsule plus the
         // protruding crest arc instead of haloing each icon. (compositingGroup, never
@@ -163,13 +174,17 @@ private struct PinWiseTabBar: View {
             VStack(spacing: 3) {
                 ZStack {
                     if prominent {
+                        // The one brand moment in the chrome: the app-icon metal, and the only
+                        // colored element in the whole tab bar. No glow — a bloom under a
+                        // metallic disc reads as cheap plating rather than machined hardware.
                         Circle()
-                            .fill(BrandColor.accent)
+                            .fill(BrandGradient.chrome)
                             .frame(width: chipSize, height: chipSize)
-                            .shadow(color: BrandColor.accent.opacity(0.4), radius: 12, y: 4)
                         Image(systemName: "plus")
                             .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(.white)
+                            // NEAR-BLACK, not white: the disc is now LIGHT on dark, so a white
+                            // glyph would sit at 1.47:1 and vanish into the metal.
+                            .foregroundStyle(BrandColor.onAccent)
                     } else {
                         Image(systemName: icon)
                             .font(.system(size: 20, weight: .semibold))

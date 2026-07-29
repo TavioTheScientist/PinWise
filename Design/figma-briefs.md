@@ -9,14 +9,23 @@ Apple/native style, then refine.
 
 ## Brand block (paste with every screen)
 
-> Dark, native iOS app. Background `#04050B`; content cards `#0F1120` with 1px `#272B45` hairline
-> borders; elevated surfaces (fields, chips, segmented) `#171A2C`. Primary action / buttons: royal
-> blue `#2536E6` with white text. Links & accent text on dark: `#8A97FF`. Success / progress: green
-> `#18E39A`. Health-data figures: teal `#4FD1C5`. Attention/amber `#FFB020`; destructive red
-> `#FF4D4D`. Text: primary `#FFFFFF`, secondary `#9AA3B8`. Font: **SF Pro** (rounded, monospaced
-> digits for big numbers). Corner radius: 12 (controls) / 18 (cards) / pill for chips. Spacing scale:
-> 4 / 8 / 12 / 16 / 24 / 32. Screen padding 16. Style: clean, restrained, precise — Apple-like, NOT
-> flashy; no heavy gradients or glows.
+> Dark, native iOS app. Background **pure black `#000000`**; content cards `#0E0E11` with 1px
+> `#2A2A30` hairline borders; elevated surfaces (fields, chips, segmented) `#17171B`. Surfaces are
+> NEUTRAL charcoal — never navy, never washed system gray. Primary action / buttons: a **solid
+> white pill `#FFFFFF` with near-black `#0B0D16` text** (inverse ink — NOT a colored button).
+> Secondary buttons: `#17171B` pill with a `#2A2A30` rim and white text. The one brand accent is
+> **metallic pale rose `#E9C9D6`** (the app-icon chrome) — used sparingly on small fills, chips and
+> the tab bar's center Log disc, always with near-black `#0B0B0D` ink on it, NEVER as a large fill.
+> Links & accent text on dark: `#DCC9D0`. Success / progress: green `#18E39A` (tertiary only).
+> Health-data figures: teal `#4FD1C5`. Attention/amber `#FFB020`; destructive red `#FF4D4D`. Text:
+> primary `#FFFFFF`, secondary `#A0A0A8`. Font: **SF Pro** (rounded, monospaced digits for big
+> numbers). Corner radius: 12 (controls) / 18 (cards) / pill for buttons and chips. Spacing scale:
+> 4 / 8 / 12 / 16 / 24 / 32 / 48. Screen padding 16. Style: clean, restrained, precise — Apple
+> Fitness restraint with Nike product luxury. NOT flashy; no glows, and the only gradient in the
+> system is the metallic chrome on the Log disc.
+>
+> (There is **no royal blue** in PinWise. `#2536E6` was retired in the 2026-07 chrome revision —
+> ignore any older brief or screenshot that shows it.)
 
 ---
 
@@ -44,7 +53,7 @@ Apple/native style, then refine.
 >    (values in accent blue).
 > 5. Card "Injection site" — wrapped selectable chips: Abdomen L (selected), Abdomen R, Thigh L,
 >    Thigh R.
-> 6. Full-width primary button "＋ Log dose" (royal blue).
+> 6. Full-width primary button "＋ Log dose" (solid white pill, near-black text).
 
 ## 3. Stack (tab)
 
@@ -122,7 +131,7 @@ Apple/native style, then refine.
 > advice — decisions belong with a clinician."). A scrollable message area (assistant + user
 > bubbles). Above the input: suggested starter chips — "What is BPC-157?", "Explain the evidence
 > tiers", "What does half-life mean?", "How's my week looking?". Bottom: a text input with a send
-> button (royal blue). On-device, private.
+> button (metallic pale rose, near-black glyph). On-device, private.
 
 ---
 

@@ -12,6 +12,8 @@ import PeptideKit
 ///   • Primary chart  — long-acting compounds (half-life ≥ 12h) as smooth curves.
 ///   • Secondary strip — short-acting compounds (< 12h): curves on 24h, "active-window" bars on 7d/30d
 ///     (a spike is invisible at those zooms, but "it was active here" still reads).
+/// Series styling comes from the design system's `ChartPalette` (adaptive, never cycled): color encodes
+/// DRUG CLASS, and a fixed dash ladder separates compounds inside a class — see `seriesStyle(for:)`.
 /// Every curve is normalized to its own peak so different-magnitude doses compare by shape. A scale-free
 /// "Right now" gauge answers "what's high/low" at a glance; tap any compound for exact numbers. Compounds
 /// with no known half-life are named as omitted, not dropped. Educational estimate — not dosing advice.
@@ -31,11 +33,10 @@ struct ActiveLevelsView: View {
     /// A short compound is "active" while it's above this fraction of its own peak (drives window bars).
     private let activeThresholdPercent: Double = 25
 
-    private let palette: [Color] = [
-        Color(hex: 0x4F8CFF), Color(hex: 0x18E39A), Color(hex: 0xFFB020), Color(hex: 0xFF4D6D),
-        Color(hex: 0x9B7DFF), Color(hex: 0x4FD1C5), Color(hex: 0xFF8A3D), Color(hex: 0xE84FCB),
-        Color(hex: 0x6BD44F), Color(hex: 0x00B4D8)
-    ]
+    /// Dash ladder — the SECONDARY encoding that separates compounds sharing a class color. Fixed
+    /// order, solid first. This is what lets a five-color palette carry more than five curves
+    /// without cycling hue (cycling `ChartPalette.categorical` is banned).
+    private static let dashLadder: [[CGFloat]] = [[], [6, 3], [2, 3], [8, 3, 2, 3]]
 
     enum TimeRange: String, CaseIterable, Identifiable {
         case day = "24h", week = "7d", month = "30d"
@@ -58,9 +59,10 @@ struct ActiveLevelsView: View {
         var isElevated: Bool { self == .nearPeak || self == .rising }
     }
 
-    /// One plotted point (carries its compound name so Charts keeps series separate).
+    /// One plotted point (carries its compound name so Charts keeps series separate, plus the
+    /// compound's dash pattern so the stroke style travels with the series).
     private struct PlotPoint: Identifiable {
-        let id = UUID(); let name: String; let time: Date; let percent: Double
+        let id = UUID(); let name: String; let time: Date; let percent: Double; let dash: [CGFloat]
     }
 
     /// A compound aggregate, independent of the selected range. Range-specific curves are derived on the fly.
@@ -69,6 +71,9 @@ struct ActiveLevelsView: View {
         var id: String { name }
         let name: String
         let color: Color
+        /// Line dash pattern; empty = solid. Distinguishes same-drug-class compounds, which
+        /// deliberately share a color.
+        let dash: [CGFloat]
         let halfLifeHours: Double
         let isLong: Bool
         let doses: [Pharmacokinetics.DoseEvent]
@@ -113,7 +118,7 @@ struct ActiveLevelsView: View {
         .heroScreen()
         .navigationTitle("Active levels")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $selected) { LevelDetailSheet(series: $0, palette: palette) }
+        .sheet(item: $selected) { LevelDetailSheet(series: $0) }
     }
 
     // MARK: - Briefing (plain-language, scan-first)
@@ -258,12 +263,16 @@ struct ActiveLevelsView: View {
     /// Multi-line normalized curves on a shared window. Tapping the plot opens nothing; use the legend/gauge.
     @ViewBuilder
     private func lineChart(_ models: [CompoundModel], ws: Date, we: Date, now: Date, height: CGFloat, labeled: Bool) -> some View {
-        let points = models.flatMap { m in samples(m, from: ws, to: we).map { PlotPoint(name: m.name, time: $0.time, percent: $0.percent) } }
+        let points = models.flatMap { m in
+            samples(m, from: ws, to: we).map { PlotPoint(name: m.name, time: $0.time, percent: $0.percent, dash: m.dash) }
+        }
         Chart {
             ForEach(points) { p in
                 LineMark(x: .value("Date", p.time), y: .value("Level", p.percent))
                     .foregroundStyle(by: .value("Compound", p.name))
-                    .lineStyle(StrokeStyle(lineWidth: 2)).interpolationMethod(.monotone)
+                    // Color says drug class; the dash says WHICH compound within that class, so
+                    // curves stay tellable apart past five series without cycling hue.
+                    .lineStyle(StrokeStyle(lineWidth: 2, dash: p.dash)).interpolationMethod(.monotone)
             }
             nowRule(now, labeled: labeled)
         }
@@ -348,9 +357,7 @@ struct ActiveLevelsView: View {
                         let isHidden = hidden.contains(m.name)
                         Button { if isHidden { hidden.remove(m.name) } else { hidden.insert(m.name) } } label: {
                             HStack(spacing: 6) {
-                                Circle().fill(isHidden ? Color.clear : m.color)
-                                    .overlay(Circle().strokeBorder(m.color, lineWidth: isHidden ? 1 : 0))
-                                    .frame(width: 9, height: 9)
+                                legendSwatch(m, isHidden: isHidden)
                                 Text(m.name).font(.caption).lineLimit(1)
                                     .foregroundStyle(isHidden ? BrandColor.textSecondary.opacity(0.5) : BrandColor.textSecondary)
                                     .strikethrough(isHidden, color: BrandColor.textSecondary.opacity(0.5))
@@ -362,6 +369,18 @@ struct ActiveLevelsView: View {
                 }
             }
         }
+    }
+
+    /// A short line segment in the compound's own color AND dash — not a dot. Same-class compounds
+    /// share a color, so a plain dot couldn't be matched back to a curve; the dash is what identifies
+    /// it. Hidden state reads from the dimmed stroke plus the struck-through name, never color alone.
+    private func legendSwatch(_ m: CompoundModel, isHidden: Bool) -> some View {
+        Path { p in
+            p.move(to: CGPoint(x: 0, y: 1))
+            p.addLine(to: CGPoint(x: 16, y: 1))
+        }
+        .stroke(isHidden ? m.color.opacity(0.3) : m.color, style: StrokeStyle(lineWidth: 2, dash: m.dash))
+        .frame(width: 16, height: 2)
     }
 
     // MARK: - Sampling helpers
@@ -473,8 +492,9 @@ struct ActiveLevelsView: View {
                 implication = ""
             }
 
+            let style = seriesStyle(for: entry.display)
             out.append(CompoundModel(
-                name: entry.display, color: stableColor(for: entry.display),
+                name: entry.display, color: style.color, dash: style.dash,
                 halfLifeHours: entry.halfLife, isLong: entry.halfLife >= longThresholdHours,
                 doses: entry.doses,
                 lastDose: lastDose,
@@ -501,32 +521,38 @@ struct ActiveLevelsView: View {
         return "~\(days) day\(days == 1 ? "" : "s")"
     }
 
-    /// Stable color by compound IDENTITY, grouped into a hue FAMILY by drug class for mild category
-    /// recognition (blues = GLP-1, greens = healing, purples = GH, ambers = other). Within a class the
-    /// shade is fixed by the compound's catalog position, so a compound's color never changes and never
-    /// reshuffles when others are added. Custom compounds hash into a shared pool. Pure red/magenta are
-    /// deliberately NOT identity colors — reserved for alerts.
-    private func stableColor(for name: String) -> Color {
+    /// Stable (color, dash) by compound IDENTITY, drawn from the design system's `ChartPalette` so the
+    /// chart is light/dark adaptive and on-brand. Color carries drug class for mild category recognition
+    /// (teal = GLP-1, green = healing, rose = GH, amber = other); custom compounds outside the catalog
+    /// take the neutral silver rung. Compounds in the SAME class deliberately share a color and are told
+    /// apart by DASH pattern, fixed by the compound's catalog position within its class — so a compound's
+    /// style never changes and never reshuffles when others are added. Colors are never cycled.
+    private func seriesStyle(for name: String) -> (color: Color, dash: [CGFloat]) {
+        let ladder = Self.dashLadder
         let key = name.lowercased()
         if let compound = CompoundCatalog.all.first(where: { $0.name.lowercased() == key }) {
-            let fam = family(for: compound.category)
             let peers = CompoundCatalog.all.filter { $0.category == compound.category }
             let idx = peers.firstIndex(where: { $0.name.lowercased() == key }) ?? 0
-            return fam[idx % fam.count]
+            // Clamp, don't wrap: past the ladder the last pattern repeats (the name label still
+            // disambiguates) rather than sending the compound to a different, off-class color.
+            return (ChartPalette.categorical[paletteIndex(for: compound.category)], ladder[min(idx, ladder.count - 1)])
         }
+        // Not in the catalog (user's own compound): neutral rung, dash hashed off the name so two
+        // custom compounds usually differ, and a given name always gets the same style.
         let h = key.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
-        return customPool[h % customPool.count]
+        return (ChartPalette.categorical[0], ladder[h % ladder.count])
     }
 
-    private func family(for category: CompoundCategory) -> [Color] {
+    /// Drug class → ONE FIXED `ChartPalette.categorical` index. Domain knowledge, so it lives here in
+    /// the view rather than in the design system. Never cycled — see `seriesStyle(for:)`.
+    private func paletteIndex(for category: CompoundCategory) -> Int {
         switch category {
-        case .glp1:                     return [0x4F8CFF, 0x3B82F6, 0x00B4D8, 0x5AA0FF].map { Color(hex: UInt($0)) }
-        case .healingRecovery:          return [0x18E39A, 0x6BD44F, 0x2FB37A, 0x8BD450].map { Color(hex: UInt($0)) }
-        case .growthHormoneSecretagogue:return [0x9B7DFF, 0x7C5CFF, 0xB18CFF, 0x8A97FF].map { Color(hex: UInt($0)) }
-        default:                        return [0xFFB020, 0xFF8A3D, 0xF2C14E, 0xE0A030].map { Color(hex: UInt($0)) }
+        case .glp1:                      return 1   // teal
+        case .healingRecovery:           return 4   // green
+        case .growthHormoneSecretagogue: return 3   // rose
+        default:                         return 2   // amber
         }
     }
-    private let customPool: [Color] = [0x4F8CFF, 0x18E39A, 0x9B7DFF, 0xFFB020, 0x00B4D8, 0x6BD44F, 0x7C5CFF, 0xFF8A3D].map { Color(hex: UInt($0)) }
 
     private func halfLife(for name: String) -> Double? {
         let key = name.lowercased()
@@ -547,7 +573,6 @@ struct ActiveLevelsView: View {
     /// bigger dose draws a taller curve; the past doesn't rescale).
     private struct LevelDetailSheet: View {
         let series: CompoundModel
-        let palette: [Color]
 
         var body: some View {
             let now = Date()
