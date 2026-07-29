@@ -2,157 +2,347 @@ import SwiftUI
 import SwiftData
 import PeptideKit
 
-/// The unified protocol card — the Stack tab's read on a `SavedProtocol` at a glance.
+/// How a `SavedProtocol` is described, resolved ONCE — the app's single protocol vocabulary.
 ///
-/// Reads top-to-bottom as an instrument: a status line (the dot's color IS the state),
-/// the protocol name and contents, a 3-up DOSE / CADENCE / NEXT PIN stat grid, and —
-/// when the protocol is linked to a vial — the same supply bar the inventory's `VialRow`
-/// uses, so "how much is left" reads identically everywhere. Paused protocols dim the
-/// card's content to 0.55 *inside* the card (callers must not dim again). Press feedback
-/// comes from the caller's `PressableStyle` Button; entrance stagger via `.entrance(i)`.
-struct ProtocolCard: View {
-    let proto: SavedProtocol
-    /// Vial-linked supply readout; nil when the protocol has no linked vial (row omitted).
-    var supply: SupplyInfo?
-    /// Full compound scope for the contents line — expands blend vials to every compound they
-    /// hold. Caller resolves it (it needs the vials); nil falls back to the primary-only
-    /// `proto.contentsSummary` so any caller without vials still renders.
-    var contents: String?
-    /// The unit to show the dose in — follows the linked vial's choice (caller resolves it). nil
-    /// falls back to the auto mg/mcg display for callers without vials.
-    var doseUnit: MassUnit?
-    /// True when any linked vial is itself a blend (multiple compounds in ONE vial = one injection).
-    /// Distinct from `proto.isStack` (multiple vials = multiple injections). Caller resolves it.
-    var isBlend: Bool = false
-    /// Every compound this protocol delivers per shot, with its dose (blend vials expanded), e.g.
-    /// "GHK-Cu 5 mg · BPC-157 1.5 mg · TB-500 1.5 mg". Caller resolves it (needs the vials). nil for
-    /// a plain single-compound protocol — there the scope line shows the single compound + its dose.
-    var perShot: String?
-    /// Whether today's dose is already logged (caller resolves from its `LoggedDose` query) —
-    /// flips a "Due today" card to "Logged today" and advances the next pin downstream.
-    var loggedToday: Bool = false
+/// Three screens used to answer "what is this protocol doing" independently (the Stack card,
+/// Home's stack rows, the Log picker's rows) and disagreed on every axis: four due-date
+/// vocabularies, two glow rules, a paused protocol claiming a next pin, a blend reading as one
+/// compound on one screen and three on another. A shared *View* could not fix that, because the
+/// three surfaces genuinely need different containers (see ``ProtocolSummary``). A shared
+/// *value* can: this struct is the fact table, `ProtocolSummary` is one way to draw it.
+///
+/// Everything here is derived in `init` — no lazily-recomputed properties — so a surface that
+/// renders four of these does the work four times, not four times per re-render.
+struct ProtocolPresentation {
+    /// What kind of thing this protocol is, structurally. Several vials (several injections) =
+    /// `.stack`, even if one of them is itself a blend. A single vial holding several compounds
+    /// (one shot) = `.blend`. One compound, one shot = `.plain`.
+    enum Taxonomy { case plain, blend, stack }
 
-    private var contentsText: String { contents ?? proto.contentsSummary }
-    private var doseText: String {
-        doseUnit.map { proto.effectiveDose.displayString(in: $0) } ?? proto.effectiveDose.displayString
-    }
-    /// The light-gray line naming the injectable compound(s) with their per-shot dose: the full
-    /// per-shot breakdown for a blend/stack, or "compound · dose" for a plain protocol. This is
-    /// where the dose lives — the card no longer shows a standalone "Dose" stat.
-    private var scopeLine: String { perShot ?? "\(contentsText) · \(doseText)" }
+    let status: SavedProtocol.DisplayStatus
+    /// "Active" | "Due today" | "Logged today" | "Paused".
+    let statusWord: String
+    let statusColor: Color
+    /// ONE glow rule, app-wide: only a dose that is due and unlogged glows. Previously the Stack
+    /// card glowed for everything except paused while Home glowed only when due today, so the
+    /// same protocol pulsed on one screen and sat quiet on the other.
+    let dotGlows: Bool
 
-    /// The caller resolves the protocol's vial linkage into this — the card stays a pure renderer.
-    struct SupplyInfo {
-        let fraction: Double
-        let dosesLeft: Int
-        let total: Int
-        let needsReorder: Bool
-    }
+    /// The single key next fact: when the next dose lands, phrased by `DoseDuePhrase`, with the
+    /// dose time appended only when the user actually set reminders. `"Paused"` when inactive —
+    /// never a scheduling claim for a protocol that isn't running.
+    let nextFact: String
+    /// The dense row's single right-hand slot: the status word when that word is itself
+    /// time-bearing (paused / due / logged), otherwise `nextFact`.
+    let rowFact: String
+    /// `warning`, `success`, or `textSecondary` — never the brand accent. A due date is not a
+    /// brand moment, and Home used to paint up to four of them in chrome at once.
+    let rowFactColor: Color
 
-    private var status: SavedProtocol.DisplayStatus { proto.displayStatus(loggedToday: loggedToday) }
+    let name: String
+    let cadence: String
+    /// Every compound this protocol delivers, blend vials EXPANDED to the compounds they hold,
+    /// joined with `" · "`. Resolved here so a blend can never read as its primary compound
+    /// alone on one screen and as its full scope on another.
+    let contents: String
+    /// Every compound with its own per-shot dose (blends expanded by mass ratio), e.g.
+    /// "GHK-Cu 5 mg · BPC-157 1.5 mg". nil for a plain single-compound protocol — there
+    /// `contents` + `doseText` says the same thing more briefly.
+    let perShot: String?
+    let doseText: String
+    let taxonomy: Taxonomy
+    /// The titration plan's next step, or that it has reached its final dose. nil without a plan.
+    let titrationNote: String?
+    let accessibilityLabel: String
+    /// Always leads with the status word, whatever `rowFact` chose to show — a screen-reader user
+    /// must never have to infer state from a dot's hue.
+    let accessibilityValue: String
 
-    /// Banner copy for a ramp-up protocol: the next scheduled increase, or that it's at its final
-    /// dose. nil when there's no ramp plan.
-    private var rampBannerText: String? {
-        guard proto.hasRampPlan else { return nil }
-        guard let inc = proto.nextRampIncrease() else { return "Titration · at final dose" }
-        let d = doseUnit.map { inc.dose.displayString(in: $0) } ?? inc.dose.displayString
-        return "Titration · next \(d) on \(inc.date.formatted(.dateTime.month().day()))"
-    }
+    /// Resolves one protocol against the vials it draws from and the doses logged TODAY.
+    ///
+    /// - Parameter todaysLogs: Logs **already filtered to today** by the caller. Not the full log
+    ///   array: Home used to hand its entire unbounded `LoggedDose` query to a per-protocol
+    ///   `loggedToday(in:)` and re-scan it once per protocol per render (up to 12 scans of an
+    ///   ever-growing array for a 4-row card). Filter once, at the call site, and pass the
+    ///   remainder — this init still date-checks each entry, so passing a wider array is correct,
+    ///   just wasteful.
+    /// - Parameters:
+    ///   - now: The reference "today", injected for determinism.
+    ///   - calendar: Calendar for all day math and phrasing.
+    ///
+    /// **Known limitation:** `status` comes from `SavedProtocol.displayStatus(loggedToday:)`,
+    /// which reaches for `Date()`/`Calendar.current` internally. Injecting a `now` far from the
+    /// real present therefore shifts the phrasing but not the status. Widening the model's
+    /// signature is the fix; it is deliberately out of scope for this step.
+    init(_ proto: SavedProtocol, vials: [StoredVial], todaysLogs: [LoggedDose],
+         now: Date = .now, calendar: Calendar = .current) {
+        let loggedToday = proto.loggedToday(in: todaysLogs, calendar: calendar)
+        let status = proto.displayStatus(loggedToday: loggedToday)
+        self.status = status
 
-    private var statusColor: Color {
         switch status {
-        case .active: return BrandColor.success
-        case .dueToday: return BrandColor.warning
-        case .doneToday: return BrandColor.success
-        case .paused: return BrandColor.textSecondary
+        case .active:    statusWord = "Active";      statusColor = BrandColor.success
+        case .dueToday:  statusWord = "Due today";   statusColor = BrandColor.warning
+        case .doneToday: statusWord = "Logged today"; statusColor = BrandColor.success
+        case .paused:    statusWord = "Paused";      statusColor = BrandColor.textSecondary
         }
-    }
+        dotGlows = status == .dueToday
 
-    private var statusLabel: String {
-        switch status {
-        case .active: return "Active"
-        case .dueToday: return "Due today"
-        case .doneToday: return "Logged today"
-        case .paused: return "Paused"
-        }
-    }
+        // The next dose date — gated on `isActive`. A paused protocol has no next pin at all;
+        // computing one from its schedule (which is what every previous surface did) made a
+        // paused daily protocol render "PAUSED" beside an amber "Next pin · Today".
+        let nextDate: Date? = {
+            guard proto.isActive else { return nil }
+            guard loggedToday else { return proto.nextDose(after: now, calendar: calendar) }
+            let tomorrow = calendar.date(byAdding: .day, value: 1,
+                                         to: calendar.startOfDay(for: now)) ?? now
+            return proto.nextDose(after: tomorrow, calendar: calendar)
+        }()
 
-    /// Next-pin display: "Today" (warning-tinted), "Tomorrow", an abbreviated date, or "—"
-    /// when nothing is scheduled (as-needed / none upcoming). Once today's dose is logged this
-    /// advances past today, so a logged protocol no longer reads "Today".
-    private var nextPin: (text: String, isToday: Bool) {
-        guard let next = proto.upcomingDose(loggedToday: loggedToday) else { return ("—", false) }
-        let calendar = Calendar.current
-        if calendar.isDateInToday(next) { return ("Today", true) }
-        if calendar.isDateInTomorrow(next) { return ("Tomorrow", false) }
-        return (next.formatted(.dateTime.month(.abbreviated).day()), false)
-    }
-
-    private var accessibilityValueText: String {
-        "\(statusLabel), \(perShot.map { "per shot \($0)" } ?? "dose \(doseText)"), \(proto.cadenceText), next pin \(nextPin.text)"
-    }
-
-    var body: some View {
-        Card(style: .standard) {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                HStack(spacing: Space.sm) {
-                    StatusDot(color: statusColor, glows: status != .paused)
-                    MicroLabel(statusLabel, color: statusColor)
-                    Spacer()
-                    // Several vials (several injections) = "Stack" — even if one of them is itself a
-                    // blend. A single vial that is a blend (one shot, several compounds) = "Blend".
-                    // A meaning-carrying icon does the explaining for users who don't know the terms:
-                    // stacked layers = several shots; a single drop = one mixed shot. The per-shot line
-                    // below reinforces it — so the distinction reads without a wordy descriptor.
-                    if proto.isStack { TagChip(text: "Stack", systemImage: "square.stack.3d.up.fill") }
-                    else if isBlend { TagChip(text: "Blend", systemImage: "drop.fill") }
-                    // No "Titration" chip here: the banner below (`rampBannerText`) says strictly
-                    // more ("Titration · next 175 mg on Aug 18") on a line of its own, and this
-                    // header already carries up to five elements.
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(BrandColor.textSecondary)
-                }
-
-                Text(proto.name)
-                    .font(Typo.headline)
-                    .foregroundStyle(BrandColor.textPrimary)
-
-                // The injectable compound(s) with their per-shot dose — the dose lives here, in
-                // light gray, not in a separate stat. Blend/stack: the full per-shot breakdown;
-                // plain protocol: "compound · dose".
-                Text(scopeLine)
-                    .font(.caption)
-                    .foregroundStyle(BrandColor.textSecondary)
-
-                // Ramp-up banner — flags the auto-advancing plan and the next scheduled increase.
-                if let rampBannerText {
-                    Label(rampBannerText, systemImage: "chart.line.uptrend.xyaxis")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(BrandColor.warning)
-                }
-
-                Divider().overlay(BrandColor.stroke)
-
-                // Only cadence + next pin as stats now; the dose is on the scope line above.
-                // (Doses-remaining lives on the vials in Stack — a protocol can draw from several,
-                // so a single supply bar here would be ambiguous and redundant.)
-                HStack(alignment: .top, spacing: Space.md) {
-                    ProtocolStat(label: "Cadence", value: proto.cadenceText, compresses: true)
-                    ProtocolStat(label: "Next pin", value: nextPin.text,
-                                 tint: nextPin.isToday ? BrandColor.warning : BrandColor.textPrimary)
-                }
+        if proto.isActive {
+            let phrase = DoseDuePhrase.phrase(for: nextDate, asOf: now, calendar: calendar)
+            // Time-of-day is only appended when the user turned reminders ON. `reminderHour`
+            // defaults to 9 and the builder hides the time picker unless reminders are on, so
+            // appending it unconditionally (as Home did) asserts a 9:00 AM schedule the user
+            // never chose. It is also only useful within a day or two — a weekday two weeks out
+            // does not need a clock time.
+            let daysAway = DoseDuePhrase.daysAway(nextDate, asOf: now, calendar: calendar)
+            if proto.remindersOn, let daysAway, (0...1).contains(daysAway),
+               let timeOfDay = calendar.date(bySettingHour: proto.reminderHour,
+                                             minute: proto.reminderMinute, second: 0, of: now) {
+                nextFact = "\(phrase), \(timeOfDay.formatted(date: .omitted, time: .shortened))"
+            } else {
+                nextFact = phrase
             }
-            .opacity(status == .paused ? 0.55 : 1)
+        } else {
+            nextFact = "Paused"
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(proto.isStack ? "\(proto.name), stack" : isBlend ? "\(proto.name), blend" : proto.name)
-        .accessibilityValue(accessibilityValueText)
+
+        // One right-hand slot, so a state that needs action is WORDED rather than riding on the
+        // dot's hue alone (Home's rows carried no status word at all).
+        switch status {
+        case .paused:    rowFact = "Paused";  rowFactColor = BrandColor.textSecondary
+        case .dueToday:  rowFact = "Due today"; rowFactColor = BrandColor.warning
+        case .doneToday: rowFact = "Logged";  rowFactColor = BrandColor.success
+        case .active:    rowFact = nextFact;  rowFactColor = BrandColor.textSecondary
+        }
+
+        name = proto.name
+        cadence = proto.cadenceText
+        contents = proto.fullContentsSummary(vials: vials)
+
+        let unit = proto.doseUnit(vials: vials)
+        doseText = proto.effectiveDose.displayString(in: unit)
+
+        let isBlend = proto.items.contains { item in
+            vials.first(where: { $0.id == item.vialID })?.isBlend == true
+        }
+        taxonomy = proto.isStack ? .stack : (isBlend ? .blend : .plain)
+
+        perShot = Self.perShotDetail(proto, vials: vials)
+
+        if proto.hasRampPlan {
+            if let increase = proto.nextRampIncrease(after: now, calendar: calendar) {
+                let dose = increase.dose.displayString(in: unit)
+                titrationNote = "Titration · next \(dose) on \(increase.date.formatted(.dateTime.month().day()))"
+            } else {
+                titrationNote = "Titration · at final dose"
+            }
+        } else {
+            titrationNote = nil
+        }
+
+        switch taxonomy {
+        case .stack: accessibilityLabel = "\(proto.name), stack"
+        case .blend: accessibilityLabel = "\(proto.name), blend"
+        case .plain: accessibilityLabel = proto.name
+        }
+        let doseFragment = perShot.map { "per shot \($0)" } ?? "dose \(doseText)"
+        accessibilityValue = "\(statusWord), \(doseFragment), \(proto.cadenceText), next \(nextFact)"
+    }
+
+    /// Every compound a protocol delivers per shot, with its dose — blend vials expanded by their
+    /// fixed mass ratio, stack items listed in order, each in its own resolved unit. nil for a
+    /// plain single-compound protocol, where `contents` + `doseText` already says it.
+    ///
+    /// Lives here rather than on a view so every surface expands blends identically; it used to
+    /// be private to `ProtocolsView`, which is why the Log tab showed one compound for a
+    /// three-compound blend.
+    private static func perShotDetail(_ proto: SavedProtocol, vials: [StoredVial]) -> String? {
+        var parts: [String] = []
+        for (i, item) in proto.items.enumerated() {
+            let unit = proto.doseUnit(forItemAt: i, vials: vials)
+            let dose = i == 0 ? proto.effectiveDose : Mass(micrograms: item.doseMicrograms)
+            if let vial = vials.first(where: { $0.id == item.vialID }), vial.isBlend,
+               let primary = vial.primaryAPI, primary.massMicrograms > 0 {
+                for api in vial.apis {
+                    let scaled = Mass(micrograms: api.massMicrograms / primary.massMicrograms * dose.micrograms)
+                    parts.append("\(api.name) \(scaled.displayString(in: unit))")
+                }
+            } else {
+                parts.append("\(item.compoundName) \(dose.displayString(in: unit))")
+            }
+        }
+        return parts.count > 1 ? parts.joined(separator: " · ") : nil
     }
 }
 
-/// One column of the card's 3-up stat grid: a micro-label over a `Typo.statValue` figure.
+/// The one rendering of a `ProtocolPresentation` — in a roomy `.full` form or a dense `.row`.
+///
+/// **It owns NO container**: no `Card`, no `Button`, no background, no rim, no outer padding.
+/// The caller supplies the surface and the tap, because the three callers genuinely differ —
+/// Home needs four rows inside ONE card sharing a single tap target, the Log picker needs
+/// `Radius.control` plus selection chrome and a radio, and the Stack tab needs `Radius.card`
+/// plus `PressableStyle` and a `contextMenu`. Three real containers over one identical payload;
+/// baking any of them in here would force the other two to fight it.
+///
+/// For the same reason this must never grow a background or wrap itself in a `Button`. A row
+/// that looks tappable but isn't is a false affordance: Home's rows are inert by design and the
+/// whole card navigates, so a per-row fill or button would promise a tap that doesn't exist.
+struct ProtocolSummary: View {
+    /// `.full` — the standalone read (status line, name, scope, titration note, stat grid).
+    /// `.row` — two dense lines for a list, where the container is already doing the framing.
+    enum Layout { case full, row }
+    enum Accessory { case none, chevron }
+
+    let presentation: ProtocolPresentation
+    var layout: Layout = .full
+    var accessory: Accessory = .none
+
+    var body: some View {
+        switch layout {
+        case .full: fullBody
+        case .row: rowBody
+        }
+    }
+
+    @ViewBuilder private var chevron: some View {
+        if accessory == .chevron {
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(BrandColor.textSecondary)
+        }
+    }
+
+    /// At most ONE taxonomy chip, and neutral (no `style:`) — it says what the protocol *is*, so
+    /// it must not out-shout the name below it. A meaning-carrying icon does the explaining for
+    /// users who don't know the words: stacked layers = several shots, a single drop = one mixed
+    /// shot. No "Titration" chip — the note below says strictly more.
+    @ViewBuilder private var taxonomyChip: some View {
+        switch presentation.taxonomy {
+        case .stack: TagChip(text: "Stack", systemImage: "square.stack.3d.up.fill")
+        case .blend: TagChip(text: "Blend", systemImage: "drop.fill")
+        case .plain: EmptyView()
+        }
+    }
+
+    private var fullBody: some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            // Max three elements after the spacer: chip, chevron — and that's the ceiling.
+            HStack(spacing: Space.sm) {
+                StatusDot(color: presentation.statusColor, glows: presentation.dotGlows)
+                MicroLabel(presentation.statusWord, color: presentation.statusColor)
+                Spacer()
+                taxonomyChip
+                chevron
+            }
+
+            Text(presentation.name)
+                .font(Typo.headline)
+                .foregroundStyle(BrandColor.textPrimary)
+
+            // The compounds and the dose, on one quiet line.
+            Text(presentation.perShot ?? "\(presentation.contents) · \(presentation.doseText)")
+                .font(Typo.caption2)
+                .foregroundStyle(BrandColor.textSecondary)
+
+            // Deliberately `textSecondary`, NOT `warning`. A planned dose increase weeks out is
+            // information, not urgency — amber here competes with a genuinely urgent "Due today"
+            // sitting directly above it, and two ambers mean neither reads as the alarm.
+            if let titrationNote = presentation.titrationNote {
+                Label(titrationNote, systemImage: "chart.line.uptrend.xyaxis")
+                    .font(Typo.caption2.weight(.semibold))
+                    .foregroundStyle(BrandColor.textSecondary)
+            }
+
+            Divider().overlay(BrandColor.stroke)
+
+            // The stat grid is ADAPTIVE, and that is on purpose — do not "fix" it back into
+            // showing Next pin unconditionally. For every status except `.active`, the status
+            // word at the top of the card ALREADY states the timing, so "Next pin · Today"
+            // under a "DUE TODAY" header is the same fact printed twice, which is what made the
+            // card fail a sub-2-second read. In those states the slot shows the Dose instead —
+            // real information that is otherwise buried at the end of the scope line above.
+            HStack(alignment: .top, spacing: Space.md) {
+                ProtocolStat(label: "Cadence", value: presentation.cadence, compresses: true)
+                if presentation.status == .active {
+                    // Untinted on purpose. Urgency is carried EXACTLY ONCE per card, by the
+                    // status line's amber word + glowing dot. This slot only ever renders for
+                    // `.active` — i.e. nothing is due today — so an amber "Next pin" here would
+                    // be a second urgency signal for a non-urgent fact. Before this card was
+                    // unified, amber appeared up to five times on one Glutathione card.
+                    ProtocolStat(label: "Next pin", value: presentation.nextFact)
+                } else {
+                    ProtocolStat(label: "Dose", value: presentation.doseText)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(presentation.accessibilityLabel)
+        .accessibilityValue(presentation.accessibilityValue)
+    }
+
+    /// Two lines, no container, no fill, no padding. No taxonomy chip and no titration note
+    /// either: `contents` names every compound, which is strictly more informative than a
+    /// five-character "Blend" badge and costs no badge budget at all.
+    private var rowBody: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+                StatusDot(color: presentation.statusColor, glows: presentation.dotGlows)
+                Text(presentation.name)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(BrandColor.textPrimary)
+                    .lineLimit(1)
+                Spacer(minLength: Space.sm)
+                Text(presentation.rowFact)
+                    .font(Typo.caption.weight(.semibold))
+                    .foregroundStyle(presentation.rowFactColor)
+                    .layoutPriority(1)
+                    .lineLimit(1)
+                chevron
+            }
+            Text("\(presentation.cadence) · \(presentation.contents)")
+                .font(Typo.caption2)
+                .foregroundStyle(BrandColor.textSecondary)
+                .lineLimit(1)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(presentation.accessibilityLabel)
+        .accessibilityValue(presentation.accessibilityValue)
+    }
+}
+
+/// The Stack tab's protocol card: a `Card` surface around a `.full` ``ProtocolSummary``.
+///
+/// Everything about *what* is shown lives in ``ProtocolPresentation``; everything about *how* it
+/// is arranged lives in ``ProtocolSummary``. This type contributes exactly two things — the card
+/// surface and the paused dimming. Press feedback comes from the caller's `PressableStyle`
+/// Button; entrance stagger via `.entrance(i)`.
+struct ProtocolCard: View {
+    let presentation: ProtocolPresentation
+
+    var body: some View {
+        Card(style: .standard) {
+            ProtocolSummary(presentation: presentation, layout: .full, accessory: .chevron)
+        }
+        // Paused dimming stays HERE, never in `ProtocolSummary`. Home only lists active
+        // protocols, so a `.row` would never use it — and once the Log picker also renders a
+        // summary, a dimming that lived in the shared view would double-apply under this card.
+        .opacity(presentation.status == .paused ? 0.55 : 1)
+    }
+}
+
+/// One column of the card's 2-up stat grid: a micro-label over a `Typo.statValue` figure.
 private struct ProtocolStat: View {
     let label: String
     let value: String
@@ -173,32 +363,6 @@ private struct ProtocolStat: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// The card's vial-supply readout — the same bar and thresholds as the inventory's
-/// `VialRow`, so supply reads identically across the Stack tab's two panels.
-private struct ProtocolSupplyRow: View {
-    let supply: ProtocolCard.SupplyInfo
-
-    // Mirrors VialRow.barColor exactly: reorder → danger, under half → warning, else success.
-    private var barColor: Color {
-        if supply.needsReorder { return BrandColor.danger }
-        if supply.fraction < 0.5 { return BrandColor.warning }
-        return BrandColor.success
-    }
-
-    var body: some View {
-        HStack(spacing: Space.sm) {
-            ProgressView(value: supply.fraction).tint(barColor)
-            Text("\(supply.dosesLeft) of \(supply.total) doses left")
-                .font(.caption)
-                .foregroundStyle(BrandColor.textSecondary)
-                .layoutPriority(1)
-            if supply.needsReorder {
-                TagChip(text: "Low", style: .danger)
-            }
-        }
     }
 }
 
