@@ -151,8 +151,14 @@ struct MicroLabel: View {
     }
 
     var body: some View {
+        // CAPPED at 15pt. `size` scales from an 11pt base relative to `.caption2`, which at
+        // accessibility-XXXL reaches ~29pt — larger than the 17pt VALUE it labels, so the hero
+        // card rendered "ON-TIME STREAK" at roughly 3x the size of "13 doses" and inverted its
+        // own hierarchy. A micro-label is by definition subordinate; it must never out-size the
+        // figure it describes. The accessibility need is met from the other side, by `statValue`
+        // now scaling (see Typo) — the VALUE is the information, so that is what should grow.
         Text(text.uppercased())
-            .font(.system(size: size, weight: .semibold))
+            .font(.system(size: min(size, 15), weight: .semibold))
             .tracking(Typo.microTracking)
             .foregroundStyle(color)
     }

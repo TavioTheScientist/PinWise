@@ -210,9 +210,19 @@ struct HomeView: View {
                     .font(.caption)
                     .foregroundStyle(streak.current > 0 ? BrandColor.warning : BrandColor.textSecondary)
                     .accessibilityHidden(true)
-                Text("\(streak.current)").font(Typo.statValue).foregroundStyle(BrandColor.textPrimary)
-                Text(streak.current == 1 ? "dose" : "doses")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                // ONE concatenated text run, not two sibling Texts. As siblings in a compressed
+                // HStack each wrapped independently at accessibility sizes, so "13 doses" split
+                // into "1 dos-" / "3 es" — the number itself broken across lines and the unit
+                // hyphenated. Concatenation keeps them a single run, so the only legal break is
+                // the space between them, while each half keeps its own font and color.
+                (
+                    Text("\(streak.current)")
+                        .font(Typo.statValue)
+                        .foregroundStyle(BrandColor.textPrimary)
+                    + Text(" \(streak.current == 1 ? "dose" : "doses")")
+                        .font(.caption)
+                        .foregroundStyle(BrandColor.textSecondary)
+                )
             }
             if streak.longest > 0 {
                 Text("Personal best \(streak.longest)").font(.caption2).foregroundStyle(BrandColor.textSecondary)

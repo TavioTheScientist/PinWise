@@ -199,14 +199,22 @@ enum BrandColor {
 /// or any `Color`-typed `.foregroundStyle` slot. Keeping it in its own namespace makes that
 /// constraint legible at the call site.
 enum BrandGradient {
-    /// Silver → pale pink → silver on the diagonal in DARK; the same metal inverted to
-    /// graphite → ink → gunmetal in LIGHT, so the brand disc still reads on a near-white
-    /// tab bar. Adaptive via `Color(light:dark:)` stops — no `colorScheme` branch needed.
+    /// Silver → pale pink → silver on the diagonal in DARK; a ROSE metal (light sheen → core →
+    /// deep shadow) in LIGHT. Adaptive via `Color(light:dark:)` stops — no `colorScheme` branch.
+    ///
+    /// The light stops were originally graphite → ink → gunmetal, which measured fine but was
+    /// wrong twice over on a real device: the disc collapsed to a plain BLACK circle, so (a) the
+    /// metallic brand signal — the whole point of this gradient — vanished in light mode, and
+    /// (b) it became indistinguishable from the near-black `ctaFill` pill, so the tab bar's one
+    /// bold action no longer read as different from a primary button. Rose keeps the metal
+    /// legible as metal in both modes and keeps the two roles visually separate.
+    /// Ink on it is `BrandColor.onAccent` (white in light): ≥4.2:1 on the lightest stop —
+    /// comfortably past the 3:1 large-glyph floor — and 6.75:1 on the core.
     static let chrome = LinearGradient(
         stops: [
-            .init(color: Color(light: 0x3A3A42, dark: 0xF2E7EB), location: 0.00),
-            .init(color: Color(light: 0x0B0D16, dark: 0xE9C9D6), location: 0.48),
-            .init(color: Color(light: 0x2A2530, dark: 0xDCDCE2), location: 1.00),
+            .init(color: Color(light: 0xC2657F, dark: 0xF2E7EB), location: 0.00),
+            .init(color: Color(light: 0xA02455, dark: 0xE9C9D6), location: 0.48),
+            .init(color: Color(light: 0x8A2E52, dark: 0xDCDCE2), location: 1.00),
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
@@ -253,7 +261,17 @@ enum Typo {
     static let microLabel = Font.system(size: 11, weight: .semibold)
     static let microTracking: CGFloat = 1.1          // pair with .tracking() at call sites
     /// 3-up stat-grid value register (Strava: 11pt caps label over 17/700 tabular value).
-    static let statValue = Font.system(size: 17, weight: .bold, design: .rounded).monospacedDigit()
+    ///
+    /// Declared against the `.body` TEXT STYLE rather than a fixed `size: 17`, so it actually
+    /// scales with Dynamic Type. `.body` is 17pt at the default size, so this is visually
+    /// identical today — but a fixed `Font.system(size:)` never grows, which meant every stat
+    /// VALUE in the app stayed 17pt while `MicroLabel` scaled past it. This is the most-used
+    /// value token (stat strips, ProtocolStat, hero stats), so it is the one that matters most.
+    ///
+    /// KNOWN GAP: `numberMD`/`numberLG`/`numberXL`/`numberHero` below are still fixed-size and
+    /// do NOT scale. They are already large, so the harm is smaller, but converting them needs
+    /// every hero layout re-verified at accessibility sizes — deliberately left as its own pass.
+    static let statValue = Font.system(.body, design: .rounded).weight(.bold).monospacedDigit()
     /// "The number is the headline" hero figure (Home activity hero).
     static let numberHero = Font.system(size: 48, weight: .black, design: .rounded).monospacedDigit()
 }
