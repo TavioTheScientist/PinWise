@@ -328,9 +328,6 @@ struct BiomarkersView: View {
 
     // MARK: - Health prefill (A9)
 
-    /// One-tap prefill from Apple Health — weight only, only when Health is connected and has
-    /// a reading. Converts kg → lb to match the user's display unit.
-    @ViewBuilder
     /// The optional note, collapsed by default — a tap reveals the field. When collapsed with text
     /// already entered, the header shows a preview so the note isn't hidden. Keeps the form minimal.
     private var noteDropdown: some View {
@@ -363,6 +360,9 @@ struct BiomarkersView: View {
         }
     }
 
+    /// One-tap prefill from Apple Health — weight only, only when Health is connected and has
+    /// a reading. Converts kg → lb to match the user's display unit.
+    @ViewBuilder
     private var healthPrefillButton: some View {
         if selected == .weight, health.authorized, let kg = health.latestWeightKg {
             let display = weightInPounds ? kg * 2.20462 : kg
