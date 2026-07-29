@@ -65,8 +65,13 @@ public struct CompoundProfile: Sendable {
     public var route: String?
     /// Half-life → how often it's typically taken, and any timing tips.
     public var timing: String?
-    /// Side effects grouped common → serious, plus "is this normal / when to stop."
+    /// Side effects as a single prose block — the fallback when the structured arrays below are empty.
     public var sideEffects: String?
+    /// Structured side effects: everyday/expected effects (`common`) and the serious ones that mean
+    /// stop-and-seek-care (`serious`). When either is non-empty the page renders them as two labeled
+    /// lists instead of the prose block, so "is this normal?" vs "red flag" reads at a glance.
+    public var sideEffectsCommon: [String]
+    public var sideEffectsSerious: [String]
     /// How it's commonly combined — logistics only, not a recommendation.
     public var stacking: String?
     /// Storage and handling (reconstitution, refrigeration, beyond-use).
@@ -90,6 +95,8 @@ public struct CompoundProfile: Sendable {
         route: String? = nil,
         timing: String? = nil,
         sideEffects: String? = nil,
+        sideEffectsCommon: [String] = [],
+        sideEffectsSerious: [String] = [],
         stacking: String? = nil,
         storageHandling: String? = nil,
         misconceptions: [String] = [],
@@ -108,6 +115,8 @@ public struct CompoundProfile: Sendable {
         self.route = route
         self.timing = timing
         self.sideEffects = sideEffects
+        self.sideEffectsCommon = sideEffectsCommon
+        self.sideEffectsSerious = sideEffectsSerious
         self.stacking = stacking
         self.storageHandling = storageHandling
         self.misconceptions = misconceptions
@@ -143,7 +152,15 @@ public enum CompoundProfiles {
             dosingCommunity: "Compounded semaglutide is often dosed to mirror the label titration. Compounded vials are sometimes labeled in \"units\" rather than mg, which has been associated with accidental overdoses; confirm the concentration and calculate the dose (PinWise's reconstitution calculator supports this). Reported, not recommended.",
             route: "Subcutaneous injection, once weekly. Rotate between the abdomen (avoiding approximately 2 in around the navel), the front or outer thigh, and the back of the upper arm. Small-volume injection with a short insulin-style needle.",
             timing: "Half-life is approximately 1 week; taken once weekly on the same day. Levels build over the first several weeks and take weeks to clear after discontinuation.",
-            sideEffects: "Very common: nausea, reduced appetite, constipation or diarrhea, burping, typically worst after a dose increase and easing with continued use. Consult a clinician for vomiting with reduced fluid intake, signs of dehydration, or severe, persistent upper-abdominal pain radiating to the back (a possible pancreatitis signal). Carries a boxed warning for thyroid C-cell tumors observed in rodents; contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2.",
+            sideEffectsCommon: [
+                "Nausea", "Reduced appetite", "Constipation or diarrhea",
+                "Burping — usually worst after a dose increase, easing with continued use",
+            ],
+            sideEffectsSerious: [
+                "Vomiting with reduced fluid intake, or signs of dehydration",
+                "Severe, persistent upper-abdominal pain radiating to the back (a possible pancreatitis signal)",
+                "Boxed warning for thyroid C-cell tumors (seen in rodents) — contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2",
+            ],
             stacking: "Frequently paired with cagrilintide (an amylin analog; the combination is studied as CagriSema). A GH secretagogue is sometimes added during dieting with the aim of preserving muscle, though this combination has not been trial-validated.",
             storageHandling: "Pens: refrigerate before first use; an in-use pen can typically be stored at room temperature for a set number of days per its label. Compounded vials follow standard reconstituted-peptide storage.",
             misconceptions: [
@@ -166,7 +183,14 @@ public enum CompoundProfiles {
             dosingCommunity: "Compounded tirzepatide is common and usually mirrors the label titration. As with semaglutide, mislabeled concentration (\"units\" vs mg) is the main injury risk; verify concentration and calculate the volume each time. Reported, not recommended.",
             route: "Subcutaneous, once weekly. Rotate abdomen, thigh, and back of upper arm.",
             timing: "Half-life approximately 5 days; taken once weekly on the same day. Levels build over the first few weeks.",
-            sideEffects: "GI-dominant profile as with other incretins: nausea, diarrhea or constipation, reduced appetite, worst after dose increases. Same pancreatitis and thyroid C-cell (rodent) cautions and the MEN 2 and medullary thyroid carcinoma contraindication as semaglutide. Dehydration from GI losses is a practical concern.",
+            sideEffectsCommon: [
+                "Nausea", "Diarrhea or constipation", "Reduced appetite — worst after dose increases",
+                "Dehydration from GI losses is a practical concern",
+            ],
+            sideEffectsSerious: [
+                "Same pancreatitis and thyroid C-cell (rodent) cautions as semaglutide",
+                "Contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2",
+            ],
             stacking: "Often used alone. Muscle-preserving strategies (resistance training, adequate protein, sometimes a GH secretagogue) are sometimes added during aggressive calorie deficits; supportive, not trial-validated.",
             storageHandling: "Pens refrigerated before use. Compounded vials follow standard reconstituted-peptide storage.",
             misconceptions: [
@@ -187,7 +211,13 @@ public enum CompoundProfiles {
             dosingCommunity: "As a research-only compound, community dosing is unregulated and product identity and purity are unverifiable without third-party testing. Reported ranges echo the Phase 2 doses but carry no manufacturing guarantees. Reported, not recommended.",
             route: "Subcutaneous, once weekly in trials.",
             timing: "Half-life approximately 6 days; once-weekly cadence. Long build-up and washout, as with other weekly agents.",
-            sideEffects: "GI effects as with the rest of the class, plus dose-dependent increases in heart rate reported in trials. Long-term human safety is not established, so unknowns are a significant risk.",
+            sideEffectsCommon: [
+                "GI effects as with the rest of the class",
+                "Dose-dependent increases in heart rate reported in trials",
+            ],
+            sideEffectsSerious: [
+                "Long-term human safety is not established — the unknowns are a significant risk",
+            ],
             stacking: "Studied as a standalone agent. Its potency means stacking other agonists compounds side effects without a clear rationale.",
             misconceptions: [
                 "\"It is approved / equivalent to Zepbound.\" It is not approved and adds a third receptor (glucagon) that changes its effect and side-effect profile.",
@@ -207,7 +237,10 @@ public enum CompoundProfiles {
             dosingCommunity: "Research-only supply; community use mirrors the approximately 2.4 mg weekly trial dose without manufacturing verification. Reported, not recommended.",
             route: "Subcutaneous, once weekly.",
             timing: "Long half-life (approximately one week) supports once-weekly dosing.",
-            sideEffects: "GI effects similar to GLP-1 agonists (nausea most common), particularly when combined with semaglutide.",
+            sideEffectsCommon: [
+                "Nausea (most common), similar to GLP-1 agonists",
+                "More likely when combined with semaglutide",
+            ],
             stacking: "Studied primarily in combination with semaglutide; the two are intended to be complementary.",
             misconceptions: [
                 "\"Amylin analogs are weaker GLP-1 agonists.\" They act on a different hormone and receptor; the aim is additive appetite control, not redundancy."
@@ -225,7 +258,13 @@ public enum CompoundProfiles {
             dosingStudied: "Saxenda label: 0.6 mg daily, increasing weekly to 3.0 mg. Victoza ranges to 1.8 mg.",
             route: "Subcutaneous, once daily. Rotate abdomen, thigh, and upper arm.",
             timing: "Half-life approximately 13 hours; once daily. A missed dose has more effect than with weekly agents.",
-            sideEffects: "Same GI profile and thyroid and pancreatitis cautions as the rest of the class; daily dosing produces a daily rather than weekly nausea pattern.",
+            sideEffectsCommon: [
+                "Same GI profile as the class (nausea, GI upset)",
+                "Daily dosing means a daily rather than weekly nausea pattern",
+            ],
+            sideEffectsSerious: [
+                "Same thyroid C-cell and pancreatitis cautions as the rest of the class",
+            ],
             misconceptions: [
                 "\"Daily dosing is gentler.\" It reflects a shorter half-life; the side-effect profile is the same drug class."
             ]
@@ -244,7 +283,13 @@ public enum CompoundProfiles {
             dosingCommunity: "Commonly reported at approximately 200–500 mcg once or twice daily, sometimes injected near the injury site, in cycles of several weeks. These are anecdotal ranges with no trial basis. Reported, not recommended.",
             route: "Usually subcutaneous, sometimes intramuscular near the target area. The claim that local injection heals faster is not established in humans.",
             timing: "Plasma half-life is short (well under an hour), which is the basis for once- or twice-daily dosing in practice.",
-            sideEffects: "Reported as generally well tolerated at these doses, with occasional injection-site irritation, nausea, or lightheadedness. Long-term safety has not been studied in humans.",
+            sideEffectsCommon: [
+                "Generally reported as well tolerated at these doses",
+                "Occasional injection-site irritation, nausea, or lightheadedness",
+            ],
+            sideEffectsSerious: [
+                "Long-term safety has not been studied in humans — the main unknown",
+            ],
             stacking: "Frequently combined with TB-500 as a recovery stack. The combination is community practice, not a studied protocol.",
             storageHandling: standardStorage,
             misconceptions: [
@@ -265,7 +310,13 @@ public enum CompoundProfiles {
             dosingCommunity: "Commonly reported at approximately 2–2.5 mg once or twice weekly, sometimes with a higher loading phase for the first few weeks. Anecdotal. Reported, not recommended.",
             route: "Subcutaneous or intramuscular, once or twice weekly.",
             timing: "Human half-life is not well established; the low weekly frequency is community convention, not derived from pharmacokinetic data.",
-            sideEffects: "Reported as generally well tolerated, with occasional fatigue or head-rush after dosing. Long-term human safety is unknown.",
+            sideEffectsCommon: [
+                "Reported as generally well tolerated",
+                "Occasional fatigue or head-rush after dosing",
+            ],
+            sideEffectsSerious: [
+                "Long-term human safety is unknown",
+            ],
             stacking: "Commonly combined with BPC-157 (the \"BPC/TB\" recovery stack); community practice, not a studied combination.",
             storageHandling: standardStorage,
             misconceptions: [
@@ -300,7 +351,14 @@ public enum CompoundProfiles {
             dosingCommunity: "Commonly reported at approximately 100–300 mcg, one to three times daily, typically before bed or fasted, often with ipamorelin. Reported, not recommended.",
             route: "Subcutaneous, small volume, rotated across abdominal sites.",
             timing: "Short-acting (community estimate approximately 30 minutes; not established in the literature), which is the basis for dosing multiple times per day during empty-stomach windows, since food (especially carbohydrate and fat) blunts the GH pulse.",
-            sideEffects: "Common: a warm flush after injecting, head-rush, injection-site itch, water retention, and hunger (largely from the GHRP partner). Reduce use with numbness or tingling in the hands (carpal-tunnel-like), joint aches, or rising blood sugar.",
+            sideEffectsCommon: [
+                "A warm flush after injecting", "Head-rush", "Injection-site itch",
+                "Water retention", "Hunger (largely from the GHRP partner)",
+            ],
+            sideEffectsSerious: [
+                "Numbness or tingling in the hands (carpal-tunnel-like)",
+                "Joint aches", "Rising blood sugar — ease off if these appear",
+            ],
             stacking: "The standard combination is CJC-1295 (no DAC) with ipamorelin, drawn together and injected as one dose. The GHRH and GHRP combination is the basis for the stack.",
             storageHandling: standardStorage,
             misconceptions: [
@@ -321,7 +379,12 @@ public enum CompoundProfiles {
             dosingCommunity: "Commonly reported at approximately 1–2 mg once weekly (sometimes split twice weekly). Reported, not recommended.",
             route: "Subcutaneous.",
             timing: "Half-life approximately 6–8 days; weekly or twice-weekly dosing. It does not require multiple daily injections.",
-            sideEffects: "Similar to no-DAC (flushing, water retention, tingling, joint aches), but because levels stay elevated longer, side effects can be more sustained.",
+            sideEffectsCommon: [
+                "Flushing", "Water retention",
+            ],
+            sideEffectsSerious: [
+                "Carpal-tunnel-like tingling, joint aches, or rising blood sugar — and because levels stay elevated longer, these can be more sustained than with no-DAC",
+            ],
             stacking: "Can be combined with a GHRP, though the pulsatile action of a GHRP pairs more naturally with the short-acting no-DAC form.",
             storageHandling: standardStorage,
             misconceptions: [
@@ -340,7 +403,13 @@ public enum CompoundProfiles {
             dosingCommunity: "Commonly reported at approximately 100–300 mcg, one to three times daily, often combined with CJC-1295 (no DAC) and timed fasted or pre-bed. Reported, not recommended.",
             route: "Subcutaneous, small volume, rotated across abdominal sites.",
             timing: "Half-life approximately 2 hours; multiple daily doses in practice, timed to empty-stomach windows since food blunts the GH pulse.",
-            sideEffects: "Reported as generally well tolerated: mild head-rush or flushing after dosing, some water retention. Less appetite stimulation than GHRP-6 or GHRP-2. Same class cautions (carpal-tunnel-like tingling, joint aches, blood sugar) at higher doses.",
+            sideEffectsCommon: [
+                "Generally well tolerated", "Mild head-rush or flushing after dosing",
+                "Some water retention", "Less appetite stimulation than GHRP-6 or GHRP-2",
+            ],
+            sideEffectsSerious: [
+                "Class cautions at higher doses: carpal-tunnel-like tingling, joint aches, blood sugar",
+            ],
             stacking: "Commonly combined with CJC-1295 (no DAC), drawn and injected together. This GHRH and GHRP pairing is the common GH stack.",
             storageHandling: standardStorage,
             misconceptions: [
@@ -360,7 +429,14 @@ public enum CompoundProfiles {
             dosingStudied: "Labeled once-daily subcutaneous: Egrifta 2 mg, Egrifta SV 1.4 mg, Egrifta WR 1.28 mg.",
             route: "Subcutaneous, once daily, into the abdomen; rotate sites.",
             timing: "Very short half-life (approximately 30 minutes); once-daily dosing, typically at a consistent time.",
-            sideEffects: "Common label effects include joint pain, swelling in the arms and legs, injection-site reactions, and muscle aches; it can raise blood sugar and IGF-1. Monitor for carpal-tunnel-like symptoms. Not for use in active malignancy.",
+            sideEffectsCommon: [
+                "Joint pain", "Swelling in the arms and legs", "Injection-site reactions",
+                "Muscle aches", "Can raise blood sugar and IGF-1",
+            ],
+            sideEffectsSerious: [
+                "Monitor for carpal-tunnel-like symptoms",
+                "Not for use in active malignancy",
+            ],
             stacking: "Used on its own as an approved drug; community stacks with GHRPs exist but are not part of its approval.",
             storageHandling: standardStorage,
             misconceptions: [
@@ -380,7 +456,12 @@ public enum CompoundProfiles {
             dosingCommunity: "Historically dosed at approximately 0.2–0.3 mg at night; community physique use follows that range, often combined with a GHRP. Reported, not recommended.",
             route: "Subcutaneous, typically at bedtime on an empty stomach.",
             timing: "Half-life approximately 11–12 minutes; dosed daily, usually nightly, to align with the nighttime GH pulse.",
-            sideEffects: "Injection-site reactions, flushing, and headache are typical; GH-class cautions apply at higher doses.",
+            sideEffectsCommon: [
+                "Injection-site reactions", "Flushing", "Headache",
+            ],
+            sideEffectsSerious: [
+                "GH-class cautions apply at higher doses (tingling, joint aches, blood sugar)",
+            ],
             stacking: "Combined with GHRPs, following the same logic as CJC-1295 (no DAC) with ipamorelin.",
             storageHandling: standardStorage,
             misconceptions: [
@@ -401,7 +482,13 @@ public enum CompoundProfiles {
             dosingCommunity: "Community use follows 10–25 mg daily, often at night, though the sleep-versus-appetite timing is debated. Oral, so no reconstitution.",
             route: "Oral; taken by mouth once daily. Not injected.",
             timing: "Once daily; effect on IGF-1 lasts approximately 24 hours. Some take it at night for sleep, others in the morning to avoid morning grogginess or appetite.",
-            sideEffects: "Very common: increased appetite, water retention, and sometimes lethargy or numb or tingling hands. It can raise blood sugar and lower insulin sensitivity, which is the most important effect to monitor. Water weight can resemble fat gain.",
+            sideEffectsCommon: [
+                "Increased appetite", "Water retention",
+                "Sometimes lethargy or numb/tingling hands", "Water weight can resemble fat gain",
+            ],
+            sideEffectsSerious: [
+                "Can raise blood sugar and lower insulin sensitivity — the most important effect to monitor, especially with prediabetes",
+            ],
             stacking: "Sometimes used alongside injectable GH secretagogues or during a bulk for appetite and recovery. Its glucose effect is a reason for caution when combining with other agents that raise blood sugar.",
             misconceptions: [
                 "\"MK-677 is a SARM.\" It is not; it is a GH secretagogue acting through ghrelin, unrelated to androgen receptors.",
@@ -425,7 +512,13 @@ public enum CompoundProfiles {
             dosingCommunity: "Off-label users often start below 1.75 mg to assess nausea. Reported, not recommended.",
             route: "Subcutaneous, as needed before activity (abdomen or thigh).",
             timing: "Half-life approximately 2.7 h; taken on demand ahead of time, not on a daily schedule.",
-            sideEffects: "Very common: nausea (sometimes significant), flushing, headache. It can transiently raise blood pressure and lower heart rate, so it is cautioned against in uncontrolled hypertension or cardiovascular disease. Prolonged or unwanted erections are possible in men (off-label).",
+            sideEffectsCommon: [
+                "Nausea (sometimes significant)", "Facial flushing", "Headache",
+            ],
+            sideEffectsSerious: [
+                "Can transiently raise blood pressure and lower heart rate — cautioned against in uncontrolled hypertension or cardiovascular disease",
+                "Prolonged or unwanted erections are possible in men (off-label)",
+            ],
             stacking: "Sometimes combined with PDE5 inhibitors off-label (different mechanisms), which compounds the blood-pressure caution and warrants medical oversight.",
             misconceptions: [
                 "\"PT-141 works like Viagra.\" It acts on desire centrally, not on penile blood flow; the target and effect are different.",
@@ -444,7 +537,13 @@ public enum CompoundProfiles {
             dosingCommunity: "Injectable community ranges are often approximately 1–2 mg, with no trial basis and open questions about systemic copper. Reported, not recommended. Topical serums are a distinct and better-supported product.",
             route: "The evidence-based route is topical (serums and creams). Injectable subcutaneous use is off-label and can sting and cause copper-blue discoloration at the site.",
             timing: "No established injectable schedule; topical is applied daily.",
-            sideEffects: "Topical: generally well tolerated, occasional irritation. Injected: site stinging and blue discoloration are reported; systemic copper load is a theoretical concern with repeated dosing.",
+            sideEffectsCommon: [
+                "Topical: generally well tolerated, occasional irritation",
+                "Injected: site stinging and blue (copper) discoloration are reported",
+            ],
+            sideEffectsSerious: [
+                "Systemic copper load is a theoretical concern with repeated injected dosing",
+            ],
             storageHandling: standardStorage,
             misconceptions: [
                 "\"Injecting GHK-Cu works better than the cream.\" The evidence favors topical use, which is what has been studied.",
@@ -464,7 +563,13 @@ public enum CompoundProfiles {
             dosingCommunity: "Community protocols often use a low-dose loading phase (approximately 250–500 mcg) then maintenance, timed with UV exposure. Reported, not recommended; the safety issues below are more significant than the dose.",
             route: "Subcutaneous.",
             timing: "No well-characterized half-life; dosed in loading and maintenance patterns by convention.",
-            sideEffects: "Very common: nausea, facial flushing, appetite loss, darkening of existing moles and freckles. The serious concern in the literature is new or changing moles; MT-2 users should have skin and moles monitored by a dermatologist, because it can mask or mimic melanoma warning signs.",
+            sideEffectsCommon: [
+                "Nausea", "Facial flushing", "Appetite loss",
+                "Darkening of existing moles and freckles",
+            ],
+            sideEffectsSerious: [
+                "New or changing moles — have skin and moles monitored by a dermatologist, because MT-2 can mask or mimic melanoma warning signs",
+            ],
             misconceptions: [
                 "\"Tanning from Melanotan protects against the sun.\" It does not reliably prevent UV damage and does not remove the need for sun protection.",
                 "\"Darkening moles are only cosmetic.\" Changing moles are a sign dermatologists monitor for melanoma; this is why MT-2 warrants monitoring."
@@ -484,7 +589,10 @@ public enum CompoundProfiles {
             dosingCommunity: "Injected or infused doses are large, tens to hundreds of mg, and are given slowly because the infusion rate is what causes discomfort. Reported, not recommended.",
             route: "Subcutaneous or IV infusion. IV is typically administered slowly for tolerability.",
             timing: "No peptide-style half-life; dosing is governed by infusion rate rather than schedule.",
-            sideEffects: "The characteristic effect is a wave of flushing, chest or abdominal tightness, and nausea if administered too quickly; uncomfortable but transient, and the reason it is given slowly. Slowing the rate reduces it.",
+            sideEffectsCommon: [
+                "A wave of flushing, chest or abdominal tightness, and nausea if infused too quickly — uncomfortable but transient",
+                "Slowing the infusion rate reduces it",
+            ],
             misconceptions: [
                 "\"NAD+ is a peptide.\" It is a dinucleotide and coenzyme, grouped with peptides only by marketing.",
                 "\"Faster infusion is better.\" A faster rate increases flushing and nausea; the rate governs tolerability.",
@@ -503,7 +611,12 @@ public enum CompoundProfiles {
             dosingCommunity: "Commonly reported at approximately 5–10 mg per week, sometimes split. Anecdotal. Reported, not recommended.",
             route: "Subcutaneous.",
             timing: "Human half-life is not established; approximately weekly dosing is convention.",
-            sideEffects: "Reported as generally well tolerated at community doses; long-term human safety is unknown.",
+            sideEffectsCommon: [
+                "Reported as generally well tolerated at community doses",
+            ],
+            sideEffectsSerious: [
+                "Long-term human safety is unknown",
+            ],
             storageHandling: standardStorage,
             misconceptions: [
                 "\"MOTS-c replaces exercise.\" The exercise-mimetic concept comes from animal work; it is not a substitute for training in humans."
@@ -521,7 +634,13 @@ public enum CompoundProfiles {
             dosingCommunity: "Off-label ranges are often approximately 600–2400 mg per session (IV or IM), repeated on a schedule. Reported, not recommended.",
             route: "IV, intramuscular, or subcutaneous depending on the protocol.",
             timing: "No peptide-style half-life driving a schedule; benefits are described as dependent on repeated dosing.",
-            sideEffects: "Reported as generally well tolerated; injection-site reactions are possible. Sterility and product quality are the practical risks with off-label injectable use.",
+            sideEffectsCommon: [
+                "Reported as generally well tolerated",
+                "Injection-site reactions are possible",
+            ],
+            sideEffectsSerious: [
+                "Sterility and product quality are the practical risks with off-label injectable use",
+            ],
             misconceptions: [
                 "\"Glutathione permanently lightens skin.\" Reported effects are gradual and tend to reverse after stopping.",
                 "\"It is a peptide drug.\" It is an antioxidant tripeptide and nutrient, not a signaling-peptide medication."

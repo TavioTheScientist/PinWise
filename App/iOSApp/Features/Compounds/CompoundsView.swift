@@ -426,8 +426,8 @@ struct CompoundDetailView: View {
         if p.dosingStudied != nil || p.dosingCommunity != nil {
             disclosure("dosing", "Reported dosing", scent: "Studied and community-reported ranges") { dosingBody(p) }
         }
-        if let s = p.sideEffects, !s.isEmpty {
-            disclosure("sides", "Side effects", scent: "Common effects and when to seek care") { proseText(s) }
+        if hasSideEffects(p) {
+            disclosure("sides", "Side effects", scent: "Common effects and when to seek care") { sideEffectsBody(p) }
         }
         if let e = p.whatToExpect, !e.isEmpty {
             disclosure("expect", "What to expect", scent: "Effects and typical timeline") { proseText(e) }
@@ -498,6 +498,42 @@ struct CompoundDetailView: View {
                     Image(systemName: "checkmark.seal.fill")
                         .font(.caption).foregroundStyle(BrandColor.mint).padding(.top, Space.xs)
                     Text(m).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func hasSideEffects(_ p: CompoundProfile) -> Bool {
+        !p.sideEffectsCommon.isEmpty || !p.sideEffectsSerious.isEmpty || !(p.sideEffects?.isEmpty ?? true)
+    }
+
+    /// Structured side effects when authored (Common list + a "When to stop or seek care" list with a
+    /// warning glyph); otherwise the legacy prose block. The two groups separate "is this normal?" from
+    /// the genuine red flags at a glance — icon + label, never color alone.
+    @ViewBuilder private func sideEffectsBody(_ p: CompoundProfile) -> some View {
+        if !p.sideEffectsCommon.isEmpty || !p.sideEffectsSerious.isEmpty {
+            VStack(alignment: .leading, spacing: Space.md) {
+                if !p.sideEffectsCommon.isEmpty {
+                    sideEffectGroup("Common", p.sideEffectsCommon, icon: "circle.fill", tint: BrandColor.textSecondary)
+                }
+                if !p.sideEffectsSerious.isEmpty {
+                    sideEffectGroup("When to stop or seek care", p.sideEffectsSerious,
+                                    icon: "exclamationmark.triangle.fill", tint: BrandColor.warning)
+                }
+            }
+        } else if let s = p.sideEffects {
+            proseText(s)
+        }
+    }
+
+    private func sideEffectGroup(_ label: String, _ items: [String], icon: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            MicroLabel(label)
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                HStack(alignment: .top, spacing: Space.sm) {
+                    Image(systemName: icon).font(.caption2).foregroundStyle(tint).padding(.top, 3)
+                    Text(item).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

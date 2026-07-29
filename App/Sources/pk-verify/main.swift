@@ -528,6 +528,9 @@ do {
     // safetyFlag is either absent or meaningful — never an empty always-visible caution strip.
     check(CompoundProfiles.all.allSatisfy { $0.safetyFlag.map { !$0.isEmpty } ?? true },
           "no empty safetyFlag strings")
+    // Structured side-effect bullets are never blank (they render as list rows).
+    check(CompoundProfiles.all.allSatisfy { ($0.sideEffectsCommon + $0.sideEffectsSerious).allSatisfy { !$0.isEmpty } },
+          "no empty side-effect bullets")
 }
 
 // MARK: - DoseDrawResult protocol
