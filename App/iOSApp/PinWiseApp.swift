@@ -200,8 +200,11 @@ struct BiometricLockView: View {
                     Label("Unlock with \(BiometricLock.biometryName)", systemImage: "lock.open")
                         .font(.body.weight(.semibold))
                         .padding(.horizontal, Space.xl).padding(.vertical, Space.md)
-                        .background(BrandColor.accent, in: Capsule())
-                        .foregroundStyle(BrandColor.onAccent)
+                        // The one action on a lock screen → the inverse-ink CTA, not the brand
+                        // metal. `accent` here spent the chrome on the loudest element, which is
+                        // exactly what `ctaFill` exists to prevent.
+                        .background(BrandColor.ctaFill, in: Capsule())
+                        .foregroundStyle(BrandColor.onCtaFill)
                 }
                 .buttonStyle(.plain)
             }

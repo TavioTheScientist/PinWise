@@ -507,9 +507,15 @@ struct HomeHealthCard: View {
                             } label: {
                                 Label(requesting ? "Connecting…" : "Connect Apple Health", systemImage: "heart.text.square")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(BrandColor.onAccent)
+                                    // The SECONDARY register, not `ctaFill`. This is a
+                                    // caption-sized invitation INSIDE a card, sitting beside a
+                                    // "Log a metric" text link — a white pill here would be a
+                                    // bright blob competing with Home's actual hero. It only
+                                    // needed to stop spending the brand metal.
+                                    .foregroundStyle(BrandColor.textPrimary)
                                     .padding(.vertical, Space.sm).padding(.horizontal, Space.md)
-                                    .background(BrandColor.accent, in: Capsule())
+                                    .background(BrandColor.surfaceElevated, in: Capsule())
+                                    .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                             }
                             .buttonStyle(.plain).disabled(requesting)
                         }

@@ -43,8 +43,10 @@ struct DataExportView: View {
                     Label("Export CSV", systemImage: "square.and.arrow.up")
                         .font(.body.weight(.semibold))
                         .frame(maxWidth: .infinity).frame(height: 52)
-                        .background(BrandColor.accent, in: Capsule())
-                        .foregroundStyle(BrandColor.onAccent)
+                        // This screen's one primary action → inverse-ink CTA, matching
+                        // `PrimaryButton`'s 52pt pill rather than spending the brand metal.
+                        .background(BrandColor.ctaFill, in: Capsule())
+                        .foregroundStyle(BrandColor.onCtaFill)
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, Space.lg)

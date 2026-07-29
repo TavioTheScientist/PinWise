@@ -687,12 +687,18 @@ struct AdherenceRing: View {
 
     var body: some View {
         ZStack {
-            Circle().stroke(ringColor.opacity(0.22), lineWidth: 10)
+            // 8pt, not 10: at 112pt across on a PURE-BLACK ground, a 10pt full-saturation arc was
+            // the largest and loudest object in the app — it out-shouted the Log action, which is
+            // meant to be the one bold thing in the chrome. Thinning the stroke reads as a
+            // measured instrument rather than a glowing ring. The HUE is deliberately unchanged:
+            // it is semantic (behind / on pace / ahead), and a Fitness-style ring legitimately
+            // earns Home's hero slot — the fix is weight, not color.
+            Circle().stroke(ringColor.opacity(0.26), lineWidth: 8)
             // Renders at its value immediately — no entrance sweep. (A data change still transitions
             // the number subtly via contentTransition, but opening Home no longer animates it in.)
             Circle()
                 .trim(from: 0, to: max(0.0001, clamped))
-                .stroke(ringColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                .stroke(ringColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             VStack(spacing: 0) {
                 Text("\(pct)%")

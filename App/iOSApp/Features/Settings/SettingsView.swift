@@ -17,23 +17,31 @@ struct SettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.xl) {
+                    // Every tile is NEUTRAL. These tints were arbitrary — amber notifications,
+                    // teal appearance, green health, and the BRAND METAL on Membership and
+                    // Privacy — four decorative hues plus a chrome misuse in one eight-row hub.
+                    // Unlike the Tools grid, there is no domain system here for a hue to encode,
+                    // and in a navigation list you scan the TITLE; the glyph is a shape cue, and
+                    // shape (bell / lock / doc / card) already differentiates without color.
+                    // `tint:` survives so a genuinely semantic row (a destructive "Delete
+                    // account") can still carry `danger` — it is not a decorative slot.
                     section("Account") {
-                        sheetRow("Membership", icon: "creditcard.fill", tint: BrandColor.accentText, value: "Free trial") { showMembership = true }
+                        sheetRow("Membership", icon: "creditcard.fill", tint: BrandColor.textSecondary, value: "Free trial") { showMembership = true }
                     }
 
                     section("Preferences") {
-                        pushRow("Notifications", icon: "bell.badge.fill", tint: BrandColor.warning) { NotificationsSettingsView() }
+                        pushRow("Notifications", icon: "bell.badge.fill", tint: BrandColor.textSecondary) { NotificationsSettingsView() }
                         rowDivider
-                        pushRow("Appearance & units", icon: "slider.horizontal.3", tint: BrandColor.data) { GeneralSettingsView() }
+                        pushRow("Appearance & units", icon: "slider.horizontal.3", tint: BrandColor.textSecondary) { GeneralSettingsView() }
                     }
 
                     section("Privacy & data") {
-                        sheetRow("Apple Health & devices", icon: "heart.text.square.fill", tint: BrandColor.success,
+                        sheetRow("Apple Health & devices", icon: "heart.text.square.fill", tint: BrandColor.textSecondary,
                                  value: HealthManager.shared.authorized ? "Connected" : "Not connected") { showConnections = true }
                         rowDivider
-                        pushRow("Privacy & security", icon: "lock.fill", tint: BrandColor.accentText) { PrivacySecuritySettingsView() }
+                        pushRow("Privacy & security", icon: "lock.fill", tint: BrandColor.textSecondary) { PrivacySecuritySettingsView() }
                         rowDivider
-                        sheetRow("Export data", icon: "square.and.arrow.up.fill", tint: BrandColor.data) { showExport = true }
+                        sheetRow("Export data", icon: "square.and.arrow.up.fill", tint: BrandColor.textSecondary) { showExport = true }
                     }
 
                     section("About") {
