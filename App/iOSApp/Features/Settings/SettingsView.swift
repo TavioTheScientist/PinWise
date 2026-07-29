@@ -39,7 +39,7 @@ struct SettingsView: View {
                     section("About") {
                         sheetRow("Privacy Policy & Terms", icon: "doc.text.fill", tint: BrandColor.textSecondary) { showLegal = true }
                         rowDivider
-                        pushRow("About PinWise", icon: "info.circle.fill", tint: BrandColor.textSecondary) { AboutView() }
+                        pushRow("About PinWise", icon: "info.circle.fill", tint: BrandColor.textSecondary) { AboutSettingsView() }
                     }
                 }
                 .padding(Space.lg)
@@ -256,7 +256,7 @@ private struct PrivacySecuritySettingsView: View {
 }
 
 /// About — version/device provenance and the standing not-medical-advice notice.
-private struct AboutView: View {
+private struct AboutSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
