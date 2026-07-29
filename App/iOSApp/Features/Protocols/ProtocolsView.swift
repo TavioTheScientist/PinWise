@@ -160,17 +160,12 @@ struct ProtocolsView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
-            Text("Stack")
-                .font(Typo.screenTitle)
-                .foregroundStyle(BrandColor.textPrimary)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
-            Text("Your protocols and your vials — the plan you track against.")
-                .font(Typo.body)
-                .foregroundStyle(BrandColor.textSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        Text("Stack")
+            .font(Typo.screenTitle)
+            .foregroundStyle(BrandColor.textPrimary)
+            .minimumScaleFactor(0.7)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var emptyState: some View {

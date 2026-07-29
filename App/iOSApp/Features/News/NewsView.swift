@@ -228,9 +228,6 @@ struct NewsView: View {
                     searchFocused = willActivate
                 }
             }
-            Text("Your hub for peptide and performance-medicine research — summarized clearly and linked to the source.")
-                .font(Typo.body)
-                .foregroundStyle(BrandColor.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
