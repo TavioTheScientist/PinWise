@@ -646,6 +646,207 @@ public enum CompoundProfiles {
                 "\"It is a peptide drug.\" It is an antioxidant tripeptide and nutrient, not a signaling-peptide medication."
             ]
         ),
+
+        // MARK: — Batch 2 —
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.dulaglutide.id,
+            goals: [.fatLoss],
+            tagline: "GLP-1 receptor agonist; a once-weekly diabetes drug.",
+            safetyFlag: "Boxed warning for thyroid C-cell tumors — do not use with a personal or family history of medullary thyroid carcinoma or MEN 2. Stop and seek care for severe, persistent abdominal pain (possible pancreatitis).",
+            whatItIs: "Dulaglutide (Trulicity) is an FDA-approved once-weekly GLP-1 receptor agonist, used mainly for type 2 diabetes and to lower cardiovascular risk in people with diabetes. It comes in fixed-dose auto-injector pens.",
+            howItWorks: "The GLP-1 mechanism shared by the class — slows gastric emptying, reduces appetite, and prompts glucose-dependent insulin release — on a fragment engineered to last about a week.",
+            whatToExpect: "Strong blood-sugar control and modest weight loss, smaller than semaglutide or tirzepatide in head-to-head data. Weekly; appetite effects appear early.",
+            evidenceSummary: "Tier A — FDA-approved, backed by the AWARD trial program and the REWIND cardiovascular-outcomes trial.",
+            dosingStudied: "Label: 0.75 mg once weekly to start, up to 4.5 mg weekly, in fixed-dose pens.",
+            route: "Subcutaneous, once weekly. Rotate abdomen / thigh / upper arm.",
+            timing: "Half-life about 4.5 days → once weekly, the same day each week.",
+            sideEffectsCommon: ["Nausea", "Diarrhea", "Reduced appetite", "Injection-site reactions"],
+            sideEffectsSerious: [
+                "Same thyroid C-cell (rodent) and pancreatitis cautions as the class",
+                "Contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2",
+            ],
+            storageHandling: "Pens: refrigerate before first use; an in-use pen can sit at room temperature for a set number of days per its label.",
+            misconceptions: [
+                "\"It's a weight-loss drug like Wegovy.\" It's primarily a diabetes drug; the weight effect is real but smaller than the obesity-indicated agents."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.survodutide.id,
+            goals: [.fatLoss],
+            tagline: "Investigational GLP-1/glucagon dual agonist for obesity and fatty-liver disease.",
+            whatItIs: "Survodutide (BI 456906) is an experimental agent that activates both the GLP-1 and glucagon receptors. It is not approved, and is in Phase 3 for obesity and for MASH (fatty-liver disease).",
+            howItWorks: "GLP-1 activation curbs appetite and slows gastric emptying; adding glucagon-receptor activation raises energy expenditure and mobilizes liver fat — the rationale behind the dual design, especially for MASH.",
+            whatToExpect: "In trials: substantial weight loss and improved liver-fat markers. Everything beyond the current trials is unestablished, and long-term safety isn't known.",
+            evidenceSummary: "Tier B — human trials, not approved. Positive Phase 2; Phase 3 underway. Anything sold as survodutide today is research-only and unverified.",
+            dosingStudied: "Studied as a once-weekly subcutaneous dose titrated up over several weeks in trials — reported, not a protocol.",
+            dosingCommunity: "Research-only supply; community ranges echo the trials but carry no manufacturing verification.",
+            route: "Subcutaneous, once weekly in trials.",
+            timing: "Long half-life supports once-weekly dosing.",
+            sideEffectsCommon: ["GI effects typical of the class — nausea and GI upset, worst after dose increases"],
+            sideEffectsSerious: [
+                "Long-term human safety is not established",
+                "Glucagon activation can raise heart rate and affect blood sugar — still being characterized in trials",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It's approved.\" It is investigational — not FDA-approved as of 2026."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.mazdutide.id,
+            goals: [.fatLoss],
+            tagline: "Investigational GLP-1/glucagon dual agonist studied for weight loss.",
+            whatItIs: "Mazdutide (IBI362 / LY3305677) is an experimental GLP-1/glucagon dual agonist, studied largely in China for obesity and diabetes. It is not FDA-approved.",
+            howItWorks: "Like survodutide, it pairs GLP-1 appetite/gastric effects with glucagon-driven energy expenditure and liver-fat mobilization.",
+            whatToExpect: "Meaningful weight loss reported in trials. Investigational, so durability and long-term safety aren't settled.",
+            evidenceSummary: "Tier B — human trials, not approved. Research-only outside trials.",
+            dosingStudied: "Studied as a titrated once-weekly subcutaneous dose in trials — reported, not a recommendation.",
+            dosingCommunity: "Research-only supply; unverified for identity and purity without third-party testing.",
+            route: "Subcutaneous, once weekly in trials.",
+            timing: "Once-weekly cadence in trials.",
+            sideEffectsCommon: ["Class GI effects — nausea, GI upset, worst after dose steps"],
+            sideEffectsSerious: [
+                "Long-term human safety is not established",
+                "Glucagon activation can affect heart rate and blood sugar",
+            ],
+            storageHandling: standardStorage
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.ghrp6.id,
+            goals: [.muscleAndGH],
+            tagline: "A growth-hormone-releasing peptide that strongly increases appetite.",
+            whatItIs: "GHRP-6 is a ghrelin-mimetic (a GHRP) that prompts a growth-hormone pulse. It's known for a pronounced hunger spike, which some use deliberately (e.g. to eat during a bulk) and others find unwanted.",
+            howItWorks: "It activates the ghrelin / GH-secretagogue receptor on the pituitary to release GH, and — via the same ghrelin signaling — sharply stimulates appetite. Often paired with a GHRH analog for a larger pulse.",
+            whatToExpect: "A strong, fast appetite increase; users report recovery and sleep effects over weeks. GH effects are indirect and subtler than injected GH.",
+            evidenceSummary: "Tier B — human pharmacokinetic data exist (biphasic; ~2.5 h terminal), but it isn't FDA-approved for therapy. WADA-prohibited.",
+            dosingCommunity: "Commonly reported around 100 mcg one to three times daily, often with a GHRH analog and timed fasted / pre-bed. Reported, not recommended.",
+            route: "Subcutaneous, small volume, rotated across abdominal sites.",
+            timing: "Human PK is biphasic (~8 min distribution, ~2.5 h terminal) → dosed multiple times daily, on an empty stomach since food blunts the GH pulse.",
+            sideEffectsCommon: ["Strong hunger", "Flushing or head-rush after dosing", "Water retention"],
+            sideEffectsSerious: ["Can raise blood sugar and prolactin/cortisol somewhat", "Carpal-tunnel-like tingling or joint aches if pushed"],
+            stacking: "Classic GHRH + GHRP pairing (e.g. with a CJC-1295 analog). The appetite effect is the main reason it's chosen over ipamorelin.",
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"The hunger means it's building muscle.\" The appetite spike is ghrelin signaling, separate from the (indirect, training-dependent) GH effect."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.ghrp2.id,
+            goals: [.muscleAndGH],
+            tagline: "A growth-hormone-releasing peptide; used diagnostically abroad.",
+            whatItIs: "GHRP-2 (pralmorelin) is a ghrelin-mimetic GHRP that triggers a GH pulse. It's used as a diagnostic agent for GH deficiency in some countries; it isn't FDA-approved for therapy.",
+            howItWorks: "Activates the ghrelin / GH-secretagogue receptor to release GH. Less hunger than GHRP-6, but it can nudge prolactin and cortisol more than the cleaner ipamorelin.",
+            whatToExpect: "Recovery, sleep, and gradual body-composition effects over weeks, with a moderate appetite bump. Indirect, subtler than injected GH.",
+            evidenceSummary: "Tier B — studied in humans (diagnostic use abroad) but not FDA-approved for therapy. WADA-prohibited.",
+            dosingCommunity: "Commonly reported around 100–300 mcg one to three times daily, often with a GHRH analog, timed fasted / pre-bed. Reported, not recommended.",
+            route: "Subcutaneous, small volume, rotated across abdominal sites.",
+            timing: "Very short-acting (~15 min) → multiple daily doses, on an empty stomach.",
+            sideEffectsCommon: ["Some hunger (less than GHRP-6)", "Flushing or head-rush", "Water retention"],
+            sideEffectsSerious: ["Can raise prolactin, cortisol, and blood sugar", "Carpal-tunnel-like tingling or joint aches if pushed"],
+            stacking: "Paired with a GHRH analog for a bigger pulse, like the rest of the GHRP family.",
+            storageHandling: standardStorage
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.hexarelin.id,
+            goals: [.muscleAndGH],
+            tagline: "The most potent GHRP — but the GH response desensitizes.",
+            whatItIs: "Hexarelin (examorelin) is the strongest of the common GHRPs at releasing GH. Its catch: continued use blunts the response (desensitization), so it isn't a set-and-forget option.",
+            howItWorks: "A potent ghrelin-receptor agonist driving a large GH pulse. With steady use the receptors down-regulate and the GH bump fades, which is why users cycle it or keep doses modest.",
+            whatToExpect: "A big initial GH pulse; effects diminish with continuous use. Like all secretagogues, physique changes are indirect and slow.",
+            evidenceSummary: "Tier B — human trials exist, not FDA-approved. WADA-prohibited.",
+            dosingCommunity: "Commonly reported around 100 mcg one to two times daily in short cycles to limit desensitization. Reported, not recommended.",
+            route: "Subcutaneous, small volume.",
+            timing: "Short-acting (~30 min) → dosed daily, fasted; cycled to preserve the response.",
+            sideEffectsCommon: ["Flushing or head-rush", "Water retention", "Some appetite increase"],
+            sideEffectsSerious: ["Can raise cortisol and prolactin more than cleaner GHRPs", "Desensitization with continuous use", "Carpal-tunnel-like tingling if pushed"],
+            stacking: "Paired with a GHRH analog like the rest of the family.",
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"Stronger is better, so run it continuously.\" Continuous use desensitizes the GH response — the reason it's cycled, not run flat-out."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.thymosinAlpha1.id,
+            goals: [.immune],
+            tagline: "An immune-modulating peptide; approved in some countries, not the US.",
+            whatItIs: "Thymosin alpha-1 (thymalfasin, brand Zadaxin) is a peptide that modulates the immune system. It's approved in several countries for hepatitis and as a vaccine adjuvant, and has been studied across other indications — but it isn't FDA-approved.",
+            howItWorks: "It nudges T-cell maturation and immune signaling, broadly acting as an immune modulator rather than a stimulant or suppressant.",
+            whatToExpect: "Used in hopes of immune support and recovery. Human evidence is strongest in its approved indications; broader wellness use is less established.",
+            evidenceSummary: "Tier B — human trials exist and it's an approved drug abroad, but not FDA-approved.",
+            dosingStudied: "Studied around 1.6 mg subcutaneous a couple of times weekly in various trials — reported, not a recommendation.",
+            dosingCommunity: "Community use echoes the trial ranges; reported, not recommended.",
+            route: "Subcutaneous.",
+            timing: "Half-life about 2 hours; dosed a few times weekly in studies.",
+            sideEffectsCommon: ["Generally well tolerated", "Injection-site reactions"],
+            sideEffectsSerious: ["Being an immune modulator, caution with autoimmune conditions or immunosuppressive therapy — a clinician conversation"],
+            storageHandling: standardStorage
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.thymosinBeta4.id,
+            goals: [.recovery],
+            tagline: "The full-length thymosin β-4 protein — distinct from the TB-500 fragment.",
+            whatItIs: "Thymosin beta-4 is the natural full-length 43-amino-acid protein, studied for tissue repair. It's often confused with TB-500, which is only a synthetic fragment of it.",
+            howItWorks: "Regulates actin (cell structure and migration) and is studied preclinically for wound healing, blood-vessel growth, and reduced inflammation.",
+            whatToExpect: "Used for recovery like the TB-500 fragment; no controlled human trials support the physique/recovery uses it's marketed for.",
+            evidenceSummary: "Tier C — preclinical / early-trial only. WADA-prohibited.",
+            dosingCommunity: "Community ranges resemble the TB-500 fragment's; anecdotal — reported, not recommended.",
+            route: "Subcutaneous or intramuscular.",
+            timing: "Human half-life isn't well characterized; low weekly frequency is convention.",
+            sideEffectsCommon: ["Reported as generally well tolerated", "Occasional fatigue or head-rush"],
+            sideEffectsSerious: ["Long-term human safety is unknown"],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"Thymosin β-4 and TB-500 are the same.\" TB-500 is a short fragment (Ac-LKKTETQ); this is the full protein — related but not identical."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.kpv.id,
+            goals: [.recovery, .immune],
+            tagline: "An anti-inflammatory tripeptide fragment of α-MSH.",
+            whatItIs: "KPV is a three-amino-acid fragment (Lys-Pro-Val) of the hormone α-MSH, studied preclinically for anti-inflammatory effects — with particular interest in gut inflammation.",
+            howItWorks: "Appears to dampen inflammatory signaling inside cells. Much of the work is in animal and cell models of colitis and skin inflammation, not humans.",
+            whatToExpect: "Used in hopes of calming gut or systemic inflammation; users report gut relief. No controlled human trials confirm this.",
+            evidenceSummary: "Tier C — preclinical only; no approved human product.",
+            dosingCommunity: "Commonly reported around 200–500 mcg daily (oral/enteric forms are used for gut targets). Anecdotal — reported, not recommended.",
+            route: "Subcutaneous, or oral/enteric-coated for gut-specific use.",
+            timing: "Human half-life isn't established; dosed daily by convention.",
+            sideEffectsCommon: ["Reported as generally well tolerated"],
+            sideEffectsSerious: ["Long-term human safety is unknown"],
+            storageHandling: standardStorage
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.igf1lr3.id,
+            goals: [.muscleAndGH],
+            tagline: "A long-acting IGF-1 variant chased for muscle growth — with real cautions.",
+            safetyFlag: "Growth-factor signaling carries a theoretical cancer-promotion risk (it drives cell growth broadly). Can also cause hypoglycemia (low blood sugar). WADA-prohibited.",
+            whatItIs: "IGF-1 LR3 (Long R3 IGF-1) is a modified version of insulin-like growth factor 1 engineered to resist binding proteins, so it stays active far longer than natural IGF-1. It's used to chase muscle growth; there's no approved human product.",
+            howItWorks: "IGF-1 drives muscle-cell growth and nutrient uptake downstream of growth hormone. The LR3 modification extends its half-life, prolonging that signaling.",
+            whatToExpect: "Users report muscle fullness and growth. Because growth-factor signaling is systemic, the concerns below matter as much as any benefit; human physique evidence is essentially absent.",
+            evidenceSummary: "Tier C — preclinical; no approved human product. WADA-prohibited (S2).",
+            dosingCommunity: "Community ranges are often tens of mcg daily around training. Reported, not recommended — the safety profile is the bigger issue than the dose.",
+            route: "Subcutaneous (systemic) or intramuscular; community lore about \"site growth\" from local injection isn't established.",
+            timing: "Extended half-life (~20 h) vs native IGF-1 → typically dosed once daily.",
+            sideEffectsCommon: ["Hypoglycemia symptoms — shakiness, sweating, hunger (eat carbs around dosing)", "Injection-site reactions"],
+            sideEffectsSerious: [
+                "Theoretical cancer-promotion risk from broad growth-factor signaling",
+                "Organ/tissue growth concerns with sustained use",
+                "Severe hypoglycemia if mishandled",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It only grows the muscle you inject.\" IGF-1 LR3 acts systemically; localized-growth claims aren't established in humans."
+            ]
+        ),
     ]
 
     /// Indexed by compound id for O(1) lookup.
