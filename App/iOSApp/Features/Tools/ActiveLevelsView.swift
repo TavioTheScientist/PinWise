@@ -95,7 +95,7 @@ struct ActiveLevelsView: View {
                 } else {
                     // Summary before control: a plain-language briefing, then gauges, then the timeline;
                     // legend / omitted notes sit last.
-                    briefingCard(result.models)
+                    briefingCard(result.models, now: now)
                     rightNowCard(result.models)
                     timelineCard(models: result.models, now: now, ws: ws, we: we)
                     legendCard(result.models)
@@ -119,23 +119,46 @@ struct ActiveLevelsView: View {
     // MARK: - Briefing (plain-language, scan-first)
 
     @ViewBuilder
-    private func briefingCard(_ models: [CompoundModel]) -> some View {
+    private func briefingCard(_ models: [CompoundModel], now: Date) -> some View {
         Card {
             HStack(alignment: .top, spacing: Space.sm) {
                 Image(systemName: "waveform.path.ecg").font(.title3).foregroundStyle(BrandColor.accentText)
-                Text(briefing(models))
-                    .font(.title3.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    MicroLabel("What's next")
+                    Text(briefing(models, now: now))
+                        .font(.title3.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
 
-    /// One or two plain sentences answering "what matters right now?" — no jargon, no chart needed.
-    private func briefing(_ models: [CompoundModel]) -> String {
-        func phrase(_ s: LevelStatus) -> String { s.label.lowercased() }   // "near peak" / "rising" / "settling" / "low"
+    /// The decision-first briefing: instead of just reporting status, it surfaces the SOONEST things
+    /// you'd act on — the next dose due and the next compound to clear — ranked by urgency, so the top
+    /// of the screen answers "what do I do next?" not just "what's high right now?".
+    private func briefing(_ models: [CompoundModel], now: Date) -> String {
+        struct Event { let hours: Double; let text: String }
+        var events: [Event] = []
+        for m in models {
+            if let next = m.nextDose {
+                events.append(Event(hours: next.timeIntervalSince(now) / 3_600, text: "\(m.name) due \(relShort(next, now: now))"))
+            } else if m.currentPercent > 25 {
+                // Decaying with nothing scheduled → when it effectively clears (~5% of its own peak).
+                let h = m.halfLifeHours * log2(m.currentPercent / 5)
+                events.append(Event(hours: h, text: "\(m.name) clears in \(friendlyDuration(h))"))
+            }
+        }
+        // Lead with the 1–2 soonest, most decision-relevant events; fall back to a status read only
+        // when nothing is scheduled or meaningfully decaying (rare — cleared compounds are dropped).
+        guard !events.isEmpty else { return statusSummary(models) }
+        return events.sorted { $0.hours < $1.hours }.prefix(2).map(\.text).joined(separator: " · ")
+    }
+
+    /// Plain status read — the fallback when there's nothing time-actionable to surface.
+    private func statusSummary(_ models: [CompoundModel]) -> String {
+        func phrase(_ s: LevelStatus) -> String { s.label.lowercased() }
         if models.count == 1 { return "\(models[0].name) is \(phrase(models[0].status))" }
         if models.count == 2 { return models.map { "\($0.name) is \(phrase($0.status))" }.joined(separator: " · ") }
-        // 3+ compounds → aggregate by band so the briefing stays to 1–2 lines.
         let elevated = models.filter { $0.status.isElevated }.count
         let settling = models.filter { $0.status == .settling }.count
         let low = models.filter { $0.status == .low }.count
