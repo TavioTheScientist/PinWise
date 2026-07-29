@@ -260,8 +260,20 @@ extension SavedProtocol {
     /// This is what lets "due today" clear downstream once the pin is logged.
     func loggedToday(in logs: [LoggedDose], calendar: Calendar = .current) -> Bool {
         logs.contains { log in
-            calendar.isDateInToday(log.timestamp) &&
-                (log.protocolID == id || compoundNames.contains(log.compoundName))
+            guard calendar.isDateInToday(log.timestamp) else { return false }
+            // A log that names its source protocol belongs to THAT protocol and no other.
+            //
+            // This used to be `log.protocolID == id || compoundNames.contains(log.compoundName)`,
+            // and the `||` is the bug: a log owned by protocol A ALSO satisfied every other
+            // protocol sharing one of its compounds. Logging semaglutide in "Cutting" marked
+            // "Maintenance" as logged today, cleared its due state everywhere, and dropped it off
+            // the Log picker — so the second protocol became impossible to log at all that day.
+            //
+            // Compound-name matching is a FALLBACK for ownerless logs only: one-time pins and
+            // pre-`protocolID` legacy rows. That is exactly what the doc comment above always
+            // claimed, and what the `||` never implemented.
+            if let owner = log.protocolID { return owner == id }
+            return compoundNames.contains(log.compoundName)
         }
     }
 
