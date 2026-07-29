@@ -232,7 +232,10 @@ struct CompoundLegendView: View {
 
     private func tierRow(_ tier: EvidenceTier, _ desc: String) -> some View {
         HStack(alignment: .top, spacing: Space.md) {
+            // Fixed-width badge column so every description starts at the same x — the badges
+            // vary in width ("A · Strong" vs "B · Moderate"), which otherwise ragged the text.
             EvidenceBadge(tier: tier)
+                .frame(width: 104, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
                 Text(tier.label).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                 Text(desc).font(.caption2).foregroundStyle(BrandColor.textSecondary)
@@ -656,6 +659,7 @@ struct AddCustomCompoundView: View {
     @State private var category: CompoundCategory = .metabolic
     @State private var doseUnit: MassUnit = .milligram
     @State private var notes = ""
+    @State private var showNotes = false
 
     private var trimmed: String { name.trimmingCharacters(in: .whitespaces) }
     private var isDuplicate: Bool {
@@ -691,9 +695,8 @@ struct AddCustomCompoundView: View {
                                 }
                                 .pickerStyle(.segmented)
                             }
-                            FieldRow("Notes", hint: "Optional — source, batch, anything worth remembering.") {
-                                TextField("Anything worth remembering", text: $notes, axis: .vertical).pinwiseField()
-                            }
+                            CollapsibleNoteField(text: $notes, expanded: $showNotes, title: "Notes",
+                                                 hint: "Optional — source, batch, anything worth remembering.")
                         }
                     }
 

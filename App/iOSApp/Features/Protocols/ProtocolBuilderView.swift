@@ -27,6 +27,7 @@ struct ProtocolBuilderView: View {
     @State private var startDate: Date = Date()
     @State private var isActive: Bool = true
     @State private var notes: String = ""
+    @State private var showNotes = false
     @State private var remindersOn = false
     @State private var reminderTime: Date = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
 
@@ -234,9 +235,7 @@ struct ProtocolBuilderView: View {
                                     DatePicker("", selection: $reminderTime, displayedComponents: [.hourAndMinute]).labelsHidden()
                                 }
                             }
-                            FieldRow("Notes", hint: "Optional.") {
-                                TextField("Anything worth remembering", text: $notes, axis: .vertical).pinwiseField()
-                            }
+                            CollapsibleNoteField(text: $notes, expanded: $showNotes, title: "Notes")
                         }
                     }
 
