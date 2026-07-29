@@ -5,35 +5,90 @@ import PeptideKit
 /// The Tools tab — a grid of plain-language calculators, each backed by verified PeptideKit.
 /// Push destinations from the Tools grid. Value-based so the stack is path-driven — which lets a
 /// Tools-tab re-tap pop back to the grid (view-based NavigationLinks can't be popped programmatically).
-enum ToolRoute: Hashable {
+/// String-backed with stable ids so the user's saved layout (order + hidden) survives across launches.
+enum ToolRoute: String, CaseIterable, Identifiable, Hashable {
     case doseCalc, doseHistory, rampUp, compounds, activeLevels, injectionMap, symptoms, biomarkers, physique, reverseDose
+    var id: String { rawValue }
+}
+
+/// A tool's display metadata + route — the single source of truth for the grid AND the customize
+/// sheet, defined once in `all` (the default order). Add a new tool here and it appears everywhere,
+/// appended to any user's existing layout automatically (see `ToolLayout`).
+struct ToolItem: Identifiable {
+    let route: ToolRoute
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    let hue: Color
+    var id: ToolRoute { route }
+
+    /// Default order — what the peptide/GLP-1 community values most (Reddit research): the daily
+    /// must-haves lead (calculator, dose log), then titration + the compound/evidence reference,
+    /// then per-session and outcome tools; the reverse "check a dose" sanity-check sits last.
+    static let all: [ToolItem] = [
+        ToolItem(route: .doseCalc, title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.accentText),
+        ToolItem(route: .doseHistory, title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText),
+        ToolItem(route: .rampUp, title: "Ramp-up plan", subtitle: "Build a titration ladder", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText),
+        ToolItem(route: .compounds, title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data),
+        ToolItem(route: .activeLevels, title: "Active levels", subtitle: "See your stack's body load", systemImage: "waveform.path.ecg", hue: BrandColor.data),
+        ToolItem(route: .injectionMap, title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success),
+        ToolItem(route: .symptoms, title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: BrandColor.warning),
+        ToolItem(route: .biomarkers, title: "Labs & metrics", subtitle: "Track weight, labs, and vitals", systemImage: "chart.xyaxis.line", hue: BrandColor.data),
+        ToolItem(route: .physique, title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success),
+        ToolItem(route: .reverseDose, title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText),
+    ]
+
+    static func item(for route: ToolRoute) -> ToolItem { all.first { $0.route == route } ?? all[0] }
+}
+
+/// Persists the user's Tools layout (order + hidden set) as compact AppStorage strings, and resolves
+/// them against the CURRENT tool set — so a tool we ship later always appears (appended in default
+/// order, never hidden by a stale saved layout) and a removed tool silently drops out.
+enum ToolLayout {
+    static let orderKey = "toolsOrderV1"
+    static let hiddenKey = "toolsHiddenV1"
+
+    static func order(from raw: String) -> [ToolRoute] {
+        let saved = raw.split(separator: ",").compactMap { ToolRoute(rawValue: String($0)) }
+        let defaults = ToolItem.all.map(\.route)
+        var result = saved.filter { defaults.contains($0) }
+        for route in defaults where !result.contains(route) { result.append(route) }  // new tools append
+        return result
+    }
+    static func hidden(from raw: String) -> Set<ToolRoute> {
+        Set(raw.split(separator: ",").compactMap { ToolRoute(rawValue: String($0)) })
+    }
+    static func encodeOrder(_ routes: [ToolRoute]) -> String { routes.map(\.rawValue).joined(separator: ",") }
+    static func encodeHidden(_ hidden: Set<ToolRoute>) -> String { hidden.map(\.rawValue).joined(separator: ",") }
 }
 
 struct ToolsView: View {
     private let columns = [GridItem(.flexible(), spacing: Space.md), GridItem(.flexible(), spacing: Space.md)]
     @State private var path = NavigationPath()
+    @State private var showCustomize = false
+    @AppStorage(ToolLayout.orderKey) private var orderRaw = ""
+    @AppStorage(ToolLayout.hiddenKey) private var hiddenRaw = ""
     @Environment(TabScrollCoordinator.self) private var scrollCoordinator
+
+    /// The tools to show, in the user's saved order, minus any they've hidden.
+    private var visibleTools: [ToolItem] {
+        let hidden = ToolLayout.hidden(from: hiddenRaw)
+        return ToolLayout.order(from: orderRaw).filter { !hidden.contains($0) }.map(ToolItem.item(for:))
+    }
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     header
-                    // Ordered by what the peptide/GLP-1 community values most (Reddit research):
-                    // the reconstitution calculator and the dose log lead (the daily must-haves),
-                    // then titration + the compound/evidence reference, then the per-session and
-                    // outcome tools; the reverse "check a dose" sanity-check sits last (most niche).
-                    LazyVGrid(columns: columns, spacing: Space.md) {
-                        ToolCard(title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.accentText, route: .doseCalc)
-                        ToolCard(title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText, route: .doseHistory)
-                        ToolCard(title: "Ramp-up plan", subtitle: "Build a titration ladder", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText, route: .rampUp)
-                        ToolCard(title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data, route: .compounds)
-                        ToolCard(title: "Active levels", subtitle: "See your stack's body load", systemImage: "waveform.path.ecg", hue: BrandColor.data, route: .activeLevels)
-                        ToolCard(title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success, route: .injectionMap)
-                        ToolCard(title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: BrandColor.warning, route: .symptoms)
-                        ToolCard(title: "Labs & metrics", subtitle: "Track weight, labs, and vitals", systemImage: "chart.xyaxis.line", hue: BrandColor.data, route: .biomarkers)
-                        ToolCard(title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success, route: .physique)
-                        ToolCard(title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText, route: .reverseDose)
+                    if visibleTools.isEmpty {
+                        emptyState
+                    } else {
+                        LazyVGrid(columns: columns, spacing: Space.md) {
+                            ForEach(visibleTools) { item in
+                                ToolCard(title: item.title, subtitle: item.subtitle, systemImage: item.systemImage, hue: item.hue, route: item.route)
+                            }
+                        }
                     }
                 }
                 .padding(Space.lg)
@@ -47,6 +102,7 @@ struct ToolsView: View {
         .onChange(of: scrollCoordinator.token) {
             if scrollCoordinator.target == .tools, !path.isEmpty { path.removeLast(path.count) }
         }
+        .sheet(isPresented: $showCustomize) { ToolsCustomizeView() }
     }
 
     @ViewBuilder
@@ -66,12 +122,114 @@ struct ToolsView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: Space.xs) {
+        HStack(alignment: .center) {
             Text("Tools")
                 .font(Typo.screenTitle)
                 .foregroundStyle(BrandColor.textPrimary)
+            Spacer()
+            Button { showCustomize = true } label: {
+                Label("Edit", systemImage: "slider.horizontal.3")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(BrandColor.accentText)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Customize tools")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var emptyState: some View {
+        Card {
+            ThemedEmptyState(icon: "square.grid.2x2",
+                             title: "All tools hidden",
+                             message: "Tap Edit to choose which tools appear here.")
+        }
+    }
+}
+
+/// Customize the Tools tab — reorder by drag and show/hide, Apple-Health "Edit" style. Reorder uses
+/// the native, VoiceOver-friendly List `.onMove` (rock-solid), and the grid behind updates live as
+/// the sheet writes the layout straight to AppStorage.
+struct ToolsCustomizeView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(ToolLayout.orderKey) private var orderRaw = ""
+    @AppStorage(ToolLayout.hiddenKey) private var hiddenRaw = ""
+
+    @State private var order: [ToolRoute] = []
+    @State private var hidden: Set<ToolRoute> = []
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(order) { route in row(for: route) }
+                        .onMove { indices, dest in
+                            order.move(fromOffsets: indices, toOffset: dest)
+                            persist()
+                        }
+                } footer: {
+                    Text("Drag to reorder. Turn a tool off to hide it from the Tools tab — you can turn it back on any time.")
+                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                }
+                .listRowBackground(BrandColor.surface)
+            }
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .heroScreen()
+            .environment(\.editMode, .constant(.active))   // always in reorder mode; grips + toggles visible
+            .navigationTitle("Customize Tools")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Reset") { withAnimation { resetToDefault() } }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }.fontWeight(.semibold)
+                }
+            }
+            .onAppear {
+                order = ToolLayout.order(from: orderRaw)
+                hidden = ToolLayout.hidden(from: hiddenRaw)
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+
+    private func row(for route: ToolRoute) -> some View {
+        let item = ToolItem.item(for: route)
+        return HStack(spacing: Space.md) {
+            Image(systemName: item.systemImage)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(item.hue)
+                .frame(width: 32, height: 32)
+                .background(item.hue.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(item.title).font(.body.weight(.medium)).foregroundStyle(BrandColor.textPrimary)
+                Text(item.subtitle).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+            }
+            Spacer(minLength: Space.sm)
+            Toggle("", isOn: Binding(
+                get: { !hidden.contains(route) },
+                set: { show in
+                    if show { hidden.remove(route) } else { hidden.insert(route) }
+                    persist()
+                }
+            ))
+            .labelsHidden()
+            .tint(BrandColor.accent)
+        }
+    }
+
+    private func persist() {
+        orderRaw = ToolLayout.encodeOrder(order)
+        hiddenRaw = ToolLayout.encodeHidden(hidden)
+    }
+
+    private func resetToDefault() {
+        order = ToolItem.all.map(\.route)
+        hidden = []
+        persist()
     }
 }
 
