@@ -102,8 +102,11 @@ struct ProtocolCard: View {
                     Spacer()
                     // Several vials (several injections) = "Stack" — even if one of them is itself a
                     // blend. A single vial that is a blend (one shot, several compounds) = "Blend".
-                    if proto.isStack { TagChip(text: "Stack", color: BrandColor.accentText) }
-                    else if isBlend { TagChip(text: "Blend", color: BrandColor.accentText) }
+                    // A meaning-carrying icon does the explaining for users who don't know the terms:
+                    // stacked layers = several shots; a single drop = one mixed shot. The per-shot line
+                    // below reinforces it — so the distinction reads without a wordy descriptor.
+                    if proto.isStack { TagChip(text: "Stack", color: BrandColor.accentText, systemImage: "square.stack.3d.up.fill") }
+                    else if isBlend { TagChip(text: "Blend", color: BrandColor.accentText, systemImage: "drop.fill") }
                     if proto.hasRampPlan { TagChip(text: "Ramp-up", color: BrandColor.warning) }
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.semibold))
