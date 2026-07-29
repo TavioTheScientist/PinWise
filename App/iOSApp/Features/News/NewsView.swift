@@ -183,13 +183,15 @@ struct NewsView: View {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     masthead
 
-                    stackToggle
-
                     if searchActive {
-                        VStack(spacing: Space.lg) {
+                        VStack(alignment: .leading, spacing: Space.md) {
                             SearchField(placeholder: "Search peptides, topics, or sources",
                                         text: $searchText, focus: $searchFocused)
                             categoryFilter
+                            if myStack && userCompounds.isEmpty {
+                                Text("Add a protocol or log a dose to filter to what you're taking.")
+                                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            }
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
@@ -217,23 +219,14 @@ struct NewsView: View {
                     .font(Typo.screenTitle)
                     .foregroundStyle(BrandColor.textPrimary)
                 Spacer()
-                Button {
+                SearchToggleButton(isActive: searchActive) {
                     let willActivate = !searchActive
                     withAnimation(.snappy) {
                         searchActive = willActivate
-                        if !willActivate { searchText = ""; category = nil }
+                        if !willActivate { clearFilters() }   // closing the panel clears the filters
                     }
                     searchFocused = willActivate
-                } label: {
-                    Image(systemName: searchActive ? "xmark" : "magnifyingglass")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(BrandColor.textPrimary)
-                        .frame(width: 40, height: 40)
-                        .background(BrandColor.surfaceElevated, in: Circle())
-                        .overlay(Circle().strokeBorder(BrandColor.stroke, lineWidth: 1))
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(searchActive ? "Close search" : "Search news")
             }
             Text("Your hub for peptide and performance-medicine research — summarized clearly and linked to the source.")
                 .font(Typo.body)
@@ -242,19 +235,10 @@ struct NewsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var stackToggle: some View {
-        HStack(spacing: Space.sm) {
-            SelectableChip(title: "Your compounds", isSelected: myStack) {
-                withAnimation(.snappy) { myStack.toggle() }
-            }
-            if myStack {
-                Text(userCompounds.isEmpty ? "Add a protocol or log a dose first."
-                                           : "Filtered to what you're taking")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-            }
-            Spacer()
-        }
-        .sensoryFeedback(.selection, trigger: myStack)
+    /// Closing the filter panel resets everything — so an applied filter is only ever live while the
+    /// panel is visible (its selected chips shown), and the feed returns to normal when you dismiss it.
+    private func clearFilters() {
+        searchText = ""; category = nil; myStack = false; newOnly = false
     }
 
     @ViewBuilder private var content: some View {
@@ -297,29 +281,23 @@ struct NewsView: View {
     }
 
     private var categoryFilter: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Space.sm) {
-                SelectableChip(title: "New", isSelected: newOnly) { newOnly.toggle() }
-                SelectableChip(title: "All", isSelected: category == nil) { category = nil }
-                ForEach(NewsCategory.allCases, id: \.self) { c in
-                    SelectableChip(title: c.rawValue, isSelected: category == c) {
-                        category = (category == c ? nil : c)
-                    }
+        FilterChipRail {
+            SelectableChip(title: "New", isSelected: newOnly) { newOnly.toggle() }
+            SelectableChip(title: "Your compounds", isSelected: myStack) { myStack.toggle() }
+            SelectableChip(title: "All", isSelected: category == nil) { category = nil }
+            ForEach(NewsCategory.allCases, id: \.self) { c in
+                SelectableChip(title: c.rawValue, isSelected: category == c) {
+                    category = (category == c ? nil : c)
                 }
             }
-            .padding(.vertical, 2)
         }
         .sensoryFeedback(.selection, trigger: category)
+        .sensoryFeedback(.selection, trigger: newOnly)
+        .sensoryFeedback(.selection, trigger: myStack)
     }
 
     @ViewBuilder private var resultsList: some View {
-        HStack {
-            Text("\(results.count) result\(results.count == 1 ? "" : "s")")
-                .font(.caption).foregroundStyle(BrandColor.textSecondary)
-            Spacer()
-            Button("Clear filters") { searchText = ""; category = nil; myStack = false; newOnly = false }
-                .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
-        }
+        AppliedFilterHeader(count: results.count, onClear: clearFilters)
         if results.isEmpty {
             Card {
                 Text(myStack && userCompounds.isEmpty

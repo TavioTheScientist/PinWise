@@ -339,6 +339,60 @@ struct SearchField: View {
     }
 }
 
+// MARK: - Standard filtering (reveal-on-demand)
+//
+// One filtering interaction across the app (News, Compound library): a magnifier toggle reveals a
+// panel of a `SearchField` + a `FilterChipRail` of `SelectableChip` facets; while a filter/search is
+// active an `AppliedFilterHeader` reports the count + a Clear; closing the panel clears the filters.
+// These three components + `SearchField`/`SelectableChip` are the shared pieces so no two screens
+// filter differently.
+
+/// The standard reveal toggle: a circular magnifier that flips to an ✕ while the filter panel is open.
+struct SearchToggleButton: View {
+    let isActive: Bool
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: isActive ? "xmark" : "magnifyingglass")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(BrandColor.textPrimary)
+                .frame(width: 40, height: 40)
+                .background(BrandColor.surfaceElevated, in: Circle())
+                .overlay(Circle().strokeBorder(BrandColor.stroke, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isActive ? "Close search and filters" : "Search and filter")
+    }
+}
+
+/// The standard horizontal rail of filter chips. Put `SelectableChip`s inside.
+struct FilterChipRail<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.sm) { content() }
+                .padding(.horizontal, Space.xs)
+        }
+        .scrollClipDisabled()
+    }
+}
+
+/// The applied-filters header — result count + Clear — shown while any filter/search is active, so
+/// every filtered list reports its state identically.
+struct AppliedFilterHeader: View {
+    let count: Int
+    let onClear: () -> Void
+    var body: some View {
+        HStack {
+            Text("\(count) result\(count == 1 ? "" : "s")")
+                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+            Spacer()
+            Button("Clear", action: onClear)
+                .font(Typo.caption.weight(.semibold)).tint(BrandColor.accentText)
+        }
+    }
+}
+
 /// The one empty / unavailable state: a muted SF Symbol, a title, and an optional line of
 /// guidance, centered. Replaces the ad-hoc `Card`+`Text` and `ContentUnavailableView` forks so
 /// every "nothing here yet" reads the same. Drop it inside a `Card` (or bare) as the caller needs.

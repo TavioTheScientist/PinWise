@@ -9,9 +9,13 @@ struct CompoundsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \CustomCompound.name) private var custom: [CustomCompound]
     @State private var search = ""
-    /// Optional goal filter, tucked into a toolbar menu (not an always-on chip rail) so the page
-    /// opens on the compounds themselves, not on a stack of controls. nil = the whole library.
+    /// Optional goal filter. nil = the whole library. Set from the reveal panel's chip rail.
     @State private var selectedGoal: CompoundGoal?
+    /// Whether the reveal-on-demand filter panel (search + goal chips) is open. Standard app-wide
+    /// pattern (see FilterChipRail/AppliedFilterHeader): opens from the toolbar magnifier; closing it
+    /// clears the filters so the library returns to its full, unfiltered state.
+    @State private var filterActive = false
+    @FocusState private var searchFocused: Bool
     @State private var showLegend = false
     @State private var showAdd = false
 
@@ -63,7 +67,15 @@ struct CompoundsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
-                if isFiltering { activeFilterBar }
+                if filterActive {
+                    VStack(alignment: .leading, spacing: Space.md) {
+                        SearchField(placeholder: "Search by name or alias (e.g. “sema”)",
+                                    text: $search, focus: $searchFocused)
+                        goalFilterRail
+                    }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+                if isFiltering { AppliedFilterHeader(count: resultCount, onClear: clearFilters) }
 
                 if resultCount == 0 {
                     Card {
@@ -102,11 +114,16 @@ struct CompoundsView: View {
             .padding(Space.lg)
         }
         .heroScreen()
-        .searchable(text: $search, prompt: "Search by name or alias (e.g. “sema”)")
         .navigationTitle("Compound library")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) { goalMenu }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { toggleFilter() } label: {
+                    Image(systemName: filterActive ? "xmark" : "magnifyingglass")
+                }
+                .tint(BrandColor.accentText)
+                .accessibilityLabel(filterActive ? "Close search and filters" : "Search and filter")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button { showAdd = true } label: { Label("Add your own compound", systemImage: "plus") }
@@ -121,47 +138,31 @@ struct CompoundsView: View {
         .sheet(isPresented: $showAdd) { AddCustomCompoundView() }
     }
 
-    /// Goal filter lives here — a single tap in the toolbar, so the body isn't crowded by a chip
-    /// rail. The icon fills in when a goal is active.
-    private var goalMenu: some View {
-        Menu {
-            Button { selectedGoal = nil } label: {
-                Label("All goals", systemImage: selectedGoal == nil ? "checkmark" : "square.grid.2x2")
-            }
+    /// The goal facets, in the standard reveal panel's chip rail.
+    private var goalFilterRail: some View {
+        FilterChipRail {
+            SelectableChip(title: "All goals", isSelected: selectedGoal == nil) { selectedGoal = nil }
             ForEach(CompoundGoal.allCases) { goal in
-                Button { selectedGoal = goal } label: {
-                    Label(goal.displayName, systemImage: selectedGoal == goal ? "checkmark" : goalIcon(goal))
+                SelectableChip(title: goal.displayName,
+                               isSelected: selectedGoal == goal,
+                               systemImage: goalIcon(goal)) {
+                    selectedGoal = (selectedGoal == goal) ? nil : goal
                 }
             }
-        } label: {
-            Image(systemName: selectedGoal == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
         }
-        .tint(BrandColor.accentText)
-        .accessibilityLabel("Filter by goal")
+        .sensoryFeedback(.selection, trigger: selectedGoal)
     }
 
-    /// Only appears while a filter/search is active — a removable goal chip and a quiet result count.
-    private var activeFilterBar: some View {
-        HStack(spacing: Space.sm) {
-            if let g = selectedGoal {
-                Button { selectedGoal = nil } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: goalIcon(g))
-                        Text(g.displayName)
-                        Image(systemName: "xmark").font(.caption2)
-                    }
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, Space.md).padding(.vertical, Space.xs)
-                    .background(BrandColor.accent, in: Capsule())
-                    .foregroundStyle(BrandColor.onAccent)
-                }
-                .buttonStyle(.plain)
-            }
-            Text("\(resultCount) result\(resultCount == 1 ? "" : "s")")
-                .font(.caption).foregroundStyle(BrandColor.textSecondary)
-            Spacer(minLength: 0)
+    private func toggleFilter() {
+        withAnimation(.snappy) {
+            filterActive.toggle()
+            if !filterActive { clearFilters() }   // closing the panel clears the filters
         }
+        searchFocused = filterActive
     }
+
+    /// Closing the panel resets to the full library — filters are only live while the panel is open.
+    private func clearFilters() { search = ""; selectedGoal = nil }
 
     private var addYourOwnButton: some View {
         Button { showAdd = true } label: {
