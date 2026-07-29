@@ -193,7 +193,7 @@ struct CompoundLegendView: View {
                         VStack(alignment: .leading, spacing: Space.md) {
                             SectionHeader(title: "Labels")
                             HStack(alignment: .top, spacing: Space.md) {
-                                TagChip(text: "WADA", color: BrandColor.warning)
+                                TagChip(text: "WADA", style: .warning)
                                 Text("On the World Anti-Doping Agency prohibited list — banned for drug-tested athletes.")
                                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                                 Spacer(minLength: 0)
@@ -263,7 +263,7 @@ struct CompoundRow: View {
                 VStack(alignment: .leading, spacing: Space.xs) {
                     HStack(spacing: Space.sm) {
                         Text(compound.name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                        if isCustom { TagChip(text: "Custom", color: BrandColor.accentText) }
+                        if isCustom { TagChip(text: "Custom") }
                     }
                     Text(descriptor).font(.caption).foregroundStyle(BrandColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -348,10 +348,10 @@ struct CompoundDetailView: View {
             }
             HStack(spacing: Space.sm) {
                 if isCustom {
-                    TagChip(text: "Custom", color: BrandColor.accentText)
+                    TagChip(text: "Custom")
                 } else {
                     EvidenceBadge(tier: compound.evidenceTier)
-                    TagChip(text: regulatoryShort, color: regulatoryColor)
+                    TagChip(text: regulatoryShort)
                 }
             }
             if let tagline = profile?.tagline {
@@ -632,13 +632,6 @@ struct CompoundDetailView: View {
         case .fdaApproved: return "FDA-approved"
         case .compoundedOnly: return "Compounded"
         case .researchOnly: return "Research only"
-        }
-    }
-    private var regulatoryColor: Color {
-        switch compound.regulatoryStatus {
-        case .fdaApproved: return BrandColor.success
-        case .compoundedOnly: return BrandColor.warning
-        case .researchOnly: return BrandColor.textSecondary
         }
     }
     private func detailRow(_ key: String, _ value: String) -> some View {

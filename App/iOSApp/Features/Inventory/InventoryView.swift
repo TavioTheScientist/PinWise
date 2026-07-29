@@ -111,9 +111,9 @@ struct VialRow: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             Spacer(minLength: Space.sm)
-            if projection.needsReorder { TagChip(text: "Low", color: BrandColor.danger) }
+            if projection.needsReorder { TagChip(text: "Low", style: .danger) }
             if let e = vial.expiryState, (e.isWarning || e.isError) {
-                TagChip(text: e.isError ? "Expired" : "Expiring", color: e.isError ? BrandColor.danger : BrandColor.warning)
+                TagChip(text: e.isError ? "Expired" : "Expiring", style: e.isError ? .danger : .warning)
             }
             Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
         }

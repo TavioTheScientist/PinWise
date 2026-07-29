@@ -174,7 +174,13 @@ enum BrandColor {
 
     // DOMAIN hue — objective health data (Labs & metrics tile + future data accents). The
     // Oura-readiness teal family. A domain color, NOT a status color: it never means
-    // "ok/attention/stop" and never appears in badges. Audited (2026-07): light 0x0E7C86
+    // "ok/attention/stop".
+    // AMENDED (chrome revision): this token MAY now carry a neutral ORDINAL rung — the
+    // `AdherenceRing` mid rung and `EvidenceBadge` tier B. Both previously used `accentText`,
+    // which spent the brand metal on a status and (because the chrome accent is light) made the
+    // MIDDLE rung the brightest, out-ranking the top one. Teal is the only hue in the set that
+    // is neither semantic nor brand, which is exactly what a neutral middle rung needs. The
+    // underlying rule is intact: status stays separate from brand. Audited (2026-07): light 0x0E7C86
     // on white 4.95:1 (text-safe); dark 0x4FD1C5 on surface 10.0:1. As icon-on-own-tint
     // (0.16 ground): 3.98:1 light / 7.40:1 dark — ≥3:1 graphics floor in both modes.
     static let data = Color(light: 0x0E7C86, dark: 0x4FD1C5)
@@ -189,7 +195,7 @@ enum BrandColor {
 /// fill. Ink on it is `BrandColor.onAccent`.
 ///
 /// It lives outside `BrandColor` on purpose: every `BrandColor` member is a `Color`, and a
-/// `LinearGradient` cannot be passed to `StatusDot(color:)`, `TagChip(color:)`, `FeedImage(tint:)`
+/// `LinearGradient` cannot be passed to `StatusDot(color:)`, `TagChip.Style.solid(_)`, `FeedImage(tint:)`
 /// or any `Color`-typed `.foregroundStyle` slot. Keeping it in its own namespace makes that
 /// constraint legible at the call site.
 enum BrandGradient {

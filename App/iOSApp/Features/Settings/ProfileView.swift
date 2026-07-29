@@ -261,8 +261,10 @@ struct ProfileView: View {
                     .font(Typo.title)
                     .foregroundStyle(BrandColor.textPrimary)
                     .multilineTextAlignment(.center)
+                // "Guest" is taxonomy (neutral); "PinWise Member" is the app's ONE sanctioned
+                // `.brand` chip — nothing else on this screen competes for the accent.
                 TagChip(text: auth.isGuest ? "Guest" : "PinWise Member",
-                        color: BrandColor.accentText,
+                        style: auth.isGuest ? .neutral : .brand,
                         systemImage: auth.isGuest ? "person.crop.circle.dashed" : "checkmark.seal.fill")
             }
 

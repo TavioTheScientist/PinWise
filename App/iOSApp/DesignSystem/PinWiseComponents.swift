@@ -260,9 +260,54 @@ struct SectionHeader: View {
 /// scheme-adaptive fills (bright on dark, deep on light), and the `BrandColor.onBadge` ink
 /// resolves scheme-correct against them automatically.
 struct TagChip: View {
+    /// NEUTRAL is the default, and that is the whole point of this type.
+    ///
+    /// `.neutral` — `surfaceElevated` fill + hairline `stroke` rim + `textSecondary` ink. This is
+    /// the register for TAXONOMY: what a thing *is* (Stack, Blend, Custom, a news category, a
+    /// regulatory class). It deliberately sits BELOW its row's own title in emphasis, so a label
+    /// can never out-shout the content it labels. Note the fill does almost no work here
+    /// (`surfaceElevated` over `surface` is ~1.08:1) — the RIM carries the shape and the INK
+    /// carries the read (6.95:1 dark / 5.26:1 light). If a taxonomy chip needs to be more
+    /// visible, add an ICON, never a louder fill.
+    ///
+    /// `.solid(_)` — reserved for URGENCY the user may need to act on (Low, Expired, WADA). Ink
+    /// is `onBadge`. Use the `.danger`/`.warning`/`.success` shorthands.
+    ///
+    /// `.brand` — the chrome accent. Spend it AT MOST ONCE per screen, on a genuine brand
+    /// moment. It exists as an explicit case precisely so it cannot spread by accident, which
+    /// is what happened when `accentText` was the convenient thing to pass.
+    enum Style {
+        case neutral
+        case solid(Color)
+        case brand
+
+        static var danger: Style { .solid(BrandColor.danger) }
+        static var warning: Style { .solid(BrandColor.warning) }
+        static var success: Style { .solid(BrandColor.success) }
+    }
+
     let text: String
-    var color: Color = BrandColor.mint
+    var style: Style = .neutral
     var systemImage: String? = nil
+
+    private var isNeutral: Bool { if case .neutral = style { return true }; return false }
+
+    private var fill: Color {
+        switch style {
+        case .neutral: return BrandColor.surfaceElevated
+        case .solid(let color): return color
+        case .brand: return BrandColor.accent
+        }
+    }
+
+    private var ink: Color {
+        switch style {
+        case .neutral: return BrandColor.textSecondary
+        case .solid: return BrandColor.onBadge
+        case .brand: return BrandColor.onAccent
+        }
+    }
+
     var body: some View {
         HStack(spacing: Space.xs) {
             if let systemImage { Image(systemName: systemImage).font(.caption2.weight(.bold)) }
@@ -272,8 +317,10 @@ struct TagChip: View {
         }
         .padding(.horizontal, Space.sm)
         .padding(.vertical, Space.xs)
-        .background(color, in: Capsule())
-        .foregroundStyle(BrandColor.onBadge)
+        .background(fill, in: Capsule())
+        // Only the neutral chip needs a rim; a solid fill defines its own edge.
+        .overlay { if isNeutral { Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1) } }
+        .foregroundStyle(ink)
     }
 }
 
@@ -529,10 +576,14 @@ struct AdvisoryRow: View {
 struct EvidenceBadge: View {
     let tier: EvidenceTier
     var compact: Bool = false
+    /// A graded ladder, so unlike a taxonomy chip this one stays SOLID: the color reinforces an
+    /// ordinal rank that the label already words ("B · Moderate"). Tier B is `data` (teal), not
+    /// `accentText` — the chrome accent would spend the brand on a status AND make the middle
+    /// rung the brightest, out-ranking tier A above it. Same fix, same reason, as `AdherenceRing`.
     private var color: Color {
         switch tier {
         case .fdaApproved: return BrandColor.mint
-        case .humanTrialsUnapproved: return BrandColor.accentText
+        case .humanTrialsUnapproved: return BrandColor.data
         case .preclinicalOrFailed: return BrandColor.warning
         case .precursorOffLabel: return BrandColor.danger
         }

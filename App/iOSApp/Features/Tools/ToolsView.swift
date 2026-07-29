@@ -410,7 +410,7 @@ struct TitrationPreviewView: View {
                                 }
                                 Spacer()
                                 if template.initiationOnlyStepIndices.contains(phase.id) {
-                                    TagChip(text: "Starter", color: BrandColor.warning)
+                                    TagChip(text: "Starter")
                                 }
                             }
                         }
