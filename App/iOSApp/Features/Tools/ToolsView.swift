@@ -28,7 +28,7 @@ struct ToolItem: Identifiable {
     static let all: [ToolItem] = [
         ToolItem(route: .doseCalc, title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.accentText),
         ToolItem(route: .doseHistory, title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText),
-        ToolItem(route: .rampUp, title: "Ramp-up plan", subtitle: "Build a titration ladder", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText),
+        ToolItem(route: .rampUp, title: "Titration", subtitle: "Plan dose changes over time", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText),
         ToolItem(route: .compounds, title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data),
         ToolItem(route: .activeLevels, title: "Active levels", subtitle: "See your stack's body load", systemImage: "waveform.path.ecg", hue: BrandColor.data),
         ToolItem(route: .injectionMap, title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success),
@@ -421,7 +421,7 @@ struct TitrationPreviewView: View {
         .heroScreen()
         .sensoryFeedback(.selection, trigger: template)
         .sensoryFeedback(.selection, trigger: startDate)
-        .navigationTitle("Ramp-up plan")
+        .navigationTitle("Titration")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -523,7 +523,7 @@ struct RampUpPlannerView: View {
             // Build a new plan — top.
             Section {
                 Button { builderTarget = RampBuilderTarget(protocolID: nil) } label: {
-                    Label("Build a new ramp-up plan", systemImage: "plus.circle.fill")
+                    Label("Build a titration plan", systemImage: "plus.circle.fill")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(activeProtocols.isEmpty ? BrandColor.textSecondary : BrandColor.accentText)
                 }
@@ -531,7 +531,7 @@ struct RampUpPlannerView: View {
                 .disabled(activeProtocols.isEmpty)
             } footer: {
                 Text(activeProtocols.isEmpty
-                     ? "Add an active protocol first, then build its ramp-up plan."
+                     ? "Add an active protocol first, then build its titration plan."
                      : "Set a dose ladder; your protocol's dose steps up on its own as each phase ends.")
                     .font(.caption).foregroundStyle(BrandColor.textSecondary)
             }
@@ -539,7 +539,7 @@ struct RampUpPlannerView: View {
 
             // Existing plans — below. Swipe a row to edit or delete.
             if !plannedProtocols.isEmpty {
-                Section("Your ramp-up plans") {
+                Section("Your titration plans") {
                     ForEach(plannedProtocols) { p in
                         Button { builderTarget = RampBuilderTarget(protocolID: p.id) } label: {
                             HStack(spacing: Space.sm) {
@@ -571,7 +571,7 @@ struct RampUpPlannerView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .heroScreen()
-        .navigationTitle("Ramp-up plan")
+        .navigationTitle("Titration")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $builderTarget) { RampBuilderSheet(protocolID: $0.protocolID) }
     }
@@ -652,7 +652,7 @@ private struct RampBuilderSheet: View {
             }
             .background(BrandColor.background.ignoresSafeArea())
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(isEditing ? "Edit ramp-up plan" : "New ramp-up plan")
+            .navigationTitle(isEditing ? "Edit titration plan" : "New titration plan")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

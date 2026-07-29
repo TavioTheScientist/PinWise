@@ -55,9 +55,9 @@ struct ProtocolCard: View {
     /// dose. nil when there's no ramp plan.
     private var rampBannerText: String? {
         guard proto.hasRampPlan else { return nil }
-        guard let inc = proto.nextRampIncrease() else { return "Ramp-up · at final dose" }
+        guard let inc = proto.nextRampIncrease() else { return "Titration · at final dose" }
         let d = doseUnit.map { inc.dose.displayString(in: $0) } ?? inc.dose.displayString
-        return "Ramp-up · next \(d) on \(inc.date.formatted(.dateTime.month().day()))"
+        return "Titration · next \(d) on \(inc.date.formatted(.dateTime.month().day()))"
     }
 
     private var statusColor: Color {
@@ -107,7 +107,7 @@ struct ProtocolCard: View {
                     // below reinforces it — so the distinction reads without a wordy descriptor.
                     if proto.isStack { TagChip(text: "Stack", color: BrandColor.accentText, systemImage: "square.stack.3d.up.fill") }
                     else if isBlend { TagChip(text: "Blend", color: BrandColor.accentText, systemImage: "drop.fill") }
-                    if proto.hasRampPlan { TagChip(text: "Ramp-up", color: BrandColor.warning) }
+                    if proto.hasRampPlan { TagChip(text: "Titration", color: BrandColor.warning) }
                     Image(systemName: "chevron.right")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(BrandColor.textSecondary)
