@@ -32,7 +32,7 @@ struct InjectionMapInfoView: View {
                     Card {
                         VStack(alignment: .leading, spacing: Space.sm) {
                             SectionHeader(title: "The time window")
-                            Text("The map counts only recent injections (2, 4, or 8 weeks), so sites you've let recover cool back down — older injections don't linger on the map. We track broad regions, so it shows how you're spreading load across the body, not exact spots.")
+                            Text("The map counts injections from the last 4 weeks, so sites you've let recover cool back down — older injections don't linger on the map. Four weeks fits the ~2–3-week rest most guidance recommends before reusing a spot. We track broad regions, so it shows how you're spreading load across the body, not exact spots.")
                                 .font(.caption).foregroundStyle(BrandColor.textSecondary)
                         }
                     }
@@ -98,18 +98,18 @@ enum HeatRamp {
     }
 }
 
-enum HeatWindow: String, CaseIterable, Identifiable {
-    case twoWeeks = "2 wks", fourWeeks = "4 wks", eightWeeks = "8 wks"
-    var id: String { rawValue }
-    var days: Int { self == .twoWeeks ? 14 : (self == .fourWeeks ? 28 : 56) }
-    var label: String { self == .twoWeeks ? "last 2 weeks" : (self == .fourWeeks ? "last 4 weeks" : "last 8 weeks") }
+/// One fixed look-back for the heat map: the last 4 weeks. Deliberately NOT a 2/4/8-week selector —
+/// site-rotation guidance rests a spot ~2–3 weeks, so a 4-week view is the useful default, and a
+/// single central map avoids three windows that disagree with one another.
+enum HeatWindow {
+    static let days = 28
+    static let label = "last 4 weeks"
     /// The "fully red" load, grounded in injection-technique guidance rather than relative ranking:
     /// keep injections ≥1 cm apart and rest a spot ~2–3 weeks (FITTER / lipohypertrophy consensus).
     /// The map is deliberately sensitive — ≈2 uses/week of one region reads as fully red — so the
-    /// warmer colors show up early and nudge rotation before a spot is genuinely overloaded (this is
-    /// 3× more sensitive than a raw ~6/week cap: a count that used to reach a color now needs a third
-    /// of it). Rate-based (scales with the window) so a longer look-back never just crowds toward red.
-    var cap: Double { Double(days) / 7.0 * 2.0 }
+    /// warmer colors show up early and nudge rotation before a spot is genuinely overloaded (3×
+    /// more sensitive than a raw ~6/week cap: a count that used to reach a color now needs a third).
+    static let cap: Double = Double(days) / 7.0 * 2.0
 }
 
 /// Injection-site heat map over a professionally-drawn anatomical body (MuscleMap, MIT). Color is
@@ -119,13 +119,12 @@ struct BodyMapView: View {
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var doses: [LoggedDose]
     @AppStorage("bodyGender") private var bodyGenderRaw = "male"
     @State private var side: BodySide = .front
-    @State private var window: HeatWindow = .fourWeeks
     @State private var showInfo = false
 
     private var bodyGender: BodyGender { bodyGenderRaw == "female" ? .female : .male }
 
     private var cutoff: Date {
-        Calendar.current.date(byAdding: .day, value: -window.days, to: Date()) ?? .distantPast
+        Calendar.current.date(byAdding: .day, value: -HeatWindow.days, to: Date()) ?? .distantPast
     }
     /// Injections per site within the window — the exact, auditable basis for the map.
     private var counts: [InjectionSite: Int] {
@@ -141,7 +140,7 @@ struct BodyMapView: View {
     }
 
     /// Absolute intensity: few uses → low (green), cap+ uses → 1.0 (red). Not relative to other sites.
-    private func intensity(_ count: Int) -> Double { max(0, min(1, Double(count) / window.cap)) }
+    private func intensity(_ count: Int) -> Double { max(0, min(1, Double(count) / HeatWindow.cap)) }
 
     private func target(for site: InjectionSite) -> (Muscle, MuscleSide) {
         switch site {
@@ -186,11 +185,6 @@ struct BodyMapView: View {
 
                 Card {
                     VStack(spacing: Space.md) {
-                        Picker("", selection: $window) {
-                            ForEach(HeatWindow.allCases) { Text($0.rawValue).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
-
                         Picker("", selection: $side) {
                             Text("Front").tag(BodySide.front)
                             Text("Back").tag(BodySide.back)
@@ -204,7 +198,7 @@ struct BodyMapView: View {
 
                         legend
 
-                        Text("Counting the \(window.label) — \(totalPlaced) injection\(totalPlaced == 1 ? "" : "s").")
+                        Text("Counting the \(HeatWindow.label) — \(totalPlaced) injection\(totalPlaced == 1 ? "" : "s").")
                             .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
@@ -224,7 +218,7 @@ struct BodyMapView: View {
 
                 Card {
                     VStack(alignment: .leading, spacing: Space.sm) {
-                        SectionHeader(title: "By site · \(window.label)")
+                        SectionHeader(title: "By site · \(HeatWindow.label)")
                         ForEach(InjectionSite.allCases) { site in
                             let c = counts[site] ?? 0
                             HStack(spacing: Space.sm) {
