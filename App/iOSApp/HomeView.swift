@@ -74,8 +74,21 @@ struct HomeView: View {
     /// ever (longest), over the same grace-aware event basis as the adherence %.
     private var streak: StreakCalculator.Result { StreakCalculator.compute(events: doseEvents) }
 
+    /// Today's logged doses, filtered out of the unbounded log query ONCE per render.
+    ///
+    /// `recent` grows forever and `loggedToday(in:)` scans whatever array it is handed. Home used
+    /// to hand it the whole of `recent` from three places per protocol row — the dot's status, the
+    /// due chip's status, and the chip's own `upcomingDose` call — i.e. up to twelve full scans of
+    /// an ever-growing array to draw a four-row card. Filter once, pass the remainder everywhere.
+    /// (`loggedToday(in:)` still date-checks each entry, so a pre-filtered array is correct input,
+    /// just a much smaller one.)
+    private var todaysLogs: [LoggedDose] {
+        recent.filter { Calendar.current.isDateInToday($0.timestamp) }
+    }
+
     private var nextDoseDate: Date? {
-        activeProtocols.compactMap { $0.upcomingDose(loggedToday: $0.loggedToday(in: recent)) }.min()
+        let logs = todaysLogs
+        return activeProtocols.compactMap { $0.upcomingDose(loggedToday: $0.loggedToday(in: logs)) }.min()
     }
 
     var body: some View {
@@ -261,6 +274,29 @@ struct HomeView: View {
 
     // MARK: Your stack (personalization)
 
+    /// One prepared row of the protocols card: a `ForEach`-stable identity plus the already-resolved
+    /// presentation. A tuple would carry the same two values but can't conform to `Identifiable`,
+    /// and `ProtocolPresentation` is a pure derived value with no identity of its own — the
+    /// identity has to come from the protocol it was resolved from.
+    private struct StackRow: Identifiable {
+        let id: UUID
+        let presentation: ProtocolPresentation
+    }
+
+    /// The (at most four) rows of the protocols card, resolved ONCE per render.
+    ///
+    /// Built here rather than inside the `ForEach` because a `ProtocolPresentation` is not a cheap
+    /// value: it resolves the next dose date, and `nextDose(after:)` walks
+    /// `AdherenceCalculator.expectedDates` across a 90-day window. That is the real cost, and it
+    /// belongs once per protocol per render — not once per read of the row's dot, its subtitle, and
+    /// its right-hand fact, which is how the hand-rolled row used to pay for it.
+    private var stackRows: [StackRow] {
+        let logs = todaysLogs
+        return activeProtocols.prefix(4).map { p in
+            StackRow(id: p.id, presentation: ProtocolPresentation(p, vials: vials, todaysLogs: logs))
+        }
+    }
+
     private var stackCard: some View {
         Button {
             // This card lists protocols — land on the Your protocols panel, not the vials default.
@@ -274,20 +310,15 @@ struct HomeView: View {
                         Spacer()
                         Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                     }
-                    ForEach(Array(activeProtocols.prefix(4).enumerated()), id: \.element.id) { i, p in
+                    ForEach(Array(stackRows.enumerated()), id: \.element.id) { i, row in
                         if i > 0 { Divider().overlay(BrandColor.stroke) }
-                        HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
-                            StatusDot(color: statusTint(p), glows: status(p) == .dueToday)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
-                                // Cadence + stack size — a single dose is meaningless for a multi-compound protocol.
-                                Text(p.compoundNames.count > 1 ? "\(p.cadenceText) · \(p.compoundNames.count) compounds" : p.cadenceText)
-                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
-                            }
-                            Spacer(minLength: Space.sm)
-                            // Due-state — the one protocol-specific value that's unambiguous for any stack.
-                            dueChip(p).font(.caption.weight(.semibold)).lineLimit(1).layoutPriority(1)
-                        }
+                        // The shared row rendering — same dot rule, same due-date vocabulary, same
+                        // blend expansion as the Stack tab and the Log picker. It carries NO
+                        // container by design, and here that is the point: these rows are
+                        // intentionally INERT. The whole card is one Button that deep-links to the
+                        // Stack tab, so giving a row its own fill, chevron, or tap target would be
+                        // a false affordance — it would promise a per-row tap that doesn't exist.
+                        ProtocolSummary(presentation: row.presentation, layout: .row)
                     }
                     if activeProtocols.count > 4 {
                         Text("+\(activeProtocols.count - 4) more").font(.caption2).foregroundStyle(BrandColor.textSecondary)
@@ -296,48 +327,6 @@ struct HomeView: View {
             }
         }
         .buttonStyle(PressableStyle())
-    }
-
-    /// The protocol's status, with today's logged dose taken into account (so a logged pin
-    /// reads "done", not "due"). The single read every Home protocol surface derives from.
-    private func status(_ p: SavedProtocol) -> SavedProtocol.DisplayStatus {
-        p.displayStatus(loggedToday: p.loggedToday(in: recent))
-    }
-
-    /// Status color for a protocol row — the dot's hue IS the information (success = active or
-    /// done today, warning = due today, textSecondary = paused; per the status language).
-    private func statusTint(_ p: SavedProtocol) -> Color {
-        switch status(p) {
-        case .active, .doneToday: return BrandColor.success
-        case .dueToday: return BrandColor.warning
-        case .paused: return BrandColor.textSecondary
-        }
-    }
-
-    /// Compact next-pin fragment for stack rows: "Today" carries the warning tint (the one
-    /// urgency signal on the card), then "Tomorrow", then an abbreviated date; "—" as-needed.
-    /// Once today's dose is logged the pin advances past today, so it never lingers on "Today".
-    /// The protocol's due-state for the Home list — replaces the (stack-ambiguous) dose. Reads
-    /// "Logged" once done today, else the next pin. The dose TIME is shown only for today/tomorrow
-    /// (when it's actually useful); further out just names the weekday.
-    private func dueChip(_ p: SavedProtocol) -> Text {
-        switch status(p) {
-        case .doneToday: return Text("Logged").foregroundStyle(BrandColor.success)
-        case .paused:    return Text("Paused").foregroundStyle(BrandColor.textSecondary)
-        case .dueToday:  return Text("Today, \(doseTime(p))").foregroundStyle(BrandColor.warning)
-        case .active:
-            guard let next = p.upcomingDose(loggedToday: p.loggedToday(in: recent)) else {
-                return Text("As needed").foregroundStyle(BrandColor.textSecondary)
-            }
-            if Calendar.current.isDateInTomorrow(next) { return Text("Tomorrow, \(doseTime(p))").foregroundStyle(BrandColor.accentText) }
-            return Text(next, format: .dateTime.weekday(.abbreviated)).foregroundStyle(BrandColor.accentText)
-        }
-    }
-
-    /// The protocol's set dose time-of-day (its reminder time), e.g. "8:00 AM".
-    private func doseTime(_ p: SavedProtocol) -> String {
-        let d = Calendar.current.date(bySettingHour: p.reminderHour, minute: p.reminderMinute, second: 0, of: Date()) ?? Date()
-        return d.formatted(date: .omitted, time: .shortened)
     }
 
     // MARK: Empty
@@ -365,13 +354,11 @@ struct HomeView: View {
         }
     }
 
-    private var nextDoseText: String {
-        guard let d = nextDoseDate else { return "—" }
-        let cal = Calendar.current
-        if cal.isDateInToday(d) { return "Today" }
-        if cal.isDateInTomorrow(d) { return "Tomorrow" }
-        return d.formatted(.dateTime.weekday(.abbreviated).month().day())
-    }
+    /// The hero card's "Next pin" figure — phrased by the app's ONE due-date vocabulary, so the
+    /// hero and the protocol rows immediately beneath it finally agree about the same date. This
+    /// used to be a fourth, private phrasing: it said "—" for an as-needed protocol while the rows
+    /// below said "As needed", and it printed "Wed Aug 12" where they printed a bare "Wed".
+    private var nextDoseText: String { DoseDuePhrase.phrase(for: nextDoseDate) }
 }
 
 /// A unified health snapshot — the top card on Home. Merges connector metrics (Apple Health:

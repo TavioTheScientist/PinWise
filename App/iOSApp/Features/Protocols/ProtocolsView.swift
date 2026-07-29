@@ -22,6 +22,13 @@ struct ProtocolsView: View {
     private var active: [SavedProtocol] { protocols.filter(\.isActive) }
     private var inactive: [SavedProtocol] { protocols.filter { !$0.isActive } }
 
+    /// Today's doses, narrowed ONCE per render. `ProtocolPresentation` takes the already-filtered
+    /// slice rather than the whole (unbounded, ever-growing) log query, so a screenful of
+    /// protocols scans the history once instead of once per card.
+    private var todaysLogs: [LoggedDose] {
+        logs.filter { Calendar.current.isDateInToday($0.timestamp) }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -77,10 +84,10 @@ struct ProtocolsView: View {
             emptyState
         } else {
             SectionHeader(title: "Active protocols")
+            let today = todaysLogs
             ForEach(Array(active.enumerated()), id: \.element.id) { i, proto in
-                let supplyInfo = supply(for: proto)
                 Button { editTarget = EditTarget(proto: proto) } label: {
-                    ProtocolCard(proto: proto, supply: supplyInfo, contents: proto.fullContentsSummary(vials: vials), doseUnit: proto.doseUnit(vials: vials), isBlend: proto.items.contains { item in vials.first(where: { $0.id == item.vialID })?.isBlend == true }, perShot: perShotDetail(proto), loggedToday: proto.loggedToday(in: logs))
+                    ProtocolCard(presentation: ProtocolPresentation(proto, vials: vials, todaysLogs: today))
                 }
                 .buttonStyle(PressableStyle())
                 .contextMenu {
@@ -102,10 +109,13 @@ struct ProtocolsView: View {
         if !inactive.isEmpty {
             SectionHeader(title: "Inactive").padding(.top, Space.sm)
             // Paused dimming lives INSIDE ProtocolCard — no call-site opacity here.
+            // Paused protocols get the SAME presentation as active ones (logs included): the
+            // presentation is what decides a paused protocol shows no next pin, so withholding
+            // the logs here would only make its status word wrong.
+            let today = todaysLogs
             ForEach(Array(inactive.enumerated()), id: \.element.id) { i, proto in
-                let supplyInfo = supply(for: proto)
                 Button { editTarget = EditTarget(proto: proto) } label: {
-                    ProtocolCard(proto: proto, supply: supplyInfo, contents: proto.fullContentsSummary(vials: vials), doseUnit: proto.doseUnit(vials: vials), isBlend: proto.items.contains { item in vials.first(where: { $0.id == item.vialID })?.isBlend == true }, perShot: perShotDetail(proto))
+                    ProtocolCard(presentation: ProtocolPresentation(proto, vials: vials, todaysLogs: today))
                 }
                 .buttonStyle(PressableStyle())
                 .contextMenu {
@@ -123,40 +133,6 @@ struct ProtocolsView: View {
                 .entrance(active.count + i)
             }
         }
-    }
-
-    /// Every compound a protocol delivers per shot, with its dose — blend vials expanded by their
-    /// fixed mass ratio, stack items listed in order, each in its own resolved unit. nil for a plain
-    /// single-compound protocol (the card's "Dose" stat already covers that).
-    private func perShotDetail(_ proto: SavedProtocol) -> String? {
-        var parts: [String] = []
-        for (i, item) in proto.items.enumerated() {
-            let unit = proto.doseUnit(forItemAt: i, vials: vials)
-            let dose = i == 0 ? proto.effectiveDose : Mass(micrograms: item.doseMicrograms)
-            if let v = vials.first(where: { $0.id == item.vialID }), v.isBlend,
-               let p = v.primaryAPI, p.massMicrograms > 0 {
-                for api in v.apis {
-                    let d = Mass(micrograms: api.massMicrograms / p.massMicrograms * dose.micrograms)
-                    parts.append("\(api.name) \(d.displayString(in: unit))")
-                }
-            } else {
-                parts.append("\(item.compoundName) \(dose.displayString(in: unit))")
-            }
-        }
-        return parts.count > 1 ? parts.joined(separator: " · ") : nil
-    }
-
-    /// Resolve the vial backing a protocol's primary line into the card's supply readout.
-    /// Nil when the protocol isn't linked to a vial — the card then omits its supply row.
-    private func supply(for proto: SavedProtocol) -> ProtocolCard.SupplyInfo? {
-        guard let vialID = proto.primaryItem?.vialID,
-              let vial = vials.first(where: { $0.id == vialID }) else { return nil }
-        return ProtocolCard.SupplyInfo(
-            fraction: vial.fractionRemaining,
-            dosesLeft: max(0, vial.totalDoses - vial.dosesTaken),
-            total: vial.totalDoses,
-            needsReorder: vial.projection(schedule: proto.schedule).needsReorder
-        )
     }
 
     private var header: some View {

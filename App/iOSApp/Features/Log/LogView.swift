@@ -50,6 +50,24 @@ struct LogView: View {
         .sorted { nextDueDateTime($0) < nextDueDateTime($1) }
     }
 
+    /// Today's doses, narrowed ONCE per render. `ProtocolPresentation` wants the already-filtered
+    /// slice rather than this view's whole (unbounded, ever-growing) `recent` query — its init doc
+    /// spells out why: it date-checks each entry itself, so a wider array is correct but wasteful.
+    private var todaysLogs: [LoggedDose] {
+        recent.filter { Calendar.current.isDateInToday($0.timestamp) }
+    }
+
+    /// The picker's rows, resolved ONCE per render instead of once per row per re-render.
+    /// `ProtocolPresentation.init` is not cheap — it runs `nextDose()` (a 90-day expectedDates
+    /// walk) and expands every blend vial — and every tap on any row re-renders the whole list,
+    /// so building presentations inline in the `ForEach` body would redo all of that work for
+    /// each row on each selection change. The protocol travels alongside its presentation because
+    /// the row still needs the model's `id` to drive selection.
+    private var loggableRows: [(proto: SavedProtocol, presentation: ProtocolPresentation)] {
+        let today = todaysLogs
+        return loggableProtocols.map { ($0, ProtocolPresentation($0, vials: vials, todaysLogs: today)) }
+    }
+
     /// The next dose's full datetime: its scheduled day (`nextDose`) at the protocol's reminder time.
     /// `nextDose` is day-granular, so folding in reminderHour/Minute is what separates same-day doses.
     private func nextDueDateTime(_ p: SavedProtocol) -> Date {
@@ -249,12 +267,18 @@ struct LogView: View {
     private var protocolCard: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
-                Text("Which protocol are you logging?").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Which protocol are you logging?").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                    // The ordering used to be implied by every row's "Due today · …" subtitle prefix.
+                    // The timing now sits right-aligned in the row's own fact slot, so state the sort
+                    // once, quietly — a hint under the prompt, not a heading.
+                    Text("Soonest first").font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                }
                 // A vertical list of full-width rows — every protocol visible at a glance, soonest-due
                 // first. (Replaces a left-right chip scroll that hid protocols and wasted the tall screen.)
                 VStack(spacing: Space.sm) {
-                    ForEach(loggableProtocols, id: \.id) { p in
-                        protocolRow(p)
+                    ForEach(loggableRows, id: \.proto.id) { row in
+                        protocolRow(row.proto, presentation: row.presentation)
                     }
                 }
                 // Condition form: the onAppear default-seed (nil → first id) is programmatic,
@@ -313,21 +337,33 @@ struct LogView: View {
         }
     }
 
-    /// A full-width, tappable protocol row for the vertical picker: name + when-due + compounds,
-    /// with a clear selected state. Re-tapping the selected row deselects it.
+    /// A full-width, tappable protocol row for the vertical picker: the shared `ProtocolSummary`
+    /// `.row` payload plus this screen's selection chrome. Re-tapping the selected row deselects it.
+    ///
+    /// The row's *words* are no longer built here. It used to compose its own subtitle from
+    /// `p.compoundNames` — the PRIMARY compound per item, which does NOT expand a blend vial — so a
+    /// protocol backed by one 3-API blend read as a single compound in this picker while the Stack
+    /// tab named all three, and tapping the row revealed an "Each shot delivers" breakdown right
+    /// below that contradicted it. `ProtocolPresentation.contents` is blend-expanded (and uses the
+    /// app-wide `" · "` separator this row used to spell `" + "`), so both surfaces now agree.
+    ///
+    /// The radio deliberately stays OUTSIDE the summary. `ProtocolSummary` says what a protocol
+    /// *is* — it renders inert on Home and inside a card on the Stack tab — whereas the radio is
+    /// what *this* screen is doing with it: a transient pick that exists only while you're logging.
+    /// Pushing it inside would leak Log-only selection state into a shared view and promise a
+    /// control on two screens that don't have one. Everything below it is container chrome the
+    /// summary also doesn't own by design: `Radius.control` (this is a control, not a card) and the
+    /// accent fill/rim for the selected state.
     @ViewBuilder
-    private func protocolRow(_ p: SavedProtocol) -> some View {
+    private func protocolRow(_ p: SavedProtocol, presentation: ProtocolPresentation) -> some View {
         let isSelected = selectedProtocolID == p.id
         Button {
             selectedProtocolID = isSelected ? nil : p.id
         } label: {
             HStack(spacing: Space.md) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
-                    Text("\(dueLabel(p)) · \(p.compoundNames.joined(separator: " + "))")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
-                }
-                Spacer(minLength: Space.sm)
+                // No Spacer needed: `.row`'s top line ends in one, so the summary already claims
+                // the width the radio leaves.
+                ProtocolSummary(presentation: presentation, layout: .row)
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
                     .foregroundStyle(isSelected ? BrandColor.accent : BrandColor.textSecondary)
@@ -340,6 +376,9 @@ struct LogView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // The summary already carries the spoken label/value; the checkmark glyph is decorative,
+        // so the selected state has to be announced as a trait rather than read off the icon.
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
     /// The minimal one-time-pin link: leads INTO one-time mode from the protocol list, or BACK to
@@ -359,15 +398,6 @@ struct LogView: View {
         }
         .buttonStyle(.plain)
         .padding(.top, Space.xs)
-    }
-
-    /// When a protocol's next dose falls, in plain language.
-    private func dueLabel(_ p: SavedProtocol) -> String {
-        guard let d = p.nextDose() else { return "As needed" }
-        let cal = Calendar.current
-        if cal.isDateInToday(d) { return "Due today" }
-        if cal.isDateInTomorrow(d) { return "Due tomorrow" }
-        return "Due \(d.formatted(.dateTime.month(.abbreviated).day()))"
     }
 
     /// Preselect the protocol a tapped dose reminder pointed to (if it's still worth logging today),
