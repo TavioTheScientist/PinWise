@@ -310,21 +310,26 @@ struct CompoundDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.lg) {
-                header
-                if !goals.isEmpty { goalRow }
-                atAGlance
-                if let flag = profile?.safetyFlag { safetyStrip(flag) }
-
-                if let p = profile {
-                    profileSections(p)
+            VStack(alignment: .leading, spacing: Space.xl) {
+                // Zone 1 — identity + summary, held tight so it reads as one cluster.
+                VStack(alignment: .leading, spacing: Space.lg) {
+                    header
+                    if !goals.isEmpty { goalRow }
+                    atAGlance
+                    if let flag = profile?.safetyFlag { safetyStrip(flag) }
                 }
-                notesBlock
 
+                // Zone 2 — reference sections (a peer stack of Cards at one heading register).
+                VStack(alignment: .leading, spacing: Space.md) {
+                    if let p = profile { profileSections(p) }
+                    notesBlock
+                    if !isCustom { relatedSection }
+                }
+
+                // Zone 3 — the close.
                 if isCustom {
                     DisclaimerBanner(text: Self.customCompoundNote, systemImage: "exclamationmark.triangle")
                 } else {
-                    relatedSection
                     footer
                 }
             }
@@ -350,7 +355,7 @@ struct CompoundDetailView: View {
             Text(compound.name).font(Typo.title).foregroundStyle(BrandColor.textPrimary)
             if !compound.aliases.isEmpty {
                 Text(compound.aliases.joined(separator: " · "))
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
             HStack(spacing: Space.sm) {
                 if isCustom {
@@ -373,33 +378,45 @@ struct CompoundDetailView: View {
             HStack(spacing: Space.sm) {
                 ForEach(goals) { GoalPill(goal: $0) }
             }
-            .padding(.horizontal, 2)
+            .padding(.horizontal, Space.xs)
         }
         .scrollClipDisabled()
     }
 
-    /// Standardized: the SAME rows on every compound page, in the same order, so pages read
-    /// consistently. Half-life shows "Not well established" rather than dropping the row, and
-    /// anti-doping status is always stated (it lives here now, not on the list rows).
+    /// Standardized stat grid: the SAME facts on every page, label-over-value (the design system's
+    /// MicroLabel register) in two columns — an instrument strip, not a form ledger. Half-life and
+    /// anti-doping are always stated (with "Not established" rather than a dropped row).
     private var atAGlance: some View {
         Card {
-            VStack(alignment: .leading, spacing: Space.md) {
-                detailRow("Class", compound.category.displayName)
+            LazyVGrid(
+                columns: [GridItem(.flexible(), alignment: .topLeading), GridItem(.flexible(), alignment: .topLeading)],
+                alignment: .leading, spacing: Space.lg
+            ) {
+                glanceStat("Class", compound.category.displayName)
                 if isCustom {
-                    detailRow("Source", "Added by you")
+                    glanceStat("Source", "Added by you")
                 } else {
-                    detailRow("Anti-doping", compound.wadaProhibited ? "Prohibited (WADA)" : "Not on the WADA list")
+                    glanceStat("Anti-doping", compound.wadaProhibited ? "Prohibited (WADA)" : "Not listed")
                 }
-                detailRow("Half-life", compound.halfLifeHours.map(halfLifeLong) ?? "Not well established")
-                detailRow("Dosed in", compound.preferredDoseUnit.rawValue)
+                glanceStat("Half-life", compound.halfLifeHours.map(halfLifeLong) ?? "Not established")
+                glanceStat("Dosed in", compound.preferredDoseUnit.rawValue)
             }
         }
+    }
+
+    private func glanceStat(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            MicroLabel(label)
+            Text(value).font(Typo.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func safetyStrip(_ text: String) -> some View {
         HStack(alignment: .top, spacing: Space.sm) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(BrandColor.warning)
-            Text(text).font(.footnote).foregroundStyle(BrandColor.textPrimary)
+            Text(text).font(Typo.caption).foregroundStyle(BrandColor.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -407,58 +424,51 @@ struct CompoundDetailView: View {
         .background(BrandColor.warning.opacity(0.12), in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
 
-    // MARK: Authored sections (plain answer visible, the rest as accordions)
+    // MARK: Authored sections — one heading register (DisclosureSection) for every section.
 
     @ViewBuilder private func profileSections(_ p: CompoundProfile) -> some View {
         if let what = p.whatItIs, !what.isEmpty {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                SectionHeader(title: "What it does")
-                proseText(what)
-            }
+            // The primary answer: a peer section, always open, in the same register as the rest.
+            staticSection("What it does") { proseText(what) }
         }
         if let m = p.howItWorks, !m.isEmpty {
-            disclosure("mechanism", "How it works", scent: "The pharmacology, in brief") { proseText(m) }
+            disclosure("mechanism", "How it works", scent: "How it works in the body") { proseText(m) }
         }
         if p.dosingStudied != nil || p.dosingCommunity != nil {
-            disclosure("dosing", "Reported dosing", scent: "Studied vs community — not a prescription") { dosingBody(p) }
+            disclosure("dosing", "Reported dosing", scent: "Studied and community-reported ranges") { dosingBody(p) }
         }
         if let s = p.sideEffects, !s.isEmpty {
-            disclosure("sides", "Side effects & when to stop", scent: "Common vs serious — and the red flags") { proseText(s) }
+            disclosure("sides", "Side effects", scent: "Common effects and when to seek care") { proseText(s) }
         }
         if let e = p.whatToExpect, !e.isEmpty {
-            disclosure("expect", "What to expect", scent: "Timeline, and expectations vs reality") { proseText(e) }
+            disclosure("expect", "What to expect", scent: "Effects and typical timeline") { proseText(e) }
         }
         if let ev = p.evidenceSummary, !ev.isEmpty {
-            disclosure("evidence", "Evidence & research",
-                       scent: "Why it's graded \(compound.evidenceTier.letter) · \(compound.evidenceTier.shortLabel)") { evidenceBody(ev) }
+            disclosure("evidence", "Evidence & research", scent: "How much research supports it") { evidenceBody(ev) }
         }
         if let r = p.route, !r.isEmpty {
-            disclosure("route", "Route & injection site", scent: "How and where it's given") { proseText(r) }
+            disclosure("route", "Route & injection site", scent: "How and where it is given") { proseText(r) }
         }
         if let t = p.timing, !t.isEmpty {
-            disclosure("timing", "Timing", scent: "Half-life and when it's taken") { proseText(t) }
+            disclosure("timing", "Timing", scent: "Half-life and dosing frequency") { proseText(t) }
         }
         if let st = p.storageHandling, !st.isEmpty {
-            disclosure("storage", "Storage & beyond-use", scent: "Fridge, light, and the 28-day window") { proseText(st) }
+            disclosure("storage", "Storage & handling", scent: "Refrigeration and beyond-use date") { proseText(st) }
         }
-        // Vendor-neutral sourcing literacy — the community's #2 question, and PinWise's differentiator
-        // from the vendor-shilling reference sites. Shared content; shown for every catalog compound.
-        disclosure("legit", "How to tell it's legit", scent: "Reading a COA — no sellers named") { proseText(Self.coaLiteracy) }
+        // Vendor-neutral sourcing literacy — shown for every catalog compound.
+        disclosure("legit", "Assessing quality", scent: "How to read a certificate of analysis") { proseText(Self.coaLiteracy) }
         if let stk = p.stacking, !stk.isEmpty {
-            disclosure("stack", "Stacking", scent: "What it's commonly combined with") { proseText(stk) }
+            disclosure("stack", "Stacking", scent: "Compounds it is commonly combined with") { proseText(stk) }
         }
         if !p.misconceptions.isEmpty {
-            disclosure("myths", "Common misconceptions", scent: "Myths, corrected") { misconceptionsBody(p) }
+            disclosure("myths", "Common misconceptions", scent: "Claims the evidence does not support") { misconceptionsBody(p) }
         }
     }
 
     @ViewBuilder private var notesBlock: some View {
         if !compound.notes.isEmpty {
             if profile == nil || isCustom {
-                VStack(alignment: .leading, spacing: Space.sm) {
-                    SectionHeader(title: isCustom ? "Notes" : "Regulatory & notes")
-                    proseText(compound.notes)
-                }
+                staticSection(isCustom ? "Notes" : "Regulatory & notes") { proseText(compound.notes) }
             } else {
                 disclosure("notes", "Regulatory & notes", scent: "Status, corrections, and caveats") { proseText(compound.notes) }
             }
@@ -469,30 +479,25 @@ struct CompoundDetailView: View {
         VStack(alignment: .leading, spacing: Space.md) {
             if let s = p.dosingStudied { labeledDose("In studies / on the label", s) }
             if let c = p.dosingCommunity { labeledDose("Reported by the community", c) }
-            // The community's #1 misconception, taught inline: units are volume, not dose.
-            Text("Units are volume, not dose — how much you draw depends on your vial's concentration. The calculator turns a target dose into exact syringe units for your vial.")
-                .font(.caption).foregroundStyle(BrandColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            proseText("Units measure volume, not dose — how much you draw depends on the vial's concentration. The calculator converts a target dose into syringe units for a specific vial.", secondary: true)
             Button { showCalculator = true } label: {
                 Label("Open dose calculator", systemImage: "syringe.fill")
-                    .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                    .font(Typo.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
             }
-            Text("Reported ranges, not a recommendation. You set your own dose — ideally with a clinician.")
-                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+            Text("Reported ranges, not a recommendation. Dose decisions belong with a clinician.")
+                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private func evidenceBody(_ text: String) -> some View {
+        // Evidence badge deliberately NOT repeated here — it is already in the header and this
+        // section is titled "Evidence." Just the rationale + a link to the grade legend.
         VStack(alignment: .leading, spacing: Space.sm) {
-            HStack(spacing: Space.sm) {
-                EvidenceBadge(tier: compound.evidenceTier)
-                Text(compound.evidenceTier.label).font(.caption).foregroundStyle(BrandColor.textSecondary)
-            }
             proseText(text)
             Button { showLegend = true } label: {
-                Label("What do the grades mean?", systemImage: "info.circle")
-                    .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                Label("What the grades mean", systemImage: "info.circle")
+                    .font(Typo.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
             }
         }
     }
@@ -502,8 +507,8 @@ struct CompoundDetailView: View {
             ForEach(Array(p.misconceptions.enumerated()), id: \.offset) { _, m in
                 HStack(alignment: .top, spacing: Space.sm) {
                     Image(systemName: "checkmark.seal.fill")
-                        .font(.caption).foregroundStyle(BrandColor.mint).padding(.top, 2)
-                    Text(m).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
+                        .font(.caption).foregroundStyle(BrandColor.mint).padding(.top, Space.xs)
+                    Text(m).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -511,10 +516,8 @@ struct CompoundDetailView: View {
     }
 
     private func labeledDose(_ label: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label.uppercased())
-                .font(Typo.caption).fontWeight(.semibold).tracking(1)
-                .foregroundStyle(BrandColor.textSecondary)
+        VStack(alignment: .leading, spacing: Space.xs) {
+            MicroLabel(label)
             Text(text).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -529,24 +532,26 @@ struct CompoundDetailView: View {
     @ViewBuilder private var relatedSection: some View {
         let related = Array(relatedCompounds.prefix(6))
         if !related.isEmpty {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                SectionHeader(title: "Often compared with")
-                ForEach(related) { c in
-                    NavigationLink { CompoundDetailView(compound: c) } label: {
-                        Card {
+            staticSection("Often compared with") {
+                VStack(spacing: 0) {
+                    ForEach(Array(related.enumerated()), id: \.element.id) { i, c in
+                        NavigationLink { CompoundDetailView(compound: c) } label: {
                             HStack(spacing: Space.sm) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(c.name).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                                VStack(alignment: .leading, spacing: Space.xs) {
+                                    Text(c.name).font(Typo.body.weight(.medium)).foregroundStyle(BrandColor.textPrimary)
                                     if let t = CompoundProfiles.profile(for: c)?.tagline {
-                                        Text(t).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                                        Text(t).font(Typo.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                                     }
                                 }
                                 Spacer(minLength: Space.sm)
                                 Image(systemName: "chevron.right").font(.caption2).foregroundStyle(BrandColor.textSecondary)
                             }
+                            .padding(.vertical, Space.sm)
+                            .contentShape(.rect)
                         }
+                        .buttonStyle(.plain)
+                        if i < related.count - 1 { Divider().overlay(BrandColor.stroke) }
                     }
-                    .buttonStyle(PressableStyle())
                 }
             }
         }
@@ -554,10 +559,10 @@ struct CompoundDetailView: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            DisclaimerBanner(text: "PinWise is a tracking tool, not medical advice. This page is educational reference — it doesn't tell you whether, or how much, to use anything. Talk to a licensed clinician before you start, change, or stop any compound.")
+            DisclaimerBanner(text: "PinWise is a tracking tool, not medical advice. This page is educational reference — it does not tell you whether, or how much, to use anything. Talk to a licensed clinician before you start, change, or stop any compound.")
             if let p = profile {
                 Text("Last reviewed \(p.lastReviewed) · PinWise editorial")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
             }
         }
     }
@@ -577,8 +582,16 @@ struct CompoundDetailView: View {
         )
     }
 
-    private func proseText(_ t: String) -> some View {
-        Text(t).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
+    /// An always-open section that shares the exact Card + headline register as the accordions, so
+    /// the primary answer and the related list read as peers of every other section.
+    private func staticSection<C: View>(_ title: String, @ViewBuilder content: @escaping () -> C) -> some View {
+        DisclosureSection(title: title, isExpanded: true, toggle: {}, collapsible: false, content: content)
+    }
+
+    private func proseText(_ t: String, secondary: Bool = false) -> some View {
+        Text(t)
+            .font(secondary ? Typo.caption : Typo.body)
+            .foregroundStyle(secondary ? BrandColor.textSecondary : BrandColor.textPrimary)
             .fixedSize(horizontal: false, vertical: true)
     }
 
