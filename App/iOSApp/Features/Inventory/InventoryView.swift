@@ -74,6 +74,10 @@ struct InventoryList: View {
     }
 }
 
+/// A vial card built to a fixed layout so the SAME fact is always in the same spot across vials:
+/// header (name · strength · status) → supply bar → a standardized 3-slot stat strip (Doses left ·
+/// Runs out/Expires · Cost/dose, with `—` placeholders so nothing shifts) → optional advisory
+/// footnotes (expiration nuance, per-shot breakdown, 28-day discard guideline).
 struct VialRow: View {
     let vial: StoredVial
     let projection: InventoryEstimator.Projection
@@ -86,82 +90,94 @@ struct VialRow: View {
 
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: Space.sm) {
-                HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
-                    Text(vial.displayName).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                        .lineLimit(1)
-                    // Concentration sits right beside the compound (frees a line vs. its own row).
-                    if let strength = vial.strengthSummary {
-                        Text(strength)
-                            .font(.caption.weight(.medium)).foregroundStyle(BrandColor.textSecondary)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                    }
-                    Spacer()
-                    if projection.needsReorder { TagChip(text: "Low", color: BrandColor.danger) }
-                    if let e = vial.expiryState, (e.isWarning || e.isError) {
-                        TagChip(text: e.isError ? "Expired" : "Expiring", color: e.isError ? BrandColor.danger : BrandColor.warning)
-                    }
-                    Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
-                }
-
-                ProgressView(value: vial.fractionRemaining).tint(barColor)
-
-                Text(supplyLine)
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
-
-                // Two-line split: when the expiration date binds before the doses run out, call it
-                // out on its own warning line instead of cramming "N of M usable" into the line above.
-                if projection.limitingFactor == .expiration, projection.usableWholeDoses > 0 {
-                    Label("\(projection.usableWholeDoses) dose\(projection.usableWholeDoses == 1 ? "" : "s") before expiration",
-                          systemImage: "exclamationmark.circle")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(BrandColor.warning)
-                }
-
-
-                if let perShot = vial.perShotSummary {
-                    Text("Per shot: " + perShot)
-                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                }
-
-                metaLine
-
-                // Advisory beyond-use line — soft, never disables the vial (per USP/community:
-                // 28 days is a microbial-safety guideline, not a potency cliff).
-                if let bud = projection.beyondUseDate {
-                    Text(bud < Date()
-                         ? "Past its 28-day discard guideline — inspect before use."
-                         : "Discard guideline: \(bud.formatted(.dateTime.month().day())) · 28-day mixed-vial window")
-                        .font(.caption2)
-                        .foregroundStyle(bud < Date() ? BrandColor.warning : BrandColor.textSecondary)
-                }
+            VStack(alignment: .leading, spacing: Space.md) {
+                header
+                supplyBar
+                statStrip
+                footnotes
             }
         }
     }
 
-    /// Primary doses line — always what you HAVE. The expiration reality (when it binds first) is a
-    /// separate warning line, so the two ideas never collide in one dense sentence.
-    private var supplyLine: String {
-        "\(projection.wholeDosesRemaining) of \(vial.totalDoses) doses left"
-    }
+    // MARK: Header — name · strength · status chips · chevron
 
-    private var metaLine: some View {
-        HStack(spacing: Space.md) {
-            // Dose run-out date only when doses bind — the expiration case has its own warning line.
-            if projection.limitingFactor == .doses, let end = projection.effectiveEndDate {
-                Label("Runs out \(end.formatted(.dateTime.month().day()))", systemImage: "calendar")
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+            Text(vial.displayName).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                .lineLimit(1)
+            if let strength = vial.strengthSummary {
+                Text(strength)
+                    .font(.caption.weight(.medium)).foregroundStyle(BrandColor.textSecondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
-            if let cpd = projection.costPerDose {
-                Label(costText(cpd), systemImage: "dollarsign.circle")
+            Spacer(minLength: Space.sm)
+            if projection.needsReorder { TagChip(text: "Low", color: BrandColor.danger) }
+            if let e = vial.expiryState, (e.isWarning || e.isError) {
+                TagChip(text: e.isError ? "Expired" : "Expiring", color: e.isError ? BrandColor.danger : BrandColor.warning)
             }
-            Spacer()
+            Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
         }
-        .font(.caption2)
-        .foregroundStyle(BrandColor.textSecondary)
     }
 
-    private func costText(_ d: Decimal) -> String {
-        String(format: "$%.2f/dose", NSDecimalNumber(decimal: d).doubleValue)
+    private var supplyBar: some View {
+        ProgressView(value: vial.fractionRemaining).tint(barColor)
+    }
+
+    // MARK: Standardized stat strip — same three slots, same order, on every vial.
+
+    private var statStrip: some View {
+        HStack(alignment: .top, spacing: Space.md) {
+            vialStat("Doses left", dosesLeftValue)
+            vialStat(endLabel, endValue)
+            vialStat("Cost / dose", costValue)
+        }
+    }
+
+    private func vialStat(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            MicroLabel(label)
+            Text(value)
+                .font(Typo.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
+                .lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var dosesLeftValue: String { "\(projection.wholeDosesRemaining) / \(vial.totalDoses)" }
+
+    /// Slot 2 is always "when it ends" — labeled by whichever limit binds first, so the metric keeps
+    /// its position whether doses or the expiry date runs out first.
+    private var endLabel: String { projection.limitingFactor == .expiration ? "Expires" : "Runs out" }
+    private var endValue: String {
+        guard let end = projection.effectiveEndDate else { return "—" }
+        return end.formatted(.dateTime.month().day())
+    }
+
+    private var costValue: String {
+        guard let cpd = projection.costPerDose else { return "—" }
+        return String(format: "$%.2f", NSDecimalNumber(decimal: cpd).doubleValue)
+    }
+
+    // MARK: Advisory footnotes (only when relevant; below the fixed stats so they never shift them)
+
+    @ViewBuilder private var footnotes: some View {
+        if projection.limitingFactor == .expiration, projection.usableWholeDoses > 0 {
+            Label("Only \(projection.usableWholeDoses) dose\(projection.usableWholeDoses == 1 ? "" : "s") usable before it expires",
+                  systemImage: "exclamationmark.circle")
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(BrandColor.warning)
+        }
+        if let perShot = vial.perShotSummary {
+            Text("Per shot: " + perShot)
+                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+        }
+        if let bud = projection.beyondUseDate {
+            Text(bud < Date()
+                 ? "Past its 28-day discard guideline — inspect before use."
+                 : "Discard guideline: \(bud.formatted(.dateTime.month().day())) · 28-day mixed-vial window")
+                .font(.caption2)
+                .foregroundStyle(bud < Date() ? BrandColor.warning : BrandColor.textSecondary)
+        }
     }
 }
 
