@@ -242,10 +242,9 @@ struct CompoundLegendView: View {
     }
 }
 
-/// A calm lookup row: name + one standardized "what it is, for what" descriptor + a chevron.
-/// No evidence grade, half-life, or WADA flag here by design — those live on the compound page,
-/// so browsing doesn't feel weighted by evidence. Every row has a descriptor (the authored
-/// tagline, else the class name) so the list reads consistently.
+/// A lookup row: name + one standardized "what it is, for what" descriptor + the evidence grade +
+/// a chevron. The grade badge lives here (not only on the page) so the whole library is scannable
+/// by evidence at a glance. Every row has a descriptor (the authored tagline, else the class name).
 struct CompoundRow: View {
     let compound: Compound
     var isCustom: Bool = false
@@ -267,6 +266,7 @@ struct CompoundRow: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: Space.sm)
+                if !isCustom { EvidenceBadge(tier: compound.evidenceTier) }
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
