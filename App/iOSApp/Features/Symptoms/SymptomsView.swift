@@ -65,6 +65,7 @@ struct SymptomsView: View {
     @State private var selected: SymptomType = .nausea
     @State private var severity: Double = 3
     @State private var note = ""
+    @State private var showNote = false
     @State private var savedCount = 0
     @State private var range: ChartRange = .thirtyDays
 
@@ -116,9 +117,7 @@ struct SymptomsView: View {
                             Slider(value: $severity, in: 0...10, step: 1).tint(BrandColor.accent)
                                 .sensoryFeedback(.selection, trigger: Int(severity))
                         }
-                        FieldRow("Note", hint: "Optional.") {
-                            TextField("Anything worth remembering", text: $note, axis: .vertical).pinwiseField()
-                        }
+                        CollapsibleNoteField(text: $note, expanded: $showNote)
                         PrimaryButton(title: "Log symptom", systemImage: "plus") { save() }
                     }
                 }
@@ -219,6 +218,7 @@ struct SymptomsView: View {
         context.insert(e)
         try? context.save()
         note = ""
+        showNote = false
         savedCount += 1
     }
 }

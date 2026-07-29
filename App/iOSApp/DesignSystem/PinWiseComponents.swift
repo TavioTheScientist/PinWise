@@ -189,6 +189,47 @@ struct FieldRow<Content: View>: View {
     }
 }
 
+/// The app's standard note input: collapsed by default (a tap reveals the field) so forms open
+/// minimal and premium. When collapsed with text already entered, the header shows a one-line
+/// preview so the note is never hidden. Expansion is caller-owned (like `DisclosureSection`) so a
+/// form can re-collapse it after saving. Used by Log, Labs, Symptoms, protocols, and custom compounds.
+struct CollapsibleNoteField: View {
+    @Binding var text: String
+    @Binding var expanded: Bool
+    var title: String = "Note"
+    var hint: String? = "Optional."
+    var placeholder: String = "Anything worth remembering"
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+            } label: {
+                HStack(spacing: Space.sm) {
+                    Text(text.isEmpty ? "Add a note" : title)
+                        .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                    if !expanded, !text.isEmpty {
+                        Text(text).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                    }
+                    Spacer(minLength: Space.sm)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                        .rotationEffect(.degrees(expanded ? 0 : -90))
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+
+            if expanded {
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    if let hint { Text(hint).font(.caption).foregroundStyle(BrandColor.textSecondary) }
+                    TextField(placeholder, text: $text, axis: .vertical).pinwiseField()
+                }
+            }
+        }
+    }
+}
+
 struct SectionHeader: View {
     let title: String
     var body: some View {

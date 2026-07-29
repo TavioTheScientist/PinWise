@@ -530,25 +530,8 @@ struct LogView: View {
                             .padding(.top, 2)
                     }
                 }
-                // Collapsible notes — hidden until tapped, so it takes no space when unused.
-                VStack(alignment: .leading, spacing: Space.xs) {
-                    Button { withAnimation(.easeInOut(duration: 0.2)) { showNotes.toggle() } } label: {
-                        HStack(spacing: Space.sm) {
-                            Text("Notes").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                            Text("optional").font(.caption).foregroundStyle(BrandColor.textSecondary)
-                            Spacer()
-                            Image(systemName: showNotes ? "chevron.up" : "chevron.down")
-                                .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    if showNotes {
-                        TextField("Anything worth remembering", text: $notes, axis: .vertical)
-                            .pinwiseField()
-                            .padding(.top, 2)
-                    }
-                }
+                // Collapsible notes — the app's standard note affordance.
+                CollapsibleNoteField(text: $notes, expanded: $showNotes, title: "Notes")
             }
         }
     }
