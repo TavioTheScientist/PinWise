@@ -577,13 +577,14 @@ struct RampUpPlannerView: View {
     }
 
     /// Concise plan summary: "2.5 → 15 mg · 5 phases · now 5 mg".
+    /// Phases + current dose only. A first→last range read as "just going down" when a plan
+    /// climbs then tapers, so we don't imply a direction — the phase count + current dose are true
+    /// regardless of shape.
     private func planSummary(_ p: SavedProtocol) -> String {
         let u = p.primaryItem?.doseUnit ?? .milligram
-        let doses = p.rampPhases.map { Mass(micrograms: $0.doseMicrograms).value(in: u) }
-        guard let first = doses.first, let last = doses.last else { return "No phases" }
-        let range = first == last ? "\(numText(first)) \(u.rawValue)" : "\(numText(first)) → \(numText(last)) \(u.rawValue)"
         let count = p.rampPhases.count
-        return "\(range) · \(count) phase\(count == 1 ? "" : "s") · now \(p.effectiveDose.displayString(in: u))"
+        guard count > 0 else { return "No phases" }
+        return "\(count) phase\(count == 1 ? "" : "s") · now \(p.effectiveDose.displayString(in: u))"
     }
 
     private func removePlan(_ p: SavedProtocol) {
@@ -592,7 +593,6 @@ struct RampUpPlannerView: View {
         try? context.save()
     }
 
-    private func numText(_ v: Double) -> String { v == v.rounded() ? String(Int(v)) : String(format: "%.2f", v) }
 }
 
 /// Identifies which plan the builder sheet targets (nil protocolID = build a new one).
