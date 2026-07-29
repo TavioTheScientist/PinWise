@@ -44,7 +44,9 @@ struct HomeView: View {
     /// window. A dose logged up to `graceDays` late still counts (people don't dose to the
     /// minute). Both constants are the single tuning point.
     private static let adherenceWindow = 22
-    private static let graceDays = 2
+    /// Reads the ONE app-wide grace window, so the ring, the streak and the protocol rows'
+    /// overdue state can never disagree about whether a given dose was taken.
+    private static let graceDays = AdherenceCalculator.defaultGraceDays
 
     /// Every past-due scheduled dose across all active protocols, tagged taken/missed with the
     /// grace rule, sorted chronologically. The one basis both the streak and the adherence %
@@ -54,7 +56,11 @@ struct HomeView: View {
         let now = Date()
         var events: [StreakCalculator.DoseEvent] = []
         for p in activeProtocols {
-            let logs = recent.filter { p.compoundNames.contains($0.compoundName) }.map(\.timestamp)
+            // Owner-aware, matching `loggedToday`/`lastOverdueDose`. Filtering purely by
+            // compound name credited THIS protocol for a dose logged against a DIFFERENT
+            // protocol sharing that compound — so the ring and streak counted doses the
+            // user never took for this schedule.
+            let logs = p.ownedLogDates(in: recent)
             let r = AdherenceCalculator.evaluate(schedule: p.schedule, start: p.startDate,
                                                  end: now, logDates: logs,
                                                  graceDays: Self.graceDays, calendar: cal)
@@ -303,7 +309,9 @@ struct HomeView: View {
     private var stackRows: [StackRow] {
         let logs = todaysLogs
         return activeProtocols.prefix(4).map { p in
-            StackRow(id: p.id, presentation: ProtocolPresentation(p, vials: vials, todaysLogs: logs))
+            StackRow(id: p.id, presentation: ProtocolPresentation(
+                p, vials: vials, todaysLogs: logs,
+                overdueSince: p.lastOverdueDose(in: recent)))
         }
     }
 

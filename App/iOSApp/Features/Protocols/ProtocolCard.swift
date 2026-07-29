@@ -53,6 +53,8 @@ struct ProtocolPresentation {
     let taxonomy: Taxonomy
     /// The titration plan's next step, or that it has reached its final dose. nil without a plan.
     let titrationNote: String?
+    /// Names the dose that was actually missed ("Missed Mon, Jul 27"). nil unless overdue.
+    let overdueNote: String?
     let accessibilityLabel: String
     /// Always leads with the status word, whatever `rowFact` chose to show — a screen-reader user
     /// must never have to infer state from a dot's hue.
@@ -74,19 +76,35 @@ struct ProtocolPresentation {
     /// which reaches for `Date()`/`Calendar.current` internally. Injecting a `now` far from the
     /// real present therefore shifts the phrasing but not the status. Widening the model's
     /// signature is the fix; it is deliberately out of scope for this step.
+    /// - Parameter overdueSince: the most recent GENUINELY missed dose, from
+    ///   `proto.lastOverdueDose(in: allLogs)`. Callers that hold the full log query should pass it;
+    ///   nil means "not overdue". It is a caller-supplied datum for the same reason `todaysLogs`
+    ///   is — computing it needs the whole log history plus a schedule expansion, which must happen
+    ///   once per render rather than once per row. The *interpretation* (word, color, precedence)
+    ///   stays here so the vocabulary cannot fork again.
     init(_ proto: SavedProtocol, vials: [StoredVial], todaysLogs: [LoggedDose],
+         overdueSince: Date? = nil,
          now: Date = .now, calendar: Calendar = .current) {
         let loggedToday = proto.loggedToday(in: todaysLogs, calendar: calendar)
-        let status = proto.displayStatus(loggedToday: loggedToday)
+        let status = proto.displayStatus(loggedToday: loggedToday, isOverdue: overdueSince != nil)
         self.status = status
 
         switch status {
         case .active:    statusWord = "Active";      statusColor = BrandColor.success
         case .dueToday:  statusWord = "Due today";   statusColor = BrandColor.warning
         case .doneToday: statusWord = "Logged today"; statusColor = BrandColor.success
+        case .overdue:   statusWord = "Overdue";     statusColor = BrandColor.danger
         case .paused:    statusWord = "Paused";      statusColor = BrandColor.textSecondary
         }
-        dotGlows = status == .dueToday
+        // Overdue glows too: a glow means "needs attention now", and a missed dose needs it more
+        // than a due one. Paused/active/logged stay quiet.
+        dotGlows = status == .dueToday || status == .overdue
+
+        // Names the dose that was actually missed — the useful half of "Overdue". Rendered in
+        // `.full` only; the dense row has one slot and spends it on the status word.
+        overdueNote = overdueSince.map { missed in
+            "Missed \(missed.formatted(.dateTime.weekday(.abbreviated).month().day()))"
+        }
 
         // The next dose date — gated on `isActive`. A paused protocol has no next pin at all;
         // computing one from its schedule (which is what every previous surface did) made a
@@ -124,6 +142,7 @@ struct ProtocolPresentation {
         case .paused:    rowFact = "Paused";  rowFactColor = BrandColor.textSecondary
         case .dueToday:  rowFact = "Due today"; rowFactColor = BrandColor.warning
         case .doneToday: rowFact = "Logged";  rowFactColor = BrandColor.success
+        case .overdue:   rowFact = "Overdue"; rowFactColor = BrandColor.danger
         case .active:    rowFact = nextFact;  rowFactColor = BrandColor.textSecondary
         }
 
@@ -265,6 +284,15 @@ struct ProtocolSummary: View {
                     .foregroundStyle(BrandColor.textSecondary)
             }
 
+            // The ONE note that does earn `danger`: it names a dose the user actually missed. This
+            // is the exception that proves the titration rule above — urgency is reserved for
+            // things that already went wrong, not for things merely scheduled.
+            if let overdueNote = presentation.overdueNote {
+                Label(overdueNote, systemImage: "exclamationmark.triangle.fill")
+                    .font(Typo.caption2.weight(.semibold))
+                    .foregroundStyle(BrandColor.danger)
+            }
+
             Divider().overlay(BrandColor.stroke)
 
             // The stat grid is ADAPTIVE, and that is on purpose — do not "fix" it back into
@@ -367,16 +395,33 @@ private struct ProtocolStat: View {
 }
 
 extension SavedProtocol {
-    /// The app-wide status vocabulary for a protocol: paused (inactive), due today, done today
-    /// (today's dose already logged), or active. Every surface that renders a protocol's status
-    /// dot derives from this one read so the color language never forks between Home and Stack.
-    enum DisplayStatus { case active, dueToday, doneToday, paused }
+    /// The app-wide status vocabulary for a protocol: paused (inactive), overdue (a past dose is
+    /// past its grace window and unlogged), due today, done today (today's dose already logged),
+    /// or active. Every surface that renders a protocol's status dot derives from this one read so
+    /// the color language never forks between Home and Stack.
+    enum DisplayStatus { case active, dueToday, doneToday, overdue, paused }
 
     /// `loggedToday` (from the caller's `LoggedDose` query) turns a "due today" into "done
     /// today" so a logged pin actually clears downstream. Callers without logs pass `false`.
-    func displayStatus(loggedToday: Bool = false) -> DisplayStatus {
+    ///
+    /// `isOverdue` closes a credibility gap: the adherence ring computes real misses, so a user at
+    /// 78% with a 0-day streak used to see every protocol row report a cheerful green "Active" —
+    /// the app contradicting itself on one screen. Callers that have the log query pass it; those
+    /// that don't get the previous behavior.
+    ///
+    /// Precedence is deliberate: **paused > doneToday > overdue > dueToday > active.**
+    /// `paused` wins because a stopped protocol makes no claims at all. `doneToday` beats `overdue`
+    /// because logging today means you are current again — leading with "Overdue" after the user
+    /// has just dosed would be both wrong and discouraging. `overdue` beats `dueToday` because a
+    /// missed dose is the exception that needs attention, while due-today is the default
+    /// expectation.
+    func displayStatus(loggedToday: Bool = false, isOverdue: Bool = false) -> DisplayStatus {
         guard isActive else { return .paused }
-        guard let next = nextDose(), Calendar.current.isDateInToday(next) else { return .active }
-        return loggedToday ? .doneToday : .dueToday
+        let dueToday = nextDose().map { Calendar.current.isDateInToday($0) } ?? false
+        // `doneToday` requires today's dose to have BEEN due — a log on a day nothing was
+        // scheduled is an extra pin, not the schedule being satisfied (unchanged from before).
+        if dueToday && loggedToday { return .doneToday }
+        if isOverdue { return .overdue }
+        return dueToday ? .dueToday : .active
     }
 }

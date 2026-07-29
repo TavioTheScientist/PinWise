@@ -65,7 +65,10 @@ struct LogView: View {
     /// the row still needs the model's `id` to drive selection.
     private var loggableRows: [(proto: SavedProtocol, presentation: ProtocolPresentation)] {
         let today = todaysLogs
-        return loggableProtocols.map { ($0, ProtocolPresentation($0, vials: vials, todaysLogs: today)) }
+        return loggableProtocols.map {
+            ($0, ProtocolPresentation($0, vials: vials, todaysLogs: today,
+                                      overdueSince: $0.lastOverdueDose(in: recent)))
+        }
     }
 
     /// The next dose's full datetime: its scheduled day (`nextDose`) at the protocol's reminder time.

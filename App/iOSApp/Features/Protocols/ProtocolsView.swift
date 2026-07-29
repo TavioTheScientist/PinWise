@@ -87,7 +87,9 @@ struct ProtocolsView: View {
             let today = todaysLogs
             ForEach(Array(active.enumerated()), id: \.element.id) { i, proto in
                 Button { editTarget = EditTarget(proto: proto) } label: {
-                    ProtocolCard(presentation: ProtocolPresentation(proto, vials: vials, todaysLogs: today))
+                    ProtocolCard(presentation: ProtocolPresentation(
+                        proto, vials: vials, todaysLogs: today,
+                        overdueSince: proto.lastOverdueDose(in: logs)))
                 }
                 .buttonStyle(PressableStyle())
                 .contextMenu {
@@ -115,7 +117,9 @@ struct ProtocolsView: View {
             let today = todaysLogs
             ForEach(Array(inactive.enumerated()), id: \.element.id) { i, proto in
                 Button { editTarget = EditTarget(proto: proto) } label: {
-                    ProtocolCard(presentation: ProtocolPresentation(proto, vials: vials, todaysLogs: today))
+                    ProtocolCard(presentation: ProtocolPresentation(
+                        proto, vials: vials, todaysLogs: today,
+                        overdueSince: proto.lastOverdueDose(in: logs)))
                 }
                 .buttonStyle(PressableStyle())
                 .contextMenu {

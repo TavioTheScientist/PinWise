@@ -277,6 +277,36 @@ extension SavedProtocol {
         }
     }
 
+    /// Timestamps of the logs that belong to THIS protocol — the owner-aware basis every
+    /// taken/missed judgement must use.
+    ///
+    /// Same ownership rule as `loggedToday(in:)`: a log naming its source protocol belongs to that
+    /// protocol alone, and compound-name matching is a fallback for ownerless logs only (one-time
+    /// pins, pre-`protocolID` legacy rows). Without this, adherence credits protocol B for a dose
+    /// logged against protocol A whenever they share a compound.
+    func ownedLogDates(in logs: [LoggedDose]) -> [Date] {
+        logs.compactMap { log in
+            if let owner = log.protocolID { return owner == id ? log.timestamp : nil }
+            return compoundNames.contains(log.compoundName) ? log.timestamp : nil
+        }
+    }
+
+    /// The most recent dose this protocol genuinely MISSED — past its grace window and unlogged.
+    /// nil (the common case) when nothing is overdue.
+    ///
+    /// Delegates to `AdherenceCalculator.lastOverdue`, which is the same engine and the same grace
+    /// window behind the adherence ring — so a protocol can never read "Active" on a screen whose
+    /// ring is simultaneously reporting the miss.
+    func lastOverdueDose(in logs: [LoggedDose],
+                         graceDays: Int = AdherenceCalculator.defaultGraceDays,
+                         now: Date = Date(),
+                         calendar: Calendar = .current) -> Date? {
+        guard isActive else { return nil }   // a paused protocol cannot be overdue
+        return AdherenceCalculator.lastOverdue(schedule: schedule, start: startDate, asOf: now,
+                                               logDates: ownedLogDates(in: logs),
+                                               graceDays: graceDays, calendar: calendar)
+    }
+
     /// Next scheduled dose strictly AFTER today — the "next pin" to show once today's is logged.
     func nextDoseAfterToday(calendar: Calendar = .current) -> Date? {
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: Date())) ?? Date()
