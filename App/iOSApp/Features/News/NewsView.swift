@@ -183,15 +183,15 @@ struct NewsView: View {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     masthead
 
+                    // "Your compounds" stays a one-tap, always-visible feed toggle (not tucked in the
+                    // search reveal) — it's the primary personal filter: news about what you're taking.
+                    myCompoundsBar
+
                     if searchActive {
                         VStack(alignment: .leading, spacing: Space.md) {
                             SearchField(placeholder: "Search peptides, topics, or sources",
                                         text: $searchText, focus: $searchFocused)
                             categoryFilter
-                            if myStack && userCompounds.isEmpty {
-                                Text("Add a protocol or log a dose to filter to what you're taking.")
-                                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
-                            }
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
@@ -223,7 +223,7 @@ struct NewsView: View {
                     let willActivate = !searchActive
                     withAnimation(.snappy) {
                         searchActive = willActivate
-                        if !willActivate { clearFilters() }   // closing the panel clears the filters
+                        if !willActivate { clearPanelFilters() }   // closing clears search/category/new (NOT My compounds)
                     }
                     searchFocused = willActivate
                 }
@@ -232,10 +232,32 @@ struct NewsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Closing the filter panel resets everything — so an applied filter is only ever live while the
-    /// panel is visible (its selected chips shown), and the feed returns to normal when you dismiss it.
-    private func clearFilters() {
-        searchText = ""; category = nil; myStack = false; newOnly = false
+    /// Always-visible personal feed filter. Independent of the search reveal so users can filter to
+    /// what they're taking in one tap.
+    private var myCompoundsBar: some View {
+        HStack(spacing: Space.sm) {
+            SelectableChip(title: "Your compounds", isSelected: myStack) {
+                withAnimation(.snappy) { myStack.toggle() }
+            }
+            if myStack {
+                Text(userCompounds.isEmpty ? "Add a protocol or log a dose first."
+                                           : "Showing news on what you're taking")
+                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .sensoryFeedback(.selection, trigger: myStack)
+    }
+
+    /// Closing the search panel clears only the panel's own filters (search / category / New); the
+    /// always-visible "Your compounds" toggle is independent and stays as the user set it.
+    private func clearPanelFilters() {
+        searchText = ""; category = nil; newOnly = false
+    }
+
+    /// Full reset — used by the results header's "Clear" (clears the panel filters AND My compounds).
+    private func clearAll() {
+        clearPanelFilters(); myStack = false
     }
 
     @ViewBuilder private var content: some View {
@@ -280,7 +302,6 @@ struct NewsView: View {
     private var categoryFilter: some View {
         FilterChipRail {
             SelectableChip(title: "New", isSelected: newOnly) { newOnly.toggle() }
-            SelectableChip(title: "Your compounds", isSelected: myStack) { myStack.toggle() }
             SelectableChip(title: "All", isSelected: category == nil) { category = nil }
             ForEach(NewsCategory.allCases, id: \.self) { c in
                 SelectableChip(title: c.rawValue, isSelected: category == c) {
@@ -290,11 +311,10 @@ struct NewsView: View {
         }
         .sensoryFeedback(.selection, trigger: category)
         .sensoryFeedback(.selection, trigger: newOnly)
-        .sensoryFeedback(.selection, trigger: myStack)
     }
 
     @ViewBuilder private var resultsList: some View {
-        AppliedFilterHeader(count: results.count, onClear: clearFilters)
+        AppliedFilterHeader(count: results.count, onClear: clearAll)
         if results.isEmpty {
             Card {
                 Text(myStack && userCompounds.isEmpty
