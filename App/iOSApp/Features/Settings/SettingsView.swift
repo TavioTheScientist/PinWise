@@ -1,155 +1,45 @@
 import SwiftUI
 import UIKit
 
-/// The Settings hub. Presented as a sheet from the side menu. Sections: Account, Notifications,
-/// Connections, Preferences, Security & Privacy, and Software Information.
+/// The Settings hub — a clean, grouped list of icon-tile navigation rows (Apple-Settings register).
+/// Every control lives on a focused subpage; the top level stays scannable rather than a wall of
+/// inline pickers and toggles. Presented as a sheet from the side menu.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("weightInPounds") private var weightInPounds = true
-    @AppStorage("appearance") private var appearanceRaw = AppearanceMode.dark.rawValue
-    @AppStorage(BiometricLock.prefKey) private var faceIDLock = false
-    @AppStorage("shareHealthWithNatt") private var shareHealthWithNatt = false
-    @AppStorage("showCompoundNamesInNotifications") private var showCompoundNames = true
-    @AppStorage("reminderLeadMinutes") private var reminderLeadMinutes = 0
 
-    private var suggestsPounds: Bool { Locale.current.measurementSystem != .metric }
-    private var suggestedUnitLabel: String { suggestsPounds ? "pounds (lb)" : "kilograms (kg)" }
-
+    // Complex, self-contained flows stay modal sheets; simple option screens push as subpages.
     @State private var showMembership = false
     @State private var showConnections = false
     @State private var showLegal = false
-    @State private var showBackupNote = false
     @State private var showExport = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: Space.lg) {
-
-                    // ── Account ────────────────────────────────────────────────
-                    Card {
-                        VStack(alignment: .leading, spacing: Space.sm) {
-                            SectionHeader(title: "Account")
-                            settingsRow("Manage membership", icon: "creditcard", detail: "Free trial") { showMembership = true }
-                            Divider().overlay(BrandColor.stroke)
-                            settingsRow("Back up all data", icon: "arrow.up.doc.on.clipboard") { showBackupNote = true }
-                            Divider().overlay(BrandColor.stroke)
-                            settingsRow("Export data (CSV)", icon: "square.and.arrow.up") { showExport = true }
-                        }
+                VStack(alignment: .leading, spacing: Space.xl) {
+                    section("Account") {
+                        sheetRow("Membership", icon: "creditcard.fill", tint: BrandColor.accentText, value: "Free trial") { showMembership = true }
                     }
 
-                    // ── Notifications ──────────────────────────────────────────
-                    Card {
-                        VStack(alignment: .leading, spacing: Space.md) {
-                            SectionHeader(title: "Notifications")
-                            Text("Turn on a reminder on each protocol. These settings apply to all of them.")
-                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
-
-                            // Timing.
-                            FieldRow("Remind me", hint: "When a dose is due, or a little ahead.") {
-                                Picker("Remind me", selection: $reminderLeadMinutes) {
-                                    Text("At dose time").tag(0)
-                                    Text("15 min early").tag(15)
-                                    Text("30 min early").tag(30)
-                                }
-                                .pickerStyle(.segmented)
-                            }
-
-                            Divider().overlay(BrandColor.stroke)
-
-                            // Compound-name discretion — short title so it never runs into the switch.
-                            Toggle(isOn: $showCompoundNames) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Show compound names")
-                                        .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                                    Text("Off keeps doses private — reminders just say “Dose due now.”")
-                                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            .tint(BrandColor.accent)
-
-                            Divider().overlay(BrandColor.stroke)
-
-                            Button {
-                                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
-                            } label: {
-                                Label("Open iOS notification settings", systemImage: "bell.badge")
-                                    .font(.footnote.weight(.semibold)).foregroundStyle(BrandColor.accentText)
-                            }
-                            .buttonStyle(.plain)
-                        }
+                    section("Preferences") {
+                        pushRow("Notifications", icon: "bell.badge.fill", tint: BrandColor.warning) { NotificationsSettingsView() }
+                        rowDivider
+                        pushRow("Appearance & units", icon: "slider.horizontal.3", tint: BrandColor.data) { GeneralSettingsView() }
                     }
 
-                    // ── Connections (moved in from the side menu) ──────────────
-                    Card {
-                        VStack(alignment: .leading, spacing: Space.sm) {
-                            SectionHeader(title: "Connections")
-                            settingsRow("Apple Health & devices", icon: "heart.text.square",
-                                        detail: HealthManager.shared.authorized ? "Connected" : "Not connected") { showConnections = true }
-                        }
+                    section("Privacy & data") {
+                        sheetRow("Apple Health & devices", icon: "heart.text.square.fill", tint: BrandColor.success,
+                                 value: HealthManager.shared.authorized ? "Connected" : "Not connected") { showConnections = true }
+                        rowDivider
+                        pushRow("Privacy & security", icon: "lock.fill", tint: BrandColor.accentText) { PrivacySecuritySettingsView() }
+                        rowDivider
+                        sheetRow("Export data", icon: "square.and.arrow.up.fill", tint: BrandColor.data) { showExport = true }
                     }
 
-                    // ── Preferences ────────────────────────────────────────────
-                    Card {
-                        VStack(alignment: .leading, spacing: Space.md) {
-                            SectionHeader(title: "Preferences")
-                            FieldRow("Appearance") {
-                                Picker("Appearance", selection: $appearanceRaw) {
-                                    ForEach(AppearanceMode.allCases) { Text($0.label).tag($0.rawValue) }
-                                }
-                                .pickerStyle(.segmented)
-                            }
-                            FieldRow("Weight", hint: "Suggested for your region: \(suggestedUnitLabel).") {
-                                Picker("Weight unit", selection: $weightInPounds) {
-                                    Text("Pounds (lb)").tag(true)
-                                    Text("Kilograms (kg)").tag(false)
-                                }
-                                .pickerStyle(.segmented)
-                            }
-                        }
-                    }
-
-                    // ── Security & Privacy ─────────────────────────────────────
-                    Card {
-                        VStack(alignment: .leading, spacing: Space.sm) {
-                            SectionHeader(title: "Security & Privacy")
-                            if BiometricLock.isAvailable {
-                                Toggle(isOn: faceIDBinding) {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Unlock with \(BiometricLock.biometryName)")
-                                            .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                                        Text("Require \(BiometricLock.biometryName) each time you open PinWise. Off by default.")
-                                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                                    }
-                                }
-                                .tint(BrandColor.accent)
-                                Divider().overlay(BrandColor.stroke)
-                            }
-                            Toggle(isOn: $shareHealthWithNatt) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Share Apple Health with Natt")
-                                        .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                                    Text("Let Natt use your Apple Health metrics — weight, heart rate, HRV, sleep, steps — to personalize answers. You agree to this when you start using Natt; turn it off here anytime.")
-                                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                                }
-                            }
-                            .tint(BrandColor.accent)
-                            Divider().overlay(BrandColor.stroke)
-                            settingsRow("Privacy Policy & Terms of Service", icon: "doc.text") { showLegal = true }
-                        }
-                    }
-
-                    // ── Software Information ───────────────────────────────────
-                    Card {
-                        VStack(alignment: .leading, spacing: Space.sm) {
-                            SectionHeader(title: "Software Information")
-                            infoRow("App version", appVersion)
-                            infoRow("iOS version", systemVersion)
-                            infoRow("Device", deviceModel)
-                            Text("PinWise is for tracking and education — not medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
-                                .font(.caption2).foregroundStyle(BrandColor.textSecondary).padding(.top, Space.xs)
-                        }
+                    section("About") {
+                        sheetRow("Privacy Policy & Terms", icon: "doc.text.fill", tint: BrandColor.textSecondary) { showLegal = true }
+                        rowDivider
+                        pushRow("About PinWise", icon: "info.circle.fill", tint: BrandColor.textSecondary) { AboutView() }
                     }
                 }
                 .padding(Space.lg)
@@ -162,12 +52,192 @@ struct SettingsView: View {
             .sheet(isPresented: $showConnections) { HealthConnectionsView() }
             .sheet(isPresented: $showLegal) { LegalDocumentView() }
             .sheet(isPresented: $showExport) { DataExportView() }
-            .alert("Backup isn't available yet", isPresented: $showBackupNote) {
-                Button("Got it", role: .cancel) {}
-            } message: {
-                Text("Your data stays on this device. Cross-device backup and restore arrive with account sync.")
-            }
         }
+    }
+
+    // MARK: - Section + row scaffolding
+
+    /// A titled group: an uppercase header over a Card of rows (Apple grouped-inset register).
+    @ViewBuilder private func section(_ title: String, @ViewBuilder _ rows: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            SectionHeader(title: title)
+            Card { VStack(spacing: 0) { rows() } }
+        }
+    }
+
+    private var rowDivider: some View { Divider().overlay(BrandColor.stroke) }
+
+    private func pushRow<Dest: View>(_ title: String, icon: String, tint: Color, value: String? = nil,
+                                     @ViewBuilder dest: () -> Dest) -> some View {
+        NavigationLink { dest() } label: { SettingsRow(title: title, icon: icon, tint: tint, value: value) }
+            .buttonStyle(.plain)
+    }
+
+    private func sheetRow(_ title: String, icon: String, tint: Color, value: String? = nil,
+                          action: @escaping () -> Void) -> some View {
+        Button(action: action) { SettingsRow(title: title, icon: icon, tint: tint, value: value) }
+            .buttonStyle(.plain)
+    }
+}
+
+/// One settings row: a colored icon tile + label + optional value + chevron. The tile register
+/// matches the Tools cards and iOS Settings, so the list reads as considered, not utilitarian.
+private struct SettingsRow: View {
+    let title: String
+    let icon: String
+    var tint: Color = BrandColor.accentText
+    var value: String? = nil
+
+    var body: some View {
+        HStack(spacing: Space.md) {
+            Image(systemName: icon)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(tint)
+                .frame(width: 30, height: 30)
+                .background(tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+            Spacer(minLength: Space.sm)
+            if let value {
+                Text(value).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+            }
+            Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+        }
+        .padding(.vertical, Space.sm)
+        .contentShape(.rect)
+    }
+}
+
+// MARK: - Subpages (focused option screens, pushed within the Settings stack)
+
+/// Notification preferences — reminder timing + lock-screen discretion. Applies to every protocol.
+private struct NotificationsSettingsView: View {
+    @AppStorage("showCompoundNamesInNotifications") private var showCompoundNames = true
+    @AppStorage("reminderLeadMinutes") private var reminderLeadMinutes = 0
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                Text("Turn a reminder on for each protocol. These settings apply to all of them.")
+                    .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
+
+                Card {
+                    VStack(alignment: .leading, spacing: Space.lg) {
+                        FieldRow("Remind me", hint: "When a dose is due, or a little ahead.") {
+                            Picker("Remind me", selection: $reminderLeadMinutes) {
+                                Text("At dose time").tag(0)
+                                Text("15 min early").tag(15)
+                                Text("30 min early").tag(30)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        Divider().overlay(BrandColor.stroke)
+                        Toggle(isOn: $showCompoundNames) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Show compound names").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                                Text("Off keeps doses private — reminders just say “Dose due now.”")
+                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .tint(BrandColor.accent)
+                    }
+                }
+
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                } label: {
+                    Label("Open iOS notification settings", systemImage: "bell.badge")
+                        .font(.footnote.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(Space.lg)
+        }
+        .heroScreen()
+        .navigationTitle("Notifications")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Appearance + units — the app-wide display preferences.
+private struct GeneralSettingsView: View {
+    @AppStorage("weightInPounds") private var weightInPounds = true
+    @AppStorage("appearance") private var appearanceRaw = AppearanceMode.dark.rawValue
+
+    private var suggestedUnitLabel: String {
+        Locale.current.measurementSystem != .metric ? "pounds (lb)" : "kilograms (kg)"
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                Card {
+                    VStack(alignment: .leading, spacing: Space.lg) {
+                        FieldRow("Appearance") {
+                            Picker("Appearance", selection: $appearanceRaw) {
+                                ForEach(AppearanceMode.allCases) { Text($0.label).tag($0.rawValue) }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        FieldRow("Weight", hint: "Suggested for your region: \(suggestedUnitLabel).") {
+                            Picker("Weight unit", selection: $weightInPounds) {
+                                Text("Pounds (lb)").tag(true)
+                                Text("Kilograms (kg)").tag(false)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                    }
+                }
+            }
+            .padding(Space.lg)
+        }
+        .heroScreen()
+        .navigationTitle("Appearance & units")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Biometric app lock + Natt's access to Apple Health, plus a link to the legal documents.
+private struct PrivacySecuritySettingsView: View {
+    @AppStorage(BiometricLock.prefKey) private var faceIDLock = false
+    @AppStorage("shareHealthWithNatt") private var shareHealthWithNatt = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                Card {
+                    VStack(alignment: .leading, spacing: Space.md) {
+                        if BiometricLock.isAvailable {
+                            Toggle(isOn: faceIDBinding) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Unlock with \(BiometricLock.biometryName)")
+                                        .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                                    Text("Require \(BiometricLock.biometryName) each time you open PinWise. Off by default.")
+                                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            .tint(BrandColor.accent)
+                            Divider().overlay(BrandColor.stroke)
+                        }
+                        Toggle(isOn: $shareHealthWithNatt) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Share Apple Health with Natt")
+                                    .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                                Text("Let Natt use your Apple Health metrics — weight, heart rate, HRV, sleep, steps — to personalize answers. You agree to this when you start using Natt; turn it off anytime.")
+                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .tint(BrandColor.accent)
+                    }
+                }
+            }
+            .padding(Space.lg)
+        }
+        .heroScreen()
+        .navigationTitle("Privacy & security")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     /// Enabling the lock requires passing a biometric check first; a failed/canceled prompt leaves it off.
@@ -183,8 +253,30 @@ struct SettingsView: View {
             }
         )
     }
+}
 
-    // MARK: - Software info
+/// About — version/device provenance and the standing not-medical-advice notice.
+private struct AboutView: View {
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                Card {
+                    VStack(alignment: .leading, spacing: Space.md) {
+                        infoRow("App version", appVersion)
+                        infoRow("iOS version", systemVersion)
+                        infoRow("Device", deviceModel)
+                    }
+                }
+                Text("PinWise is for tracking and education — not medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
+                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+            }
+            .padding(Space.lg)
+        }
+        .heroScreen()
+        .navigationTitle("About PinWise")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
     private var appVersion: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
         let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
@@ -193,29 +285,12 @@ struct SettingsView: View {
     private var systemVersion: String { "iOS \(UIDevice.current.systemVersion)" }
     private var deviceModel: String { UIDevice.current.model }
 
-    // MARK: - Rows
-    private func settingsRow(_ title: String, icon: String, detail: String? = nil, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: Space.md) {
-                Image(systemName: icon).font(.body).frame(width: 24).foregroundStyle(BrandColor.accentText)
-                Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                Spacer()
-                if let detail { Text(detail).font(.caption).foregroundStyle(BrandColor.textSecondary) }
-                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
-            }
-            .padding(.vertical, Space.xs)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
     private func infoRow(_ key: String, _ value: String) -> some View {
         HStack {
             Text(key).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
             Spacer()
             Text(value).font(.caption).foregroundStyle(BrandColor.textSecondary)
         }
-        .padding(.vertical, 2)
     }
 }
 
