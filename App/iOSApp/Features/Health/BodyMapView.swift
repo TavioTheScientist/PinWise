@@ -105,10 +105,11 @@ enum HeatWindow: String, CaseIterable, Identifiable {
     var label: String { self == .twoWeeks ? "last 2 weeks" : (self == .fourWeeks ? "last 4 weeks" : "last 8 weeks") }
     /// The "fully red" load, grounded in injection-technique guidance rather than relative ranking:
     /// keep injections ≥1 cm apart and rest a spot ~2–3 weeks (FITTER / lipohypertrophy consensus).
-    /// Once a single region is used ~daily, holding that spacing + rest becomes impractical, so we
-    /// treat ≈6 uses/week of one region as fully red. Rate-based (scales with the window) so a
-    /// longer look-back never just crowds everything toward red.
-    var cap: Double { Double(days) / 7.0 * 6.0 }
+    /// The map is deliberately sensitive — ≈2 uses/week of one region reads as fully red — so the
+    /// warmer colors show up early and nudge rotation before a spot is genuinely overloaded (this is
+    /// 3× more sensitive than a raw ~6/week cap: a count that used to reach a color now needs a third
+    /// of it). Rate-based (scales with the window) so a longer look-back never just crowds toward red.
+    var cap: Double { Double(days) / 7.0 * 2.0 }
 }
 
 /// Injection-site heat map over a professionally-drawn anatomical body (MuscleMap, MIT). Color is
