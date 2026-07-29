@@ -70,6 +70,8 @@ struct BiomarkersView: View {
     @State private var selected: BiomarkerType = .weight
     @State private var valueText = ""
     @State private var note = ""
+    /// Notes collapse by default — keep the form minimal/premium; expand only when needed.
+    @State private var showNote = false
     @State private var savedCount = 0
     @State private var range: ChartRange = .all
     @State private var scrubDate: Date?
@@ -142,9 +144,7 @@ struct BiomarkersView: View {
                                 healthPrefillButton
                             }
                         }
-                        FieldRow("Note", hint: "Optional — e.g. \"fasting\", \"post-workout\".") {
-                            TextField("Anything worth remembering", text: $note, axis: .vertical).pinwiseField()
-                        }
+                        noteDropdown
                         PrimaryButton(title: "Log \(selected.displayName)", systemImage: "plus") { save() }
                             .disabled(!canSave).opacity(canSave ? 1 : 0.5)
                     }
@@ -331,6 +331,38 @@ struct BiomarkersView: View {
     /// One-tap prefill from Apple Health — weight only, only when Health is connected and has
     /// a reading. Converts kg → lb to match the user's display unit.
     @ViewBuilder
+    /// The optional note, collapsed by default — a tap reveals the field. When collapsed with text
+    /// already entered, the header shows a preview so the note isn't hidden. Keeps the form minimal.
+    private var noteDropdown: some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { showNote.toggle() }
+            } label: {
+                HStack(spacing: Space.sm) {
+                    Text(note.isEmpty ? "Add a note" : "Note")
+                        .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                    if !showNote, !note.isEmpty {
+                        Text(note).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                    }
+                    Spacer(minLength: Space.sm)
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                        .rotationEffect(.degrees(showNote ? 0 : -90))
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+
+            if showNote {
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    Text("Optional — e.g. \"fasting\", \"post-workout\".")
+                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    TextField("Anything worth remembering", text: $note, axis: .vertical).pinwiseField()
+                }
+            }
+        }
+    }
+
     private var healthPrefillButton: some View {
         if selected == .weight, health.authorized, let kg = health.latestWeightKg {
             let display = weightInPounds ? kg * 2.20462 : kg
@@ -358,6 +390,7 @@ struct BiomarkersView: View {
         try? context.save()
         valueText = ""
         note = ""
+        showNote = false   // collapse the note for the next entry
         savedCount += 1
     }
 }
