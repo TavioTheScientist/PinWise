@@ -152,7 +152,7 @@ struct ActiveLevelsView: View {
     private func rightNowCard(_ models: [CompoundModel]) -> some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
-                Text("Right now").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                SectionHeader(title: "Right now")
                 Text("Where each compound sits between its own trough and peak this moment.")
                     .font(.caption).foregroundStyle(BrandColor.textSecondary)
                 ForEach(models) { gaugeRow($0).transition(.opacity) }
@@ -202,27 +202,24 @@ struct ActiveLevelsView: View {
 
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
-                HStack {
-                    Text("Timeline").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                    Spacer()
-                }
+                SectionHeader(title: "Timeline")
                 Picker("Range", selection: $range) {
                     ForEach(TimeRange.allCases) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
 
-                Text("Curves show timing and shape, not exact amount. Tap a compound for precise levels.")
+                Text("Each curve is scaled to its own peak — shape and timing, not exact amount. Tap a compound for numbers.")
                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
 
                 if hasLong {
-                    Text("Long-acting · scaled to each compound's own peak")
+                    Text("Long-acting")
                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                     lineChart(longs, ws: ws, we: we, now: now, height: 200, labeled: true)
                 }
 
                 if hasShort {
                     Divider().overlay(BrandColor.stroke)
-                    Text(range == .day ? "Short-acting · levels over the day" : "Short-acting · when each was active")
+                    Text(range == .day ? "Short-acting · over the day" : "Short-acting · when each was active")
                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                     // Label "Now" only on the first chart shown, so the tag isn't repeated down the stack.
                     if range == .day {
@@ -320,7 +317,9 @@ struct ActiveLevelsView: View {
     private func legendCard(_ models: [CompoundModel]) -> some View {
         Card {
             VStack(alignment: .leading, spacing: Space.sm) {
-                Text("Compounds").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                SectionHeader(title: "Compounds")
+                Text("Tap to show or hide a compound on the chart.")
+                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: Space.sm)], alignment: .leading, spacing: Space.xs) {
                     ForEach(models) { m in
                         let isHidden = hidden.contains(m.name)
