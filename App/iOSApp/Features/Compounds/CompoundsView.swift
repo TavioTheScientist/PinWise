@@ -21,25 +21,10 @@ struct CompoundsView: View {
 
     private var query: String { search.trimmingCharacters(in: .whitespaces).lowercased() }
 
-    /// Class order for grouping — mirrors the catalog's own ordering so the library reads the same
-    /// way every time. Blends never appear here (catalog is single-compound), but kept for totality.
-    private let classOrder: [CompoundCategory] = [
-        .glp1, .growthHormoneSecretagogue, .healingRecovery, .cosmeticLongevity, .metabolic, .blend,
-    ]
-
+    /// Every matching compound in one flat A–Z list (CompoundCatalog.allSorted is already
+    /// alphabetical, and filtering preserves that order). No class grouping.
     private var results: [Compound] {
         CompoundCatalog.allSorted.filter { matchesQuery($0) && matchesGoal($0) }
-    }
-
-    /// Library grouped by class, plain alphabetical within each class. No evidence-first ranking —
-    /// evidence lives on the compound page, not in how the list is ordered, so browsing stays neutral.
-    private var grouped: [(category: CompoundCategory, compounds: [Compound])] {
-        let items = results
-        return classOrder.compactMap { cat in
-            let inCat = items.filter { $0.category == cat }
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-            return inCat.isEmpty ? nil : (cat, inCat)
-        }
     }
 
     private func matchesQuery(_ c: Compound) -> Bool {
@@ -98,14 +83,14 @@ struct CompoundsView: View {
                             }
                         }
                     }
-                    ForEach(grouped, id: \.category) { group in
-                        SectionHeader(title: group.category.displayName)
-                        ForEach(group.compounds) { compound in
-                            NavigationLink { CompoundDetailView(compound: compound) } label: {
-                                CompoundRow(compound: compound)
-                            }
-                            .buttonStyle(PressableStyle())
+                    // One flat A–Z list of every compound (no class grouping). A "Library" header
+                    // only appears to separate it from the user's own compounds above.
+                    if !customResults.isEmpty { SectionHeader(title: "Library") }
+                    ForEach(results) { compound in
+                        NavigationLink { CompoundDetailView(compound: compound) } label: {
+                            CompoundRow(compound: compound)
                         }
+                        .buttonStyle(PressableStyle())
                     }
                 }
 
