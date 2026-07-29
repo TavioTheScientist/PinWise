@@ -26,16 +26,16 @@ struct ToolItem: Identifiable {
     /// must-haves lead (calculator, dose log), then titration + the compound/evidence reference,
     /// then per-session and outcome tools; the reverse "check a dose" sanity-check sits last.
     static let all: [ToolItem] = [
-        ToolItem(route: .doseCalc, title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.accentText),
-        ToolItem(route: .doseHistory, title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.accentText),
-        ToolItem(route: .rampUp, title: "Titration", subtitle: "Plan dose changes over time", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.accentText),
+        ToolItem(route: .doseCalc, title: "Dose calculator", subtitle: "Calculate what to draw", systemImage: "syringe.fill", hue: BrandColor.textSecondary),
+        ToolItem(route: .doseHistory, title: "Dose history", subtitle: "Review or undo doses", systemImage: "clock.arrow.circlepath", hue: BrandColor.textSecondary),
+        ToolItem(route: .rampUp, title: "Titration", subtitle: "Plan dose changes over time", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.textSecondary),
         ToolItem(route: .compounds, title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data),
         ToolItem(route: .activeLevels, title: "Active levels", subtitle: "See your stack's body load", systemImage: "waveform.path.ecg", hue: BrandColor.data),
         ToolItem(route: .injectionMap, title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success),
         ToolItem(route: .symptoms, title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: BrandColor.warning),
         ToolItem(route: .biomarkers, title: "Labs & metrics", subtitle: "Track weight, labs, and vitals", systemImage: "chart.xyaxis.line", hue: BrandColor.data),
         ToolItem(route: .physique, title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success),
-        ToolItem(route: .reverseDose, title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.accentText),
+        ToolItem(route: .reverseDose, title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.textSecondary),
     ]
 
     static func item(for route: ToolRoute) -> ToolItem { all.first { $0.route == route } ?? all[0] }
@@ -239,9 +239,14 @@ private struct ToolCard: View {
     let title: String
     let subtitle: String
     let systemImage: String
-    /// Domain hue (Oura-style color-as-information): accentText = dose, success = body,
-    /// warning = subjective tracking, data = objective health data. Tints the icon chip
-    /// and icon only — text stays neutral. No default: every tool declares its domain.
+    /// Domain hue (Oura-style color-as-information): textSecondary = dose, success = body,
+    /// warning = subjective tracking, data = objective health data. Tints the icon chip and icon
+    /// only — text stays neutral. No default: every tool declares its domain.
+    ///
+    /// The DOSE domain is deliberately NEUTRAL rather than a hue. It used to be `accentText`,
+    /// which spent the brand metal decoratively across four of ten cards — and dose is PinWise's
+    /// core domain, so it is the right one to carry no color at all: the hues then mark only the
+    /// peripheral domains, and the grid reads as one system instead of a rainbow.
     let hue: Color
     let route: ToolRoute
 

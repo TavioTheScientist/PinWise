@@ -89,8 +89,11 @@ struct PhysiqueView: View {
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, Space.md)
-                        .background(BrandColor.accent, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-                        .foregroundStyle(BrandColor.onAccent)
+                        // Primary of a primary/secondary pair — "Add from library" beside it
+                        // already carries the quiet charcoal+rim register, so this becomes the
+                        // inverse-ink CTA and the two read as one button family.
+                        .background(BrandColor.ctaFill, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+                        .foregroundStyle(BrandColor.onCtaFill)
                 }
                 .buttonStyle(.plain)
             }
