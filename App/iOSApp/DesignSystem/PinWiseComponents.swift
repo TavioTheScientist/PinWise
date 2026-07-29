@@ -450,37 +450,54 @@ struct DisclosureSection<Content: View>: View {
     var scent: String? = nil
     let isExpanded: Bool
     let toggle: () -> Void
+    /// A non-collapsible section: content is always shown, the header carries no chevron and isn't
+    /// tappable. Lets always-visible sections ("What it does", "Often compared with") share the exact
+    /// same Card + `Typo.headline` register as the accordions, so every section reads as a peer.
+    var collapsible: Bool = true
     @ViewBuilder var content: () -> Content
+
+    private var showsContent: Bool { isExpanded || !collapsible }
 
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: isExpanded ? Space.md : 0) {
-                Button(action: toggle) {
-                    HStack(alignment: .top, spacing: Space.sm) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                            if let scent, !isExpanded {
-                                Text(scent).font(.caption).foregroundStyle(BrandColor.textSecondary)
-                                    .lineLimit(1)
-                            }
-                        }
-                        Spacer(minLength: Space.sm)
-                        Image(systemName: "chevron.down")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(BrandColor.textSecondary)
-                            .rotationEffect(.degrees(isExpanded ? 0 : -90))
-                            .padding(.top, 2)
-                    }
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-
-                if isExpanded {
+            VStack(alignment: .leading, spacing: showsContent ? Space.md : 0) {
+                header
+                if showsContent {
                     content().frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .animation(.easeInOut(duration: 0.22), value: isExpanded)
         }
+    }
+
+    @ViewBuilder private var header: some View {
+        if collapsible {
+            Button(action: toggle) { headerRow(showChevron: true) }
+                .buttonStyle(.plain)
+        } else {
+            headerRow(showChevron: false)
+        }
+    }
+
+    private func headerRow(showChevron: Bool) -> some View {
+        HStack(alignment: .top, spacing: Space.sm) {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                if let scent, !isExpanded, collapsible {
+                    Text(scent).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer(minLength: Space.sm)
+            if showChevron {
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(BrandColor.textSecondary)
+                    .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                    .padding(.top, Space.xs)
+            }
+        }
+        .contentShape(.rect)
     }
 }
 

@@ -180,6 +180,9 @@ enum Typo {
     static let headline = Font.system(size: 20, weight: .semibold)
     static let body = Font.system(size: 16, weight: .regular)
     static let caption = Font.system(size: 13, weight: .medium)
+    /// The sub-caption register (footnotes, disclaimers, secondary hints) — one token so the
+    /// smallest text is consistent instead of scattered raw `.caption2`/`.footnote` calls.
+    static let caption2 = Font.system(size: 12, weight: .regular)
     // Rounded design for vital numbers — the Apple Health/Fitness signature; reads as a
     // considered product choice rather than default system type.
     static let numberXL = Font.system(size: 40, weight: .black, design: .rounded).monospacedDigit()
