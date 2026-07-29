@@ -556,7 +556,7 @@ struct ActiveLevelsView: View {
                         Text("Amount on board · \(unitLabel) · \(spanLabel(spanHours)) window")
                             .font(.caption).foregroundStyle(BrandColor.textSecondary)
                         detailChart(curve: curve.points, markers: curve.markers, domain: ws...we, spanHours: spanHours, now: now)
-                        Text("Actual estimated amount in your body — a ramp-up shows as a taller curve. Dots mark each dose; dashed line is now.")
+                        Text("Actual estimated amount in your body — a dose increase shows as a taller curve. Dots mark each dose; dashed line is now.")
                             .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
