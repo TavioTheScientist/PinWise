@@ -217,7 +217,9 @@ struct ToolsCustomizeView: View {
                 }
             ))
             .labelsHidden()
-            .tint(BrandColor.accent)
+            // `controlOn`, not `accent`: the system draws this control's knob/label in white, and
+            // the chrome accent is light on dark — white-on-accent would vanish.
+            .tint(BrandColor.controlOn)
         }
     }
 
@@ -555,7 +557,7 @@ struct RampUpPlannerView: View {
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) { removePlan(p) } label: { Label("Delete", systemImage: "trash") }
                             Button { builderTarget = RampBuilderTarget(protocolID: p.id) } label: { Label("Edit", systemImage: "pencil") }
-                                .tint(BrandColor.accent)
+                                .tint(BrandColor.controlOn)
                         }
                         .listRowBackground(BrandColor.surface)
                     }

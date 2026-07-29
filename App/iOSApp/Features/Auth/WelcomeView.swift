@@ -3,10 +3,15 @@ import AuthenticationServices
 import PeptideKit
 
 /// First-launch sign-in gate. Cinematic hero: two stainless-steel vials (Retatrutide + GLOW)
-/// over a teal→blue glow on pitch black, then the PinWise mark + tagline, then auth — three
-/// groups with generous vertical spacing, the whole block vertically centered. Sign in with
-/// Apple works on-device; "Continue as guest" keeps the app usable locally; "Log in" routes to
-/// the (backend-pending) email path. Terms/Privacy reachable before authenticating.
+/// over a silver→pale-pink metallic bloom on pitch black, then the PinWise mark + tagline, then
+/// auth — three groups with generous vertical spacing, the whole block vertically centered.
+/// Sign in with Apple works on-device; "Continue as guest" keeps the app usable locally;
+/// "Log in" routes to the (backend-pending) email path. Terms/Privacy reachable before auth.
+///
+/// This screen is pinned to DARK regardless of the user's appearance setting (see the
+/// `.environment(\.colorScheme, .dark)` on the root ZStack): its canvas is a hardcoded pure
+/// black to match the launch storyboard, so resolving light-mode tokens on top of it would put
+/// near-black CTAs and near-white "subtle lifts" on a black ground.
 struct WelcomeView: View {
     @State private var auth = AuthManager.shared
     @State private var showLegal = false
@@ -16,9 +21,11 @@ struct WelcomeView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // Teal → blue glow, strictly behind the vials.
+            // Metallic bloom (pale pink → silver), strictly behind the vials — the app-icon
+            // chrome as ambient light rather than as a fill. Fixed hexes are correct here: this
+            // canvas is always pure black, so there is no light-mode counterpart to adapt to.
             RadialGradient(
-                colors: [Color(hex: 0x22E0B0).opacity(0.32), Color(hex: 0x1E9CC8).opacity(0.20), .clear],
+                colors: [Color(hex: 0xE9C9D6).opacity(0.30), Color(hex: 0xDCDCE2).opacity(0.16), .clear],
                 center: .center, startRadius: 0, endRadius: 220
             )
             .frame(width: 380, height: 380)
@@ -61,25 +68,32 @@ struct WelcomeView: View {
                     .frame(height: 52)
                     .clipShape(Capsule())
 
+                    // These two carry the SecondaryButton recipe exactly — 52pt capsule,
+                    // `surfaceElevated` fill, hairline `stroke` rim, `textPrimary` ink — but stay
+                    // hand-rolled for their labels alone. SecondaryButton uppercases and tracks
+                    // its title (the app's in-app button voice); here the buttons sit directly
+                    // beneath `SignInWithAppleButton`, whose sentence-case 19pt label Apple does
+                    // not let us restyle. Matching Apple wins on this one screen, so the shared
+                    // vocabulary is honored at the token/geometry level and broken only in case.
                     Button { showEmail = true } label: {
                         Label("Continue with email", systemImage: "envelope.fill")
                             .font(.system(size: 19, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(BrandColor.textPrimary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
-                            .background(Color.white.opacity(0.06), in: Capsule())
-                            .overlay(Capsule().strokeBorder(Color.white.opacity(0.22), lineWidth: 1))
+                            .background(BrandColor.surfaceElevated, in: Capsule())
+                            .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
 
                     Button { auth.continueAsGuest() } label: {
                         Text("Continue as guest")
                             .font(.system(size: 19, weight: .semibold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(BrandColor.textPrimary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
-                            .background(Color.white.opacity(0.06), in: Capsule())
-                            .overlay(Capsule().strokeBorder(Color.white.opacity(0.22), lineWidth: 1))
+                            .background(BrandColor.surfaceElevated, in: Capsule())
+                            .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
 
@@ -107,7 +121,11 @@ struct WelcomeView: View {
             }
             .padding(.horizontal, Space.xl)
         }
-        .tint(BrandColor.accent)
+        // Pin the whole cover to dark so the `Color(light:dark:)` tokens above resolve against
+        // the hardcoded black canvas. Without this, a user whose appearance is set to Light gets
+        // near-black ink and near-white "lifts" on black. Must stay ABOVE `.tint`.
+        .environment(\.colorScheme, .dark)
+        .tint(BrandColor.controlOn)
         .alert("Heads up", isPresented: Binding(get: { auth.notice != nil }, set: { if !$0 { auth.notice = nil } })) {
             Button("Got it", role: .cancel) { auth.notice = nil }
         } message: { Text(auth.notice ?? "") }

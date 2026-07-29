@@ -87,11 +87,11 @@ struct ProfileAvatar: View {
                 if initials.isEmpty {
                     Image(systemName: "person.fill")
                         .font(.system(size: size * 0.42, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
+                        .foregroundStyle(BrandColor.onAccent.opacity(0.9))
                 } else {
                     Text(initials)
                         .font(.system(size: size * 0.36, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(BrandColor.onAccent)
                 }
             }
         }

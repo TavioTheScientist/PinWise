@@ -155,7 +155,7 @@ struct PhysiqueView: View {
                         if isSelected {
                             Image(systemName: "checkmark.circle.fill")
                                 .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, BrandColor.accent)
+                                .foregroundStyle(BrandColor.onAccent, BrandColor.accent)
                         } else {
                             Image(systemName: "circle").foregroundStyle(.white)
                         }
@@ -167,8 +167,11 @@ struct PhysiqueView: View {
             }
             .overlay {
                 if selecting && isSelected {
+                    // Stays FULL opacity (unlike the toned-down rims on dark cards): this one
+                    // sits over an arbitrary photo and has to read against any image beneath it.
+                    // Trimmed 3pt → 2pt so the affordance is unmistakable without being loud.
                     RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-                        .strokeBorder(BrandColor.accent, lineWidth: 3)
+                        .strokeBorder(BrandColor.accent, lineWidth: 2)
                 }
             }
         }

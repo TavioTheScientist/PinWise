@@ -224,9 +224,11 @@ struct ProtocolBuilderView: View {
                             FieldRow("Start date") {
                                 DatePicker("", selection: $startDate, displayedComponents: [.date]).labelsHidden()
                             }
-                            Toggle("Active", isOn: $isActive).tint(BrandColor.accent)
+                            // `controlOn`, not `accent`: the system draws these controls' knobs in
+                            // white, and the chrome accent is light on dark.
+                            Toggle("Active", isOn: $isActive).tint(BrandColor.controlOn)
                             Toggle("Remind me", isOn: $remindersOn)
-                                .tint(BrandColor.accent)
+                                .tint(BrandColor.controlOn)
                                 .onChange(of: remindersOn) { _, on in
                                     if on { Task { await NotificationManager.requestAuthorization() } }
                                 }

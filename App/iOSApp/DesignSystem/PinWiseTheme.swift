@@ -1,15 +1,22 @@
 import SwiftUI
 import UIKit
 
-// PinWise design system. Color strategy (founder-directed):
-//  • Deep blue = brand + trust + primary CTA (the Enhanced-style deep royal blue).
-//  • 60-30-10: 60% blue-biased near-black background, 30% elevated surfaces + muted text,
-//    10% the accent on interactive elements only.
-//  • Saturation hierarchy: saturated blue for interactive fills; desaturated blue-grays elsewhere.
+// PinWise design system. Color strategy (founder-directed, 2026-07 "chrome" revision):
+//  • PURE BLACK ground + a metallic silver→pale-pink chrome accent — the app-icon language.
+//    The former royal blue (0x2536E6) is RETIRED: a large saturated fill reads as a template,
+//    not as quiet luxury, and it never matched the icon it shipped under.
+//  • 60-30-10: 60% pure-black background, 30% neutral charcoal surfaces + muted silver text,
+//    10% chrome on interactive elements only. Metal is a HIGHLIGHT, never a large fill.
+//  • Value hierarchy over hue: surfaces separate by lightness + hairline stroke, not by color.
+//    Neutral charcoals (not navy) so nothing competes with the metal.
+//  • The primary CTA is INVERSE INK, not the accent: a white pill with black ink on dark
+//    (`ctaFill`/`onCtaFill`), matching "Continue with Apple" on the sign-in cover. This keeps
+//    the single loudest element in the app neutral, so the metal stays rare.
 //  • Semantic colors (green=success/progress, red=urgency/destructive, amber=attention) are
-//    SEPARATE from the accent and signal meaning, not brand.
-//  • WCAG ≥ 4.5:1: white-on-accent fills pass (~8:1); the deep blue fails as text on black
-//    (~2.5:1), so `accentText` (a lighter blue, ~7:1) is used for links/emphasis on dark.
+//    SEPARATE from the accent and signal meaning, not brand. Green is tertiary only.
+//  • POLARITY WARNING: on dark, `accent` is now LIGHT. Ink on an accent fill is `onAccent`
+//    (near-black) — never `.white`. System controls that draw their own white knobs/labels
+//    (Toggle, Slider, swipeActions) must use `controlOn`, not `accent`.
 
 extension Color {
     init(hex: UInt, alpha: Double = 1) {
@@ -103,37 +110,61 @@ struct AppearanceApplier: UIViewRepresentable {
     }
 }
 
-// Measured WCAG contrast ratios (audited 2026-07, small-text target 4.5:1):
-//   white/background 20.1 · white/surface 18.7 · textSecondary/dark 7.9 · accentText/dark 7.6
-//   white-on-accent 7.6 · accent-on-white 7.6 · light success-on-white 5.0 · light
-//   warning-on-white 5.4 · danger 4.8 (chip) · data-on-white 4.95 · data-on-dark-surface 10.0
+// Measured WCAG contrast ratios (re-audited 2026-07 for the chrome revision, small-text 4.5:1):
+//   DARK (ground 0x000000): white/background 21.0 · white/surface 19.4 · textSecondary 10.9 ·
+//   accentText 13.3 · accent-as-text 14.4 · onAccent-on-accent 13.9 · onCtaFill-on-ctaFill 18.9 ·
+//   white-on-controlOn 4.71 · data-on-surface 9.7
+//   LIGHT (ground 0xF4F6FC): accent/accentText 6.75 · white-on-accent 6.75 ·
+//   onCtaFill-on-ctaFill 18.1 · white-on-controlOn 7.3 · success 5.0 · warning 5.4 ·
+//   danger 4.8 (chip) · data 4.95
 // Badge ink: every semantic fill holds ≥4.5:1 with `onBadge` in BOTH modes — dark fills +
-// near-black ink 6.2–12.1, light fills + white ink 4.8–5.4. The previous light success
-// (0x0E9E63 → 3.45) and warning (0xB26A00 → 4.24) failed 4.5:1 as small text on white;
-// both are darkened (0x0C8052 / 0x9A5B00) so the light set genuinely holds ≥4.5:1 now.
-// The deep `accent` as text on dark is only 2.6:1 — so text/links on dark use `accentText`.
-// Each token adapts per interface style: dark keeps the Enhanced-style deep blue-black; light
-// is a clean blue-biased near-white. Light values are chosen to hold small-text contrast ≥4.5:1
-// (deep accent, darker semantic hues); dark values are the previously audited set.
+// near-black ink 6.2–12.9, light fills + white ink 4.8–5.4.
+//
+// THE POLARITY FLIP (the one thing to internalize): the old `accent` was a DARK blue
+// (luminance 0.088) so white ink on it passed at 7.6:1. The new dark `accent` is a LIGHT
+// chrome rose (luminance 0.663) — white ink on it is 1.47:1, i.e. invisible. Every accent
+// fill takes `onAccent`. Three token pairs exist precisely to keep this straight:
+//   accent / onAccent       — chrome fills (chips, discs, small badges). Ink is near-black on dark.
+//   ctaFill / onCtaFill     — the ONE primary action per screen. Inverse ink: white pill + black
+//                             ink on dark, near-black pill + white ink on light. Never the accent.
+//   controlOn / (system)    — Toggle tracks, Slider tracks, swipeAction fills. The SYSTEM draws
+//                             these knobs and labels in white and we cannot override it, so this
+//                             token stays MID-DARK in both modes (white-on-it ≥4.7:1).
 enum BrandColor {
-    // 60% — dominant neutral. Dark: deep blue-black. Light: blue-white.
-    static let background = Color(light: 0xF4F6FC, dark: 0x04050B)
-    // 30% — secondary surfaces / cards.
-    static let surface = Color(light: 0xFFFFFF, dark: 0x0F1120)
-    static let surfaceElevated = Color(light: 0xEEF1F9, dark: 0x171A2C)
-    static let stroke = Color(light: 0xDCE0EC, dark: 0x272B45)     // hairline
+    // 60% — dominant neutral. Dark: PURE BLACK (the splash/launch ground, so splash → sign-in →
+    // Home is one continuous surface). Light: blue-white.
+    static let background = Color(light: 0xF4F6FC, dark: 0x000000)
+    // 30% — secondary surfaces / cards. Neutral charcoal with a slight lift, NOT navy and NOT
+    // a washed system gray: nothing here may compete with the metal.
+    static let surface = Color(light: 0xFFFFFF, dark: 0x0E0E11)
+    static let surfaceElevated = Color(light: 0xEEF1F9, dark: 0x17171B)
+    static let stroke = Color(light: 0xDCE0EC, dark: 0x2A2A30)     // hairline
+    /// The one brighter rim, reserved for `Card(style: .hero)`. On pure black a black shadow is
+    /// a no-op, so the hero surface earns its rank from this rim rather than from elevation.
+    static let strokeStrong = Color(light: 0xC3C9D9, dark: 0x3A3A42)
 
-    // Deep blue used in hero gradients. Light mode uses a soft periwinkle so the mesh stays subtle.
-    static let deepBlue = Color(light: 0x8FA0FF, dark: 0x0C1A66)
-
-    // 10% — functional accent: deep royal-electric blue (trust). Same in both modes → for FILLS.
-    static let accent = Color(hex: 0x2536E6)
-    static let onAccent = Color(hex: 0xFFFFFF)
-    // Accent TEXT/ICONS: the deep accent reads well on light; on dark it needs the lighter blue.
-    static let accentText = Color(light: 0x2536E6, dark: 0x8A97FF)
+    // 10% — functional accent: metallic pale rose (the app-icon chrome, flattened to one Color
+    // for fills/icons/text). LIGHT on dark — see the polarity note above.
+    static let accent = Color(light: 0xA02455, dark: 0xE9C9D6)
+    /// Ink on an `accent` fill. NEVER use `.white` here on dark.
+    static let onAccent = Color(light: 0xFFFFFF, dark: 0x0B0B0D)
+    // Accent TEXT/ICONS — a hair more desaturated than the fill so links read as warm silver
+    // rather than pink. (The fill/text split is now near-vestigial: the old reason for it was
+    // the deep blue's 2.6:1 as text on dark, and the chrome accent measures 14.4:1. Kept as a
+    // separate token for its ~90 call sites; do NOT "fix" it by re-differentiating the hues.)
+    static let accentText = Color(light: 0xA02455, dark: 0xDCC9D0)
+    /// The primary-CTA pill — inverse ink, deliberately NEUTRAL so the one loudest element on a
+    /// screen is not the brand metal. Matches `.signInWithAppleButtonStyle(.white)`.
+    static let ctaFill = Color(light: 0x0B0D16, dark: 0xFFFFFF)
+    static let onCtaFill = Color(light: 0xFFFFFF, dark: 0x0B0D16)
+    /// "ON" ground for SYSTEM-DRAWN controls only — Toggle tracks, Slider minimum tracks,
+    /// swipeAction fills. Those controls render their knob/label in white unconditionally, so
+    /// this is a muted mid-dark member of the rose family instead of the light `accent`
+    /// (white-on-it: 4.71:1 dark, 7.3:1 light). Do not use it for ordinary fills.
+    static let controlOn = Color(light: 0xA02455, dark: 0x8A6B78)
     /// Badge ink — text on solid semantic badge fills: white on the deep light-mode fills,
     /// near-black on the bright dark-mode fills (the Spotify black-on-green register).
-    static let onBadge = Color(light: 0xFFFFFF, dark: 0x04050B)
+    static let onBadge = Color(light: 0xFFFFFF, dark: 0x0B0B0D)
 
     // Semantic (separate from the accent). Light variants darkened for contrast on white.
     static let success = Color(light: 0x0C8052, dark: 0x18E39A)   // green — progress / health
@@ -148,27 +179,51 @@ enum BrandColor {
     // (0.16 ground): 3.98:1 light / 7.40:1 dark — ≥3:1 graphics floor in both modes.
     static let data = Color(light: 0x0E7C86, dark: 0x4FD1C5)
 
-    // Text
+    // Text — dark secondary is a NEUTRAL silver (was a blue-gray) to match the charcoal surfaces.
     static let textPrimary = Color(light: 0x0B0D16, dark: 0xFFFFFF)
-    static let textSecondary = Color(light: 0x5A6478, dark: 0x9AA3B8)
+    static let textSecondary = Color(light: 0x5A6478, dark: 0xA0A0A8)
+}
+
+/// The metallic brand gradient — the app-icon chrome, and the ONLY gradient in the system.
+/// Brand moments ONLY: the tab bar's Log disc and hero art. Never a card ground, never a large
+/// fill. Ink on it is `BrandColor.onAccent`.
+///
+/// It lives outside `BrandColor` on purpose: every `BrandColor` member is a `Color`, and a
+/// `LinearGradient` cannot be passed to `StatusDot(color:)`, `TagChip(color:)`, `FeedImage(tint:)`
+/// or any `Color`-typed `.foregroundStyle` slot. Keeping it in its own namespace makes that
+/// constraint legible at the call site.
+enum BrandGradient {
+    /// Silver → pale pink → silver on the diagonal in DARK; the same metal inverted to
+    /// graphite → ink → gunmetal in LIGHT, so the brand disc still reads on a near-white
+    /// tab bar. Adaptive via `Color(light:dark:)` stops — no `colorScheme` branch needed.
+    static let chrome = LinearGradient(
+        stops: [
+            .init(color: Color(light: 0x3A3A42, dark: 0xF2E7EB), location: 0.00),
+            .init(color: Color(light: 0x0B0D16, dark: 0xE9C9D6), location: 0.48),
+            .init(color: Color(light: 0x2A2530, dark: 0xDCDCE2), location: 1.00),
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
 }
 
 /// Chart-series palette — the one source of categorical color for Swift Charts surfaces.
 enum ChartPalette {
-    /// Categorical series colors — FIXED order, never cycled. CVD-validated per mode
-    /// (dark minimum pairwise CVD distance 26.8, light 27.1, and every color holds ≥3:1
-    /// contrast against its mode's chart ground). Dark set intentionally aligns 1–3 with
-    /// the accentText/success/warning hues but is declared separately: series color ≠
-    /// status color. No cycling helper is provided — cycling is banned; when a domain
-    /// exceeds five series, repeat colors WITH a distinct symbol shape as the secondary
-    /// encoding (see the Symptoms chart).
+    /// Categorical series colors — FIXED order, never cycled. Data is SUBORDINATE to the
+    /// black + chrome + white system: the set leads with a neutral silver and stays desaturated
+    /// so no chart ever out-shouts Home or the Log action. Every color holds ≥4.5:1 against its
+    /// mode's chart ground (not merely the 3:1 graphics floor), so series labels are safe too.
+    /// The retired royal blue is deliberately absent — blue is no longer part of the brand.
+    /// No cycling helper is provided: cycling is banned. When a domain exceeds five series,
+    /// repeat colors WITH a distinct secondary encoding — symbol shape (Symptoms) or dash
+    /// pattern (Active Levels).
     static let categorical: [Color] = [
-        Color(light: 0x2536E6, dark: 0x8A97FF),
-        Color(light: 0x0C8052, dark: 0x18E39A),
-        Color(light: 0x9A5B00, dark: 0xFFB020),
-        Color(light: 0xB12D63, dark: 0xFF7AB0),
-        Color(light: 0x0E5FA8, dark: 0x7FB4FF),
-    ]
+        Color(light: 0x4A4F5C, dark: 0xD8D8DE),   // graphite / silver — the neutral rung
+        Color(light: 0x0E7C86, dark: 0x4FD1C5),   // teal   (aligns with `data`)
+        Color(light: 0x9A5B00, dark: 0xFFB020),   // amber  (aligns with `warning`)
+        Color(light: 0xA83A63, dark: 0xE8A0B8),   // rose   (the chrome family's data cousin)
+        Color(light: 0x1F7A45, dark: 0x18E39A),   // green — light value warmed off `success`
+    ]                                             // to widen the gap from the teal at index 1
 }
 
 /// Type ramp — system font (SF), monospaced figures. `.black` is reserved for the number
@@ -224,9 +279,11 @@ enum Motion {
     static let stagger: Double = 0.04                                             // 40ms/row (Oura)
 }
 
-// Glow rules: a colored glow means "live/active" — never gray, never decorative. The only
-// sanctioned glows are the PrimaryButton accent, the tab bar's Log chip, and StatusDot
-// (its own status color, radius 6). Nothing else glows.
+// Glow rules (tightened in the chrome revision): a colored glow means "live/active" — never
+// gray, never decorative. The ONLY sanctioned glow left is `StatusDot` (its own status color,
+// radius 6). The PrimaryButton glow and the Log chip's glow are both REMOVED: the CTA is now a
+// neutral inverse-ink pill that needs no help, and a glow under the metallic disc reads as
+// cheap chrome rather than expensive. Restraint is the brand signal, not luminance.
 // Neutral-black STRUCTURAL shadows are not glows: the two drawer shadows (0.45/24) and
 // Elevation.chrome under the floating tab bar.
 //
@@ -247,13 +304,15 @@ struct Elevation: ViewModifier {
     let level: Level
     @Environment(\.colorScheme) private var scheme
 
-    // (opacity, radius, y) per level — dark: hero 0.50/28/14 · chrome 0.35/18/8 · card 0/0/0
-    // (dark elevation is surface lightness + hairline); light: hero 0.10/20/10 ·
-    // chrome 0.10/14/6 · card 0.08/16/8; none draws no shadow.
+    // (opacity, radius, y) per level. DARK: a black shadow over a PURE-BLACK ground is a
+    // literal no-op, so `.hero` and `.card` cast nothing — dark elevation is surface lightness
+    // plus the hairline (and `strokeStrong` for hero). `.chrome` is the one exception and is
+    // RAISED to 0.55/20/10: it does real work in the moments a lighter card surface scrolls
+    // beneath the floating tab bar. LIGHT: hero 0.10/20/10 · chrome 0.10/14/6 · card 0.08/16/8.
     private var values: (opacity: Double, radius: CGFloat, y: CGFloat) {
         switch (level, scheme == .dark) {
-        case (.hero, true): return (0.50, 28, 14)
-        case (.chrome, true): return (0.35, 18, 8)
+        case (.hero, true): return (0, 0, 0)
+        case (.chrome, true): return (0.55, 20, 10)
         case (.card, true): return (0, 0, 0)
         case (.hero, false): return (0.10, 20, 10)
         case (.chrome, false): return (0.10, 14, 6)
@@ -274,32 +333,6 @@ extension View {
     }
 }
 
-/// Ambient blue mesh behind hero areas (iOS 18). Native — no image assets. Scheme-aware:
-/// deep saturated blue on dark; a soft blue wash on light so dark titles stay readable on top.
-struct HeroMesh: View {
-    @Environment(\.colorScheme) private var scheme
-
-    var body: some View {
-        // On light, replace the deep `accent` with a pale blue so near-black titles keep contrast.
-        let deep = BrandColor.deepBlue               // adaptive: navy on dark, periwinkle on light
-        let glow = scheme == .dark ? BrandColor.accent : Color(hex: 0xBAC6FF)
-        let base = BrandColor.background
-        return MeshGradient(
-            width: 3, height: 3,
-            points: [
-                SIMD2<Float>(0, 0),   SIMD2<Float>(0.5, 0),   SIMD2<Float>(1, 0),
-                SIMD2<Float>(0, 0.5), SIMD2<Float>(0.5, 0.5), SIMD2<Float>(1, 0.5),
-                SIMD2<Float>(0, 1),   SIMD2<Float>(0.5, 1),   SIMD2<Float>(1, 1)
-            ],
-            colors: [
-                deep,             glow,          deep,
-                glow.opacity(0.7), deep,         glow.opacity(0.5),
-                base,             base,          base
-            ]
-        )
-    }
-}
-
 extension View {
     /// Bottom clearance so scrollable content always clears the floating tab bar (an overlay
     /// that reserves no layout space). 90 = bar content height 65 (top pad 12 + iconRow 30 +
@@ -315,9 +348,9 @@ extension View {
             .background(BrandColor.background.ignoresSafeArea())
     }
 
-    /// Flat brand canvas for tab-level screens (identical to `screenBackground()`; the name
-    /// is kept for its call sites). The ambient mesh survives only on the four pre-auth
-    /// covers that use `HeroMesh()` directly.
+    /// Flat brand canvas for tab-level screens (identical to `screenBackground()`; the name is
+    /// kept for its call sites). There is no ambient mesh any more — the ground is pure black
+    /// everywhere, and the one gradient left in the system is `BrandGradient.chrome`.
     func heroScreen() -> some View {
         screenBackground()
     }

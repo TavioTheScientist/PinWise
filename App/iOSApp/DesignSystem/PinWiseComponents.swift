@@ -16,7 +16,6 @@ struct Card<Content: View>: View {
     private let style: Style
     private let padding: CGFloat
     private let content: Content
-    @Environment(\.colorScheme) private var scheme
 
     init(style: Style = .standard, padding: CGFloat = Space.lg, @ViewBuilder content: () -> Content) {
         self.style = style
@@ -31,12 +30,13 @@ struct Card<Content: View>: View {
     private var fillGradient: LinearGradient {
         switch style {
         case .hero:
-            // 0.65 only on dark, where the flat canvas would otherwise swallow the wash.
-            // Light stays at 0.5: the periwinkle ground at 0.65 drops the hero's
-            // textSecondary micro-labels below the 4.5:1 small-text floor the theme promises.
+            // A quiet VALUE lift, not a hue. The old deep-blue wash was the largest colored fill
+            // in the app and is retired with the blue; the hero now ranks by a top-down
+            // charcoal lift plus its brighter `strokeStrong` rim (see `rimGradient`), which is
+            // what still reads once dark `.hero` elevation drops to zero on a pure-black ground.
             return LinearGradient(
-                colors: [BrandColor.deepBlue.opacity(scheme == .dark ? 0.65 : 0.5), BrandColor.surface],
-                startPoint: .topLeading, endPoint: .bottomTrailing
+                colors: [BrandColor.surfaceElevated, BrandColor.surface],
+                startPoint: .top, endPoint: .bottom
             )
         case .standard:
             return LinearGradient(
@@ -51,12 +51,15 @@ struct Card<Content: View>: View {
         }
     }
 
-    // Rim: every register wears the same sober flat hairline. The degenerate 3× stroke
-    // gradient keeps the strokeBorder's LinearGradient type, so the rim never changes the
-    // card's structural identity either.
+    // Rim: a sober flat hairline in every register EXCEPT `.hero`, which wears the one brighter
+    // `strokeStrong` rim. That rim is now the hero's only rank marker: on pure black its shadow
+    // is a no-op, and the fill lift alone is a ~1.07:1 step — invisible without it. The
+    // degenerate 3× stroke gradient keeps the strokeBorder's LinearGradient type, so the rim
+    // never changes the card's structural identity.
     private var rimGradient: LinearGradient {
-        LinearGradient(
-            colors: [BrandColor.stroke, BrandColor.stroke, BrandColor.stroke],
+        let rim = style == .hero ? BrandColor.strokeStrong : BrandColor.stroke
+        return LinearGradient(
+            colors: [rim, rim, rim],
             startPoint: .top, endPoint: .bottom
         )
     }
@@ -82,7 +85,11 @@ struct Card<Content: View>: View {
     }
 }
 
-/// Primary call-to-action — flat accent fill, white label, the app's one accent glow.
+/// Primary call-to-action — ONE per screen. An inverse-ink PILL: white fill + black ink on dark,
+/// near-black fill + white ink on light. Deliberately NEUTRAL rather than the brand metal, so the
+/// loudest element on a screen never spends the chrome; and deliberately unglowed — the old accent
+/// glow is gone with the blue. Matches `.signInWithAppleButtonStyle(.white)` on the sign-in cover,
+/// so the app has ONE primary-button silhouette from first launch onward.
 struct PrimaryButton: View {
     let title: String
     var systemImage: String? = nil
@@ -96,14 +103,19 @@ struct PrimaryButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.lg)
+            // A FLOOR, not a fixed height: `Space.lg` padding already lands at ~52pt at the
+            // default text size, and must stay free to grow with Dynamic Type. A hard
+            // `.frame(height: 52)` would clip the label at accessibility sizes across 16 sites.
+            .frame(minHeight: 52)
         }
-        .background(BrandColor.accent, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-        .foregroundStyle(BrandColor.onAccent)
-        .shadow(color: BrandColor.accent.opacity(0.35), radius: 12, y: 5)
+        .background(BrandColor.ctaFill, in: Capsule())
+        .foregroundStyle(BrandColor.onCtaFill)
     }
 }
 
-/// Secondary CTA — white fill, deep-blue label (legible: dark text on light).
+/// Secondary CTA — the same 52pt pill silhouette as `PrimaryButton`, one register quieter: a
+/// charcoal fill with a hairline rim and primary-text ink (the "Continue as guest" recipe).
+/// Reads as an alternative rather than a competing action.
 struct SecondaryButton: View {
     let title: String
     var systemImage: String? = nil
@@ -117,9 +129,11 @@ struct SecondaryButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.lg)
+            .frame(minHeight: 52)
         }
-        .background(BrandColor.textPrimary, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
-        .foregroundStyle(BrandColor.accent)
+        .background(BrandColor.surfaceElevated, in: Capsule())
+        .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
+        .foregroundStyle(BrandColor.textPrimary)
     }
 }
 
@@ -608,10 +622,14 @@ struct AdherenceRing: View {
     private var pct: Int { Int((clamped * 100).rounded()) }
 
     // Value-driven single hue: the color carries the adherence verdict, not decoration.
+    // The mid rung is `data` (teal), NOT the accent: with the chrome accent the ladder ran
+    // warning 0.524 → accentText 0.616 → success 0.575, so "on pace" was the BRIGHTEST rung and
+    // visually out-ranked "ahead" — and it spent the brand color on a status. Teal (0.513)
+    // restores a monotone amber → teal → green ladder and keeps status separate from brand.
     private var ringColor: Color {
         switch clamped {
         case ..<0.5: return BrandColor.warning
-        case ..<0.8: return BrandColor.accentText
+        case ..<0.8: return BrandColor.data
         default: return BrandColor.success
         }
     }
@@ -775,8 +793,10 @@ struct FeedImage: View {
 
     var body: some View {
         ZStack {
+            // The category `tint` still carries the semantic; the plate beneath it goes neutral
+            // (was a deep-blue midpoint) so a loading feed row reads as charcoal, not as brand.
             LinearGradient(
-                colors: [tint.opacity(0.55), BrandColor.deepBlue, BrandColor.background],
+                colors: [tint.opacity(0.45), BrandColor.surfaceElevated, BrandColor.background],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
             if let urlString, let url = URL(string: urlString) {
