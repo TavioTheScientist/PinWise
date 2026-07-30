@@ -135,8 +135,16 @@ enum NotificationManager {
         c.interruptionLevel = .timeSensitive   // breaks through Focus/DND for a time-sensitive dose
         c.categoryIdentifier = categoryID
 
-        // Carry protocol IDs so a tap (or Log action) opens the Log tab preselected.
-        c.userInfo = ["protocolIDs": protos.map { $0.id.uuidString }]
+        // Carry protocol IDs so a tap (or Log action) opens the Log tab preselected, and names so a
+        // Skip recorded from the banner can denormalize a readable label into `SkippedDose` without
+        // a store lookup from the notification delegate. IDs and names are index-aligned.
+        //
+        // Note these travel in `userInfo`, NOT in the visible title/body — so they are unaffected by
+        // the privacy mode below, which governs what appears on the lock screen.
+        c.userInfo = [
+            "protocolIDs": protos.map { $0.id.uuidString },
+            "protocolNames": protos.map(\.name),
+        ]
 
         // Private mode — never name a compound on the lock screen.
         guard showCompoundNames else {

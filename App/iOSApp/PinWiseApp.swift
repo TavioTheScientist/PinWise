@@ -17,10 +17,11 @@ struct PinWiseApp: App {
         WindowGroup {
             RootView()
         }
-        // Local-first store. To enable iCloud private-database sync later, add the iCloud
-        // + CloudKit capability and a ModelConfiguration(cloudKitDatabase:) — the model is
-        // already CloudKit-safe (see LoggedDose).
-        .modelContainer(for: [LoggedDose.self, SavedProtocol.self, StoredVial.self, SymptomEntry.self, BiomarkerEntry.self, CustomCompound.self, PhysiquePhoto.self, HealthSnapshot.self])
+        // Local-first store, shared with the notification-center delegate (see PinWiseStore) so a
+        // Skip tapped on a reminder banner can be recorded even when the app isn't running. To
+        // enable iCloud private-database sync later, add the iCloud + CloudKit capability and a
+        // ModelConfiguration(cloudKitDatabase:) — the models are already CloudKit-safe.
+        .modelContainer(PinWiseStore.shared)
     }
 }
 
@@ -50,13 +51,39 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         case NotificationManager.actionSnooze15: await NotificationManager.snooze(request, minutes: 15); return
         case NotificationManager.actionSnooze30: await NotificationManager.snooze(request, minutes: 30); return
         case NotificationManager.actionSnooze60: await NotificationManager.snooze(request, minutes: 60); return
-        case NotificationManager.actionSkip: return   // just dismiss
+        // Skip now RECORDS the decision instead of silently dismissing it. Without this the app
+        // asked the user to declare a skip and threw the answer away — and once the Overdue state
+        // shipped, that skipped dose would resurface days later as a red "OVERDUE", punishing an
+        // honest answer in precisely the case where guidance says skipping is correct.
+        case NotificationManager.actionSkip:
+            await recordSkip(for: request, firedAt: response.notification.date)
+            return
         default: break                                // Log action or default tap
         }
         let info = request.content.userInfo
         let ids = (info["protocolIDs"] as? [String]) ?? (info["protocolID"] as? String).map { [$0] } ?? []
         guard let first = ids.first, let id = UUID(uuidString: first) else { return }
         await MainActor.run { DoseReminderRouter.shared.route(to: id) }
+    }
+
+    /// Writes a `SkippedDose` for every protocol the reminder covered.
+    ///
+    /// The slot is derived from when the notification FIRED, not from `Date()` — a banner sat in
+    /// Notification Center overnight must still decline yesterday's dose, not today's.
+    @MainActor
+    private func recordSkip(for request: UNNotificationRequest, firedAt: Date) {
+        let info = request.content.userInfo
+        let ids = (info["protocolIDs"] as? [String]) ?? (info["protocolID"] as? String).map { [$0] } ?? []
+        let slot = Calendar.current.startOfDay(for: firedAt)
+        let context = PinWiseStore.shared.mainContext
+        let names = (info["protocolNames"] as? [String]) ?? []
+
+        for (i, raw) in ids.enumerated() {
+            guard let id = UUID(uuidString: raw) else { continue }
+            context.insert(SkippedDose(timestamp: Date(), scheduledFor: slot, protocolID: id,
+                                       protocolName: i < names.count ? names[i] : ""))
+        }
+        try? context.save()
     }
 }
 

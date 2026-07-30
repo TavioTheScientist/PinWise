@@ -10,6 +10,7 @@ struct ProtocolsView: View {
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
     @Query(sort: \StoredVial.dateAcquired, order: .reverse) private var vials: [StoredVial]
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var logs: [LoggedDose]
+    @Query private var skips: [SkippedDose]
     @State private var showBuilder = false
     @State private var editTarget: EditTarget?
     @State private var panel: Panel = .inventory
@@ -89,7 +90,7 @@ struct ProtocolsView: View {
                 Button { editTarget = EditTarget(proto: proto) } label: {
                     ProtocolCard(presentation: ProtocolPresentation(
                         proto, vials: vials, todaysLogs: today,
-                        overdueSince: proto.lastOverdueDose(in: logs)))
+                        overdueSince: proto.lastOverdueDose(in: logs, skips: skips)))
                 }
                 .buttonStyle(PressableStyle())
                 .contextMenu {
@@ -119,7 +120,7 @@ struct ProtocolsView: View {
                 Button { editTarget = EditTarget(proto: proto) } label: {
                     ProtocolCard(presentation: ProtocolPresentation(
                         proto, vials: vials, todaysLogs: today,
-                        overdueSince: proto.lastOverdueDose(in: logs)))
+                        overdueSince: proto.lastOverdueDose(in: logs, skips: skips)))
                 }
                 .buttonStyle(PressableStyle())
                 .contextMenu {

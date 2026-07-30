@@ -12,6 +12,7 @@ private enum LogMode: String, CaseIterable { case protocolBased = "Protocol", co
 struct LogView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var recent: [LoggedDose]
+    @Query private var skips: [SkippedDose]
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
     @Query(sort: \StoredVial.dateAcquired, order: .reverse) private var vials: [StoredVial]
     @Query(sort: \CustomCompound.name) private var customCompounds: [CustomCompound]
@@ -67,7 +68,7 @@ struct LogView: View {
         let today = todaysLogs
         return loggableProtocols.map {
             ($0, ProtocolPresentation($0, vials: vials, todaysLogs: today,
-                                      overdueSince: $0.lastOverdueDose(in: recent)))
+                                      overdueSince: $0.lastOverdueDose(in: recent, skips: skips)))
         }
     }
 
