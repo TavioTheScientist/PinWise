@@ -43,6 +43,21 @@ final class LoggedDose {
     /// adherence (matching logs to their source schedule). Additive optional to stay
     /// CloudKit-safe; nil = one-time dose not tied to any protocol (and every legacy row).
     var protocolID: UUID? = nil
+    /// The batch this dose came from, stamped at log time from the resolved vial.
+    ///
+    /// Stamped rather than derived through `vialID` because `vialID` does NOT survive:
+    /// `StoredVial.reconcileDelete` NILS it, and `refill()` deletes the old vial as a routine
+    /// once-a-month action — exactly when batch truth matters most, since the new vial may be a
+    /// different lot. A record that evaporates on a refill is not a record.
+    var lotID: UUID? = nil
+    /// The lot number as it read at log time. Denormalized on purpose, the same move (and for the
+    /// same reason) as `SkippedDose.protocolName`: deleting a lot must not rewrite history.
+    ///
+    /// NOTE this does NOT make a dose's *interpretation* immutable — a vial's `coa*Percent` stays
+    /// editable, so derived draw/strength readouts can still shift. `doseMicrograms` is absolute, so
+    /// the dose itself never moves. True immutability would need a `netFactorAtLog` stamp; that is
+    /// deliberately not built.
+    var lotNumber: String = ""
 
     init(
         id: UUID = UUID(),
@@ -511,6 +526,9 @@ final class StoredVial {
     var coaAssayPercent: Double? = nil
     var coaContentPercent: Double? = nil
     var coaPurityPercent: Double? = nil
+    /// The batch this vial came from (`StoredLot`). Soft link — a lot may back several vials (a kit),
+    /// so the pointer lives on the child. nil = provenance not recorded, which is always allowed.
+    var lotID: UUID? = nil
 
     init(
         id: UUID = UUID(), label: String = "", apis: [VialAPI] = [], solventVolumeMilliliters: Double? = nil,
@@ -568,6 +586,12 @@ extension StoredVial {
     /// For each dose drawn from this vial: clear `vialID` and reset `didDecrement` (nothing left
     /// to restore to). For each protocol whose items reference it: rebuild `items` nilling the
     /// matching `vialID` and reassign the array so SwiftData re-persists the JSON blob. Then delete.
+    ///
+    /// **Lots are deliberately exempt.** This nils `dose.vialID` but leaves `dose.lotID` and
+    /// `dose.lotNumber` intact: losing the vial must not erase which BATCH a past dose came from.
+    /// That asymmetry is precisely why the lot is stamped onto the dose at log time rather than
+    /// derived through `vialID` — and why `refill()`, which deletes the old vial every time, doesn't
+    /// take the provenance with it.
     func reconcileDelete(in context: ModelContext,
                          doses: [LoggedDose], protocols: [SavedProtocol]) {
         for dose in doses where dose.vialID == id {
