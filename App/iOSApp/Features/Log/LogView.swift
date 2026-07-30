@@ -13,6 +13,7 @@ struct LogView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var recent: [LoggedDose]
     @Query private var skips: [SkippedDose]
+    @Query private var lots: [StoredLot]
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
     @Query(sort: \StoredVial.dateAcquired, order: .reverse) private var vials: [StoredVial]
     @Query(sort: \CustomCompound.name) private var customCompounds: [CustomCompound]
@@ -658,6 +659,13 @@ struct LogView: View {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { confirmation = message }
     }
 
+    /// The lot number of the batch a vial came from, or "" when provenance wasn't recorded.
+    /// Resolved at log time so it can be denormalized onto the dose.
+    private func lotNumber(for vial: StoredVial?) -> String {
+        guard let id = vial?.lotID, let lot = lots.first(where: { $0.id == id }) else { return "" }
+        return lot.lotNumber
+    }
+
     /// The vial a logged compound draws from: the newest non-depleted vial containing that API.
     private func resolveVial(for compoundName: String) -> StoredVial? {
         vials.first { $0.apiNames.contains(compoundName) && $0.dosesTaken < $0.totalDoses }
@@ -676,6 +684,12 @@ struct LogView: View {
             didDecrement: willDecrement,
             protocolID: protocolID
         )
+        // Stamp the batch at log time. The vial is already resolved here, so this costs no query and
+        // adds no failure mode — but it is what makes the dose survive a refill or a vial delete,
+        // both of which nil `vialID`. `lotNumber` is copied so history stays readable even if the
+        // lot record is later removed.
+        entry.lotID = vial?.lotID
+        entry.lotNumber = lotNumber(for: vial)
         context.insert(entry)
         if decrement, let vial, vial.dosesTaken < vial.totalDoses {
             vial.dosesTaken += 1
