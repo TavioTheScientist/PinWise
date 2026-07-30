@@ -191,7 +191,23 @@ struct BodyMapView: View {
                         }
                         .pickerStyle(.segmented)
 
+                        // `.showSubGroups()` is REQUIRED for this map to work at all, not cosmetic.
+                        //
+                        // MuscleMap hides sub-group paths by default and draws only their parent
+                        // group. Of the muscles we target, `upperAbs` and `lowerAbs` are sub-groups
+                        // (parent `.abs`) — so the renderer skipped those paths entirely, looked up
+                        // `highlights[.abs]` (which we never set), found nothing, and painted default
+                        // grey. The result: all FOUR abdomen sites were invisible on the map while the
+                        // other twelve rendered fine. Abdomen is the most-used site for GLP-1s, so a
+                        // new user's first logged dose produced a body with no highlight anywhere and
+                        // the map looked broken — even though the count line correctly read
+                        // "1 injection".
+                        //
+                        // Enabling sub-groups is safe for the sites that already worked: the renderer
+                        // falls back to a parent's highlight for any sub-group that has none of its
+                        // own, so e.g. a `.quadriceps` highlight still fills inner/outer quad.
                         BodyView(gender: bodyGender, side: side)
+                            .showSubGroups()
                             .heatmap(intensities, colorScale: heatScale)
                             .frame(maxWidth: .infinity)
                             .frame(height: 420)
