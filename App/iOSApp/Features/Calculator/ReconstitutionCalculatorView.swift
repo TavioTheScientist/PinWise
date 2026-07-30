@@ -28,6 +28,16 @@ final class DoseCalculatorViewModel {
     var doseUnit: MassUnit = .milligram
     var syringe: SyringeScale = .u100
 
+    /// COA net active fraction applied to the vial amount (1.0 = dose off the label).
+    ///
+    /// Kept OUT of `vialMassText` deliberately: that field must keep showing the number printed on
+    /// the vial, so it still matches the label and round-trips with the vial builder's own entry.
+    /// The correction is applied at calculation time instead, and surfaced as a dismissible chip —
+    /// a silently-applied 0.874 would be a trap.
+    var netFactor: Double = 1.0
+    /// Human provenance for the chip, e.g. "GLOW — 87.4% of label". nil hides the chip.
+    var netFactorSource: String? = nil
+
     /// The domain result verbatim — `ReconstitutionResult` or `PreparedDoseResult`, both of
     /// which conform to `DoseDrawResult`. No view-local wrapper.
     private(set) var result: (any DoseDrawResult)?
@@ -44,8 +54,13 @@ final class DoseCalculatorViewModel {
                 guard let vialMass = vialMassText.decimalValue, let solvent = solventText.decimalValue else {
                     errorMessage = "Enter the vial amount and water volume."; return
                 }
+                // Pre-correct at the call site rather than teaching `ReconstitutionInput` about
+                // COAs: the domain calculator's contract is "mass + volume + dose → units", and it
+                // also serves pure hand entry (and `ReverseDoseView`) where a net factor is
+                // meaningless. `StoredVial.projection()` already set this precedent.
+                let trueMass = Mass(micrograms: Mass(vialMass, vialMassUnit).micrograms * netFactor)
                 result = try ReconstitutionCalculator.calculate(
-                    ReconstitutionInput(vialMass: Mass(vialMass, vialMassUnit),
+                    ReconstitutionInput(vialMass: trueMass,
                                         solventVolumeMilliliters: solvent, desiredDose: desired, syringe: syringe))
             case .premixed:
                 guard let strength = concentrationText.decimalValue else {
@@ -93,7 +108,53 @@ struct ReconstitutionCalculatorView: View {
     private var blendBreakdown: [(name: String, dose: Mass)]? {
         guard let v = selectedBlendVial, v.apis.count > 1, model.mode == .reconstitute,
               let r = model.result, let vol = model.solventText.decimalValue, vol > 0 else { return nil }
-        return v.apis.map { ($0.name, Mass(micrograms: $0.massMicrograms / vol * r.drawVolumeMilliliters)) }
+        // `* v.coaFactor` is NOT optional here — it must land in the same change as the primary
+        // correction above. This expression is a mass RATIO: drawVolume itself already carries
+        // 1/coaFactor once the primary is corrected, so leaving the component masses raw would
+        // over-report every component by 1/f — about +14% at a typical 87.4% COA. Correcting both
+        // restores the identity (the factor cancels), which is why this was correct BEFORE the
+        // primary fix and would have become wrong the moment it shipped alone.
+        return v.apis.map { ($0.name, Mass(micrograms: $0.massMicrograms * v.coaFactor / vol * r.drawVolumeMilliliters)) }
+    }
+
+    /// "Label 2.5 mg/mL → adjusted 2.19 mg/mL (87.4% per your COA)" — nil when uncorrected, or when
+    /// there is nothing to compare (premixed mode states true strength directly).
+    private var labelVsAdjusted: String? {
+        guard model.netFactor != 1.0, model.mode == .reconstitute,
+              let mass = model.vialMassText.decimalValue,
+              let vol = model.solventText.decimalValue, vol > 0 else { return nil }
+        let unit = model.concentrationUnit
+        let label = Mass(mass, model.vialMassUnit).micrograms / vol
+        let adjusted = label * model.netFactor
+        let l = Mass(micrograms: label).displayString(in: unit)
+        let a = Mass(micrograms: adjusted).displayString(in: unit)
+        return "Label \(l)/mL → adjusted \(a)/mL (\(Self.percentText(model.netFactor * 100)) per your COA)."
+    }
+
+    /// Visible and REVERSIBLE. `vialMassText` keeps the number printed on the vial, so the COA
+    /// adjustment has to announce itself — otherwise the tool quietly computes off a figure the user
+    /// cannot see. Extracted from `body` because inlining it tipped the type-checker over
+    /// ("unable to type-check this expression in reasonable time").
+    @ViewBuilder
+    private var coaChip: some View {
+        if let source = model.netFactorSource {
+            HStack(spacing: Space.xs) {
+                Image(systemName: "doc.text.magnifyingglass")
+                Text("COA-adjusted · \(source)")
+                Spacer(minLength: 0)
+                Button { clearCOAAdjustment() } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Dose off the label instead")
+            }
+            .font(Typo.caption2.weight(.semibold))
+            .foregroundStyle(BrandColor.accentText)
+        }
+    }
+
+    private func clearCOAAdjustment() {
+        model.netFactor = 1.0
+        model.netFactorSource = nil
+        model.recalculate()
     }
 
     var body: some View {
@@ -113,6 +174,14 @@ struct ReconstitutionCalculatorView: View {
                 // can never cover. Always present — an em-dash hero when there's nothing
                 // to show — so the form never bounces under the user's finger.
                 DoseHeroCard(result: model.result, errorMessage: model.errorMessage, syringe: model.syringe, concentrationUnit: model.concentrationUnit)
+
+                // Both numbers, as the brief asks — but the HERO stays units-to-draw. This is the
+                // supporting math, phrased to match `coaCorrectedReadout` in the vial builder rather
+                // than inventing a second voice for the same fact.
+                if let adjusted = labelVsAdjusted {
+                    Text(adjusted)
+                        .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                }
 
                 // For a blend vial, restate what that single draw delivers per compound.
                 if let breakdown = blendBreakdown {
@@ -145,9 +214,12 @@ struct ReconstitutionCalculatorView: View {
                         }
                         if model.mode == .reconstitute {
                             FieldRow("How much peptide is in the vial?", hint: "The amount printed on the vial label.") {
-                                HStack {
-                                    TextField("e.g. 5", text: $model.vialMassText).keyboardType(.decimalPad).pinwiseField()
-                                    MassUnitPicker(selection: $model.vialMassUnit)
+                                VStack(alignment: .leading, spacing: Space.sm) {
+                                    HStack {
+                                        TextField("e.g. 5", text: $model.vialMassText).keyboardType(.decimalPad).pinwiseField()
+                                        MassUnitPicker(selection: $model.vialMassUnit)
+                                    }
+                                    coaChip
                                 }
                             }
                             FieldRow("How much water did you add?", hint: "The bacteriostatic or sterile water you mixed in.") {
@@ -208,6 +280,9 @@ struct ReconstitutionCalculatorView: View {
         .onChange(of: model.vialMassUnit) { _, _ in model.recalculate() }
         .onChange(of: model.doseUnit) { _, _ in model.recalculate() }
         .onChange(of: model.syringe) { _, _ in model.recalculate() }
+        // Re-selecting the SAME vial changes no watched text field, so the COA factor needs its own
+        // trigger or the correction would apply without the result updating.
+        .onChange(of: model.netFactor) { _, _ in model.recalculate() }
     }
 
     /// Prefills the form from a stored vial. Premixed vials with a recoverable label
@@ -217,6 +292,14 @@ struct ReconstitutionCalculatorView: View {
     private func applyVial(_ v: StoredVial) {
         // Remember whether this is a blend so the per-compound breakdown shows (cleared for singles).
         selectedBlendVial = v.apis.count > 1 ? v : nil
+        // Carry the vial's COA correction across. Without this the Tools calculator prefilled the RAW
+        // label mass while the Stack card showed COA-corrected strength — the same vial reading two
+        // different ways, and the calculator's "doses per vial" disagreeing with `totalDoses`.
+        // `coaFactor` is already 1.0 when there is no COA, and 1.0 for premixed vials by definition.
+        model.netFactor = v.coaFactor
+        model.netFactorSource = v.hasCOACorrection
+            ? "\(v.displayName) — \(Self.percentText(v.coaFactor * 100)) of label"
+            : nil
         // Open the dose + concentration in the vial's chosen units, so this calc agrees with the
         // vial's Stack row instead of always reading mg/mL.
         model.doseUnit = v.doseUnit
@@ -247,6 +330,9 @@ struct ReconstitutionCalculatorView: View {
             model.doseText = Self.numberText(Mass(micrograms: pd).value(in: v.doseUnit))
         }
     }
+
+    /// One decimal, matching `coaCorrectedReadout`'s voice in the vial builder.
+    private static func percentText(_ v: Double) -> String { String(format: "%.1f%%", v) }
 
     /// Int-if-whole else two decimals — mirrors Blend's `applyVial` formatting.
     private static func numberText(_ v: Double) -> String {
