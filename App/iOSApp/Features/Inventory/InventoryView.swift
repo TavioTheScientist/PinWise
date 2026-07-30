@@ -619,20 +619,27 @@ struct VialBuilderView: View {
                                         .foregroundStyle(BrandColor.textSecondary)
                                     // One-tap window presets (28 = the USP default). Sets the discard
                                     // date to today + N days; fine-tune with the picker above.
+                                    // The label stays put; the chips scroll. Five presets already sit
+                                    // close to the available width at the default text size, and at
+                                    // accessibility sizes four of them overflowed the card — so this
+                                    // uses the app's existing chip rail rather than clipping. Adding a
+                                    // sixth preset later now costs nothing.
                                     HStack(spacing: Space.sm) {
                                         Text("Window").font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                                        ForEach([14, 28, 60, 90], id: \.self) { d in
-                                            Button {
-                                                expiration = Calendar.current.date(byAdding: .day, value: d, to: Date()) ?? Date()
-                                            } label: {
-                                                Text("\(d)d")
-                                                    .font(.caption.weight(.semibold))
-                                                    .padding(.horizontal, Space.sm).padding(.vertical, 4)
-                                                    .background(BrandColor.surfaceElevated, in: Capsule())
-                                                    .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
-                                                    .foregroundStyle(BrandColor.accentText)
+                                        FilterChipRail {
+                                            ForEach([14, 28, 45, 60, 90], id: \.self) { d in
+                                                Button {
+                                                    expiration = Calendar.current.date(byAdding: .day, value: d, to: Date()) ?? Date()
+                                                } label: {
+                                                    Text("\(d)d")
+                                                        .font(.caption.weight(.semibold))
+                                                        .padding(.horizontal, Space.sm).padding(.vertical, 4)
+                                                        .background(BrandColor.surfaceElevated, in: Capsule())
+                                                        .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
+                                                        .foregroundStyle(BrandColor.accentText)
+                                                }
+                                                .buttonStyle(.plain)
                                             }
-                                            .buttonStyle(.plain)
                                         }
                                     }
                                     // Per-compound suggested window (editable) — some peptides are
