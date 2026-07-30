@@ -10,6 +10,7 @@ struct InventoryList: View {
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
     // Needed so a vial delete can null the soft `vialID` links on every dose that drew from it.
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var logs: [LoggedDose]
+    @Query private var lots: [StoredLot]
     @State private var showBuilder = false
     @State private var editTarget: EditTarget?
     /// Identifiable wrapper so a tapped vial can drive `.sheet(item:)` (same pattern as protocols).
@@ -68,6 +69,31 @@ struct InventoryList: View {
                 }
             }
 
+            // Provenance lives one level down rather than as a third segment: three segments crowd
+            // the picker and complicate the data-backed landing logic, and this is a screen you visit
+            // deliberately, not on every glance at your stack.
+            NavigationLink {
+                LotsView()
+            } label: {
+                Card {
+                    HStack(spacing: Space.md) {
+                        Image(systemName: "shippingbox")
+                            .font(.title3).foregroundStyle(BrandColor.textSecondary)
+                            .frame(width: 32)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Lots & COA documents")
+                                .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                            Text(lots.isEmpty ? "Track what was actually in the vial"
+                                              : "\(lots.count) lot\(lots.count == 1 ? "" : "s") recorded")
+                                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right")
+                            .font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                    }
+                }
+            }
+            .buttonStyle(PressableStyle())
         }
         .sheet(isPresented: $showBuilder) { VialBuilderView() }
         .sheet(item: $editTarget) { VialBuilderView(editing: $0.vial) }
@@ -191,6 +217,10 @@ struct VialBuilderView: View {
     // Needed to detach any logs/protocols that reference this vial before deleting it.
     @Query private var logs: [LoggedDose]
     @Query private var protocols: [SavedProtocol]
+    @Query(sort: \StoredLot.dateAdded, order: .reverse) private var lots: [StoredLot]
+    /// Needed to tell whether a lot is shared: amending a lot used by several vials would silently
+    /// rewrite the others' provenance, so that case creates a new record instead.
+    @Query private var allVials: [StoredVial]
     @State private var showDeleteConfirm = false
 
     private struct APIEntry: Identifiable {
@@ -219,6 +249,11 @@ struct VialBuilderView: View {
     @State private var hasExpiration: Bool
     @State private var expiration: Date
     @State private var expandExtras: Bool
+    // Lot & vendor — provenance, always optional. Lot number/vendor blank = no lot recorded.
+    @State private var selectedLotID: UUID?
+    @State private var lotVendorText: String
+    @State private var lotNumberText: String
+    @State private var expandLot: Bool
     @State private var coaAssayText: String
     @State private var coaContentText: String
     @State private var coaPurityText: String
@@ -259,6 +294,10 @@ struct VialBuilderView: View {
             _hasExpiration = State(initialValue: true)
             _expiration = State(initialValue: Calendar.current.date(byAdding: .day, value: Self.recommendedBeyondUseDays, to: Date()) ?? Date())
             _expandExtras = State(initialValue: true)
+            _selectedLotID = State(initialValue: nil)
+            _lotVendorText = State(initialValue: "")
+            _lotNumberText = State(initialValue: "")
+            _expandLot = State(initialValue: false)
             _coaAssayText = State(initialValue: "")
             _coaContentText = State(initialValue: "")
             _coaPurityText = State(initialValue: "")
@@ -299,6 +338,11 @@ struct VialBuilderView: View {
         _hasExpiration = State(initialValue: v.expirationDate != nil)
         _expiration = State(initialValue: v.expirationDate ?? Date())
         _expandExtras = State(initialValue: v.expirationDate != nil)
+        _selectedLotID = State(initialValue: v.lotID)
+        // Fields are hydrated from the linked lot in `.task`, since a @Query isn't readable from init.
+        _lotVendorText = State(initialValue: "")
+        _lotNumberText = State(initialValue: "")
+        _expandLot = State(initialValue: v.lotID != nil)
         _coaAssayText = State(initialValue: v.coaAssayPercent.map(Self.fmt) ?? "")
         _coaContentText = State(initialValue: v.coaContentPercent.map(Self.fmt) ?? "")
         _coaPurityText = State(initialValue: v.coaPurityPercent.map(Self.fmt) ?? "")
@@ -557,6 +601,7 @@ struct VialBuilderView: View {
 
                     // COA correction is only for powder you reconstitute — a pre-mixed vial's
                     // stated strength is already corrected by the pharmacy.
+                    lotCard
                     if !isPremixed { coaCard }
 
                     Card {
@@ -691,7 +736,14 @@ struct VialBuilderView: View {
                     return e
                 }
             }
-            .sheet(isPresented: $showScanner) {
+            .task {
+            // Hydrate the lot fields for an edited vial: `lots` is a @Query, so it cannot be read
+            // from `init` where the rest of the form is seeded.
+            guard let lot = selectedLot, lotNumberText.isEmpty, lotVendorText.isEmpty else { return }
+            lotNumberText = lot.lotNumber
+            lotVendorText = lot.vendor
+        }
+        .sheet(isPresented: $showScanner) {
                 LabelScannerView(extraCompoundNames: customCompounds.map(\.name)) { applyScan($0) }
             }
             .sheet(isPresented: $showVoice) {
@@ -738,11 +790,22 @@ struct VialBuilderView: View {
         }
         if let vol = r.volumeMl { solventText = Self.fmt(vol) }
         if let exp = r.expiration { hasExpiration = true; expiration = exp }
+        // A scanned lot number PREFILLS the lot form now, instead of being appended to `notes` as
+        // "Lot X" — that string was unqueryable and unlinkable. Deliberately NOT auto-inserting a
+        // StoredLot: the OCR regex will happily capture garbage and a lot record is permanent, so the
+        // user confirms by saving. If it matches one they already have, select that rather than
+        // creating a near-duplicate.
         if let lot = r.lotNumber, !lot.isEmpty {
-            let tag = "Lot \(lot)"
-            if !notes.localizedCaseInsensitiveContains(tag) {
-                notes = notes.isEmpty ? tag : notes + "\n" + tag
+            if let existing = lots.first(where: {
+                LotIdentity.normalizedLotNumber($0.lotNumber) == LotIdentity.normalizedLotNumber(lot)
+            }) {
+                selectedLotID = existing.id
+                lotNumberText = existing.lotNumber
+                lotVendorText = existing.vendor
+            } else {
+                lotNumberText = lot
             }
+            expandLot = true
         }
     }
 
@@ -826,6 +889,99 @@ struct VialBuilderView: View {
 
     /// COA card — enter assay / content / purity (any subset) to correct the vial's true active
     /// concentration, so doses aren't computed off the (higher) label amount. Shown for every vial.
+    /// The lot currently selected, if it still exists.
+    private var selectedLot: StoredLot? {
+        selectedLotID.flatMap { id in lots.first { $0.id == id } }
+    }
+
+    /// The primary compound's name — a lot is a batch OF something.
+    private var primaryCompoundName: String { entries.first?.compound.name ?? "" }
+
+    /// Lots for this compound first (the overwhelmingly likely choice), then everything else.
+    private var lotChoices: [StoredLot] {
+        let mine = lots.filter { $0.compoundName.caseInsensitiveCompare(primaryCompoundName) == .orderedSame }
+        return mine + lots.filter { !mine.contains($0) }
+    }
+
+    /// Near-duplicate advice for what's currently typed. Never blocks a save.
+    private var lotMatchAdvice: String? {
+        let typed = (primaryCompoundName, lotVendorText, lotNumberText)
+        guard !LotIdentity.normalizedLotNumber(lotNumberText).isEmpty else { return nil }
+        for lot in lots where lot.id != selectedLotID {
+            switch lot.match(typed) {
+            case .exact:
+                return "You already have this lot — select it above instead of adding a second record."
+            case .sameLotNumberOnly:
+                return "A lot numbered \(lot.lotNumber) already exists, from \(lot.vendor.isEmpty ? "another vendor" : lot.vendor)."
+            case .none:
+                continue
+            }
+        }
+        return nil
+    }
+
+    /// Collapsed by default and ALWAYS optional — provenance must never gate saving a vial, and the
+    /// fast paths (scan, speak, save) stay untouched. Sits directly above `coaCard` because a COA
+    /// belongs to a lot, so the two read as one provenance block.
+    ///
+    /// Extracted as its own property rather than inlined: this view's `body` is already near the
+    /// type-checker's limit (see the note on `blendHero`).
+    private var lotCard: some View {
+        DisclosureSection(
+            title: "Lot & vendor",
+            scent: selectedLot?.displaySummary ?? (lotNumberText.isEmpty ? "Optional — track what was in the vial" : lotNumberText),
+            isExpanded: expandLot,
+            toggle: { withAnimation(.easeInOut(duration: 0.2)) { expandLot.toggle() } }
+        ) {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                Text("A lot is the batch your vial came from. Recording it is what lets a COA, and every dose you log, point at a specific batch rather than a compound in general.")
+                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+
+                if !lotChoices.isEmpty {
+                    Menu {
+                        ForEach(lotChoices) { lot in
+                            Button {
+                                selectedLotID = lot.id
+                                lotNumberText = lot.lotNumber
+                                lotVendorText = lot.vendor
+                            } label: {
+                                Text(lot.compoundName.isEmpty ? lot.displaySummary : "\(lot.compoundName) · \(lot.displaySummary)")
+                            }
+                        }
+                        Divider()
+                        Button("No lot") {
+                            selectedLotID = nil
+                            lotNumberText = ""
+                            lotVendorText = ""
+                        }
+                    } label: {
+                        Label(selectedLot.map { "Lot: \($0.displaySummary)" } ?? "Choose an existing lot",
+                              systemImage: "shippingbox")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(BrandColor.accentText)
+                            .lineLimit(1)
+                    }
+                }
+
+                FieldRow("Lot number", hint: "As printed on the vial or the COA.") {
+                    TextField("e.g. A24-118", text: $lotNumberText)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.characters)
+                        .pinwiseField()
+                }
+                FieldRow("Vendor or source", hint: "Free text. PinWise doesn't vet suppliers or keep a vendor list.") {
+                    TextField("Who you got it from", text: $lotVendorText)
+                        .autocorrectionDisabled()
+                        .pinwiseField()
+                }
+
+                if let advice = lotMatchAdvice {
+                    Text(advice).font(Typo.caption2).foregroundStyle(BrandColor.warning)
+                }
+            }
+        }
+    }
+
     private var coaCard: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
@@ -871,6 +1027,34 @@ struct VialBuilderView: View {
     /// Suggested beyond-use window (days) for the anchor compound — editable; defaults to 28.
     private var suggestedBUDDays: Int {
         anchorCompoundName.map(BeyondUseGuidance.recommendedDays(forCompound:)) ?? BeyondUseGuidance.defaultDays
+    }
+
+    /// Resolves the form's lot fields to a `StoredLot`, creating one only when there is something to
+    /// record. Returns nil when the user left it blank — a vial with no recorded provenance is a
+    /// first-class, always-allowed state, so this must never manufacture an empty lot.
+    private func resolveLot() -> StoredLot? {
+        let number = lotNumberText.trimmingCharacters(in: .whitespaces)
+        let vendor = lotVendorText.trimmingCharacters(in: .whitespaces)
+        if let picked = selectedLot, picked.lotNumber == number, picked.vendor == vendor { return picked }
+        guard !number.isEmpty || !vendor.isEmpty else { return nil }
+
+        // Reuse an exact match rather than creating a near-duplicate. `.sameLotNumberOnly` is
+        // deliberately NOT reused — a different vendor may genuinely be a different batch.
+        let typed = (primaryCompoundName, vendor, number)
+        if let exact = lots.first(where: { $0.match(typed) == .exact }) { return exact }
+
+        // Editing the number/vendor of a lot that only this vial uses is an amendment, not a new
+        // batch — otherwise fixing a typo would orphan the old record and its COA documents.
+        if let picked = selectedLot, allVials.filter({ $0.lotID == picked.id }).count <= 1 {
+            picked.lotNumber = number
+            picked.vendor = vendor
+            picked.compoundName = primaryCompoundName
+            return picked
+        }
+
+        let lot = StoredLot(compoundName: primaryCompoundName, vendor: vendor, lotNumber: number)
+        context.insert(lot)
+        return lot
     }
 
     private func save() {
@@ -938,6 +1122,8 @@ struct VialBuilderView: View {
         vial.coaPurityPercent = isPremixed ? nil : coaPurityText.decimalValue
         vial.expirationDate = hasExpiration ? expiration : nil
         vial.notes = notes
+        // Provenance link. nil is a normal, supported state — a lot never gates saving a vial.
+        vial.lotID = resolveLot()?.id
         vial.isPremixed = isPremixed
         // Provenance: a powder vial mixed with solvent is reconstituted now. Preserve an existing
         // date across edits; clear it if the vial isn't a reconstituted powder (premixed / no water).
