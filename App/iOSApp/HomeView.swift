@@ -114,6 +114,10 @@ struct HomeView: View {
                     if !activeProtocols.isEmpty {
                         heroActive.entrance(1)
                         stackCard.entrance(2)
+                        // Directly under the card that says what's due, so the statement and the
+                        // action are adjacent. Self-hiding, so on a day with nothing due Home looks
+                        // exactly as it did before.
+                        logDueAction.entrance(3)
                     } else if !recent.isEmpty {
                         heroActivity.entrance(1)
                     } else {
@@ -320,6 +324,53 @@ struct HomeView: View {
             StackRow(id: p.id, presentation: ProtocolPresentation(
                 p, vials: vials, todaysLogs: logs,
                 overdueSince: p.lastOverdueDose(in: recent, skips: skips)))
+        }
+    }
+
+    /// The protocols that are actually actionable right now — due today, running late, or overdue, and
+    /// not yet logged. Ordered soonest-first, matching the Log picker's own order.
+    ///
+    /// Derived from the SAME `ProtocolPresentation` the card already renders, so the button can never
+    /// disagree with the row above it about whether something is due.
+    private var actionableNow: [(id: UUID, name: String)] {
+        stackRows.compactMap { row in
+            switch row.presentation.status {
+            case .dueToday, .late, .overdue: return (row.id, row.presentation.name)
+            case .active, .doneToday, .paused: return nil
+            }
+        }
+    }
+
+    /// Home's ONE primary action, and it exists only when there is something to act on.
+    ///
+    /// Why this earns its place: Home already *announces* "GLOW stack — Due today", and until now the
+    /// only thing you could do about it was navigate to the Stack tab. The center Log tab is one tap
+    /// away, but it opens on "Which protocol are you logging?" with nothing selected — so acting on
+    /// what Home just told you cost three taps (Log → pick protocol → save) when the app already knew
+    /// which protocol you meant.
+    ///
+    /// It deliberately does NOT log the dose. It routes to Log with that protocol PRESELECTED, which
+    /// is the same path a tapped reminder takes. A dose is an assertion that you injected a drug: a
+    /// one-tap write from a home screen would be dangerous on a mis-tap, and it would skip the site
+    /// picker that the injection map and rotation advice depend on. Reduce friction to the decision,
+    /// never to the record.
+    ///
+    /// Hidden entirely when nothing is due, so Home gains no permanent chrome and the tab bar's Log
+    /// disc stays the single always-present way in.
+    @ViewBuilder
+    private var logDueAction: some View {
+        let due = actionableNow
+        if let first = due.first {
+            PrimaryButton(title: due.count == 1 ? "Log \(first.name)" : "Log a due dose",
+                          systemImage: "plus") {
+                // Reuses the reminder deep-link: setting this switches to the Log tab (RootTabView)
+                // and preselects the protocol (LogView.consumeReminder). No new navigation.
+                DoseReminderRouter.shared.route(to: first.id)
+            }
+            if due.count > 1 {
+                Text("\(due.count) protocols are due — this opens the soonest.")
+                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+            }
         }
     }
 
