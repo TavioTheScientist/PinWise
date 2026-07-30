@@ -62,10 +62,17 @@ struct HomeView: View {
             // protocol sharing that compound — so the ring and streak counted doses the
             // user never took for this schedule.
             let logs = p.ownedLogDates(in: recent)
+            // Grace is per cadence now (daily = 0, weekly = 2) rather than one flat constant, so a
+            // late log only backfills where that is clinically meaningful.
             let r = AdherenceCalculator.evaluate(schedule: p.schedule, start: p.startDate,
                                                  end: now, logDates: logs,
-                                                 graceDays: Self.graceDays, calendar: cal)
-            events += StreakCalculator.events(from: r, asOf: now, calendar: cal)
+                                                 graceDays: p.dosePolicy.attributionGraceDays,
+                                                 calendar: cal)
+            // Deliberately skipped slots are NEUTRAL — excluded from the chain, so they neither
+            // break the streak nor extend it.
+            events += StreakCalculator.events(from: r, asOf: now,
+                                              skippedDays: Set(p.ownedSkipSlots(in: skips)),
+                                              calendar: cal)
         }
         return events.sorted { $0.date < $1.date }
     }

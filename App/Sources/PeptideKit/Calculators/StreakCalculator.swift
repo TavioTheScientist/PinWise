@@ -45,16 +45,30 @@ public enum StreakCalculator {
     /// Turn one protocol's adherence result into streak events: every past-due scheduled day
     /// (taken or missed), plus today's day only if it was already taken. Future days and a
     /// not-yet-taken today are dropped as pending.
+    ///
+    /// - Parameter skippedDays: slots the user DELIBERATELY declined. These are excluded from the
+    ///   chain entirely — they neither break the streak nor extend it.
+    ///
+    ///   Neutral is the only defensible reading. Breaking the streak would punish behavior clinical
+    ///   guidance sometimes prescribes (injectable semaglutide: skip if the next dose is under 2
+    ///   days away), and punishing an involuntary or correct miss is the documented way naive streak
+    ///   mechanics backfire — they cannot tell "I chose not to" from "I shouldn't have". Counting a
+    ///   skip as taken would be the opposite failure: a streak that says you dosed when you didn't.
+    ///   Excluding the slot keeps the streak honest AND keeps it from becoming a reason to inject:
+    ///   a skip can never build a streak either, so there is nothing to game.
     public static func events(
         from result: AdherenceCalculator.Result,
         asOf: Date,
+        skippedDays: Set<Date> = [],
         calendar: Calendar = .current
     ) -> [DoseEvent] {
         let today = calendar.startOfDay(for: asOf)
         let takenDays = Set(result.takenDates.map { calendar.startOfDay(for: $0) })
+        let skipped = Set(skippedDays.map { calendar.startOfDay(for: $0) })
         var events: [DoseEvent] = []
         for expected in result.expectedDates {
             let day = calendar.startOfDay(for: expected)
+            if skipped.contains(day) { continue }   // declined → neither taken nor missed
             let taken = takenDays.contains(day)
             if day < today {
                 events.append(DoseEvent(date: day, taken: taken))

@@ -308,16 +308,37 @@ extension SavedProtocol {
     /// streak call the engine separately with logs only, so a skip still shows up honestly there. A
     /// user who answers "Skip" on a reminder has told us their decision — resurfacing it as OVERDUE
     /// days later would punish exactly the behavior clinical guidance sometimes prescribes.
+    /// This protocol's cadence-derived policy: the nudge window and the clinical catch-up window.
+    var dosePolicy: DosePolicy { DosePolicy.forSchedule(schedule) }
+
     func lastOverdueDose(in logs: [LoggedDose],
                          skips: [SkippedDose] = [],
-                         graceDays: Int = AdherenceCalculator.defaultGraceDays,
+                         graceDays: Int? = nil,
                          now: Date = Date(),
                          calendar: Calendar = .current) -> Date? {
         guard isActive else { return nil }   // a paused protocol cannot be overdue
+        // Grace is now PER CADENCE, not one flat constant. A daily compound gets ZERO backfill —
+        // you cannot take Monday's dose on Wednesday, so a forgotten daily dose is simply gone and
+        // the next one belongs to the next day. A weekly GLP-1 gets the published 2-day catch-up.
+        let grace = graceDays ?? dosePolicy.attributionGraceDays
         let resolved = ownedLogDates(in: logs) + ownedSkipSlots(in: skips)
         return AdherenceCalculator.lastOverdue(schedule: schedule, start: startDate, asOf: now,
                                                logDates: resolved,
-                                               graceDays: graceDays, calendar: calendar)
+                                               graceDays: grace, calendar: calendar)
+    }
+
+    /// The live lateness of TODAY's scheduled dose — the state a card or nudge acts on.
+    ///
+    /// Requires a scheduled time, which only exists when the user turned reminders on. With
+    /// reminders off there is no time-of-day the app may assert (`reminderHour` defaults to 9 and
+    /// the builder hides the picker), so lateness is unknowable and this returns nil — the dose
+    /// simply reads "due today" until the attribution window closes.
+    func todaysLateness(now: Date = Date(), calendar: Calendar = .current) -> DoseLateness? {
+        guard isActive, remindersOn else { return nil }
+        guard let next = nextDose(calendar: calendar), calendar.isDate(next, inSameDayAs: now) else { return nil }
+        guard let scheduledAt = calendar.date(bySettingHour: reminderHour, minute: reminderMinute,
+                                              second: 0, of: next) else { return nil }
+        return DoseLateness.state(scheduledAt: scheduledAt, now: now, policy: dosePolicy)
     }
 
     /// Next scheduled dose strictly AFTER today — the "next pin" to show once today's is logged.

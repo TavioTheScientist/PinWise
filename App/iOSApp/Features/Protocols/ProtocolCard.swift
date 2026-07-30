@@ -86,19 +86,26 @@ struct ProtocolPresentation {
          overdueSince: Date? = nil,
          now: Date = .now, calendar: Calendar = .current) {
         let loggedToday = proto.loggedToday(in: todaysLogs, calendar: calendar)
-        let status = proto.displayStatus(loggedToday: loggedToday, isOverdue: overdueSince != nil)
+        let lateness = proto.todaysLateness(now: now, calendar: calendar)
+        let status = proto.displayStatus(loggedToday: loggedToday,
+                                         isOverdue: overdueSince != nil,
+                                         lateness: lateness)
         self.status = status
 
         switch status {
         case .active:    statusWord = "Active";      statusColor = BrandColor.success
         case .dueToday:  statusWord = "Due today";   statusColor = BrandColor.warning
+        // Same amber as `.dueToday` — these are mutually exclusive states of one card, so there is
+        // never a second amber competing on screen, and the WORD carries the escalation (status must
+        // never rest on hue alone).
+        case .late:      statusWord = "Running late"; statusColor = BrandColor.warning
         case .doneToday: statusWord = "Logged today"; statusColor = BrandColor.success
         case .overdue:   statusWord = "Overdue";     statusColor = BrandColor.danger
         case .paused:    statusWord = "Paused";      statusColor = BrandColor.textSecondary
         }
         // Overdue glows too: a glow means "needs attention now", and a missed dose needs it more
         // than a due one. Paused/active/logged stay quiet.
-        dotGlows = status == .dueToday || status == .overdue
+        dotGlows = status == .dueToday || status == .late || status == .overdue
 
         // Names the dose that was actually missed — the useful half of "Overdue". Rendered in
         // `.full` only; the dense row has one slot and spends it on the status word.
@@ -141,6 +148,7 @@ struct ProtocolPresentation {
         switch status {
         case .paused:    rowFact = "Paused";  rowFactColor = BrandColor.textSecondary
         case .dueToday:  rowFact = "Due today"; rowFactColor = BrandColor.warning
+        case .late:      rowFact = "Running late"; rowFactColor = BrandColor.warning
         case .doneToday: rowFact = "Logged";  rowFactColor = BrandColor.success
         case .overdue:   rowFact = "Overdue"; rowFactColor = BrandColor.danger
         case .active:    rowFact = nextFact;  rowFactColor = BrandColor.textSecondary
@@ -399,7 +407,7 @@ extension SavedProtocol {
     /// past its grace window and unlogged), due today, done today (today's dose already logged),
     /// or active. Every surface that renders a protocol's status dot derives from this one read so
     /// the color language never forks between Home and Stack.
-    enum DisplayStatus { case active, dueToday, doneToday, overdue, paused }
+    enum DisplayStatus { case active, dueToday, late, doneToday, overdue, paused }
 
     /// `loggedToday` (from the caller's `LoggedDose` query) turns a "due today" into "done
     /// today" so a logged pin actually clears downstream. Callers without logs pass `false`.
@@ -415,13 +423,19 @@ extension SavedProtocol {
     /// has just dosed would be both wrong and discouraging. `overdue` beats `dueToday` because a
     /// missed dose is the exception that needs attention, while due-today is the default
     /// expectation.
-    func displayStatus(loggedToday: Bool = false, isOverdue: Bool = false) -> DisplayStatus {
+    func displayStatus(loggedToday: Bool = false,
+                       isOverdue: Bool = false,
+                       lateness: DoseLateness? = nil) -> DisplayStatus {
         guard isActive else { return .paused }
         let dueToday = nextDose().map { Calendar.current.isDateInToday($0) } ?? false
         // `doneToday` requires today's dose to have BEEN due — a log on a day nothing was
         // scheduled is an extra pin, not the schedule being satisfied (unchanged from before).
         if dueToday && loggedToday { return .doneToday }
         if isOverdue { return .overdue }
+        // `.late` is a REFINEMENT of `.dueToday`: same day, but past the scheduled time by more
+        // than the due window. It only exists when reminders are on, because without them the app
+        // has no time-of-day it may legitimately assert (see `todaysLateness`).
+        if dueToday, lateness == .late || lateness == .missed { return .late }
         return dueToday ? .dueToday : .active
     }
 }
