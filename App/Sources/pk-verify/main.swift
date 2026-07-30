@@ -681,6 +681,39 @@ do {
           "12:01 AM tomorrow ⇒ \"Tomorrow\"")
 }
 
+// MARK: - Dose reminder policy
+
+do {
+    section("Reminder follow-up (one nudge, then quiet)")
+    let scheduled = day(2026, 7, 29).addingTimeInterval(9 * 3600)   // 09:00
+
+    // As-needed has no slot, so nothing can be late and nothing should be pushed.
+    check(DoseFollowUp.fireDate(scheduledAt: scheduled, policy: .asNeeded) == nil,
+          "as-needed ⇒ no follow-up")
+
+    // THE invariant: the banner can never contradict the card. If a follow-up exists, the dose it
+    // nudges about reads `.late` at that exact moment — never still `.due`, never already `.missed`.
+    for (label, policy) in [("daily", DosePolicy.short), ("every 2–3 days", .medium), ("weekly", .long)] {
+        guard let fire = DoseFollowUp.fireDate(scheduledAt: scheduled, policy: policy) else {
+            check(false, "\(label) ⇒ expected a follow-up"); continue
+        }
+        check(DoseLateness.state(scheduledAt: scheduled, now: fire, policy: policy) == .late,
+              "\(label) follow-up fires while the dose still reads Late")
+    }
+
+    check(DoseFollowUp.fireDate(scheduledAt: scheduled, policy: .short)!
+            .timeIntervalSince(scheduled) == 2 * 3600,
+          "daily ⇒ follow-up at +2h (a third of its 6h window)")
+    check(DoseFollowUp.fireDate(scheduledAt: scheduled, policy: .long)!
+            .timeIntervalSince(scheduled) == DoseFollowUp.maximumDelay,
+          "weekly ⇒ follow-up CAPPED at +12h, not scaled to its 36h window")
+
+    // A window too short to hold a follow-up yields silence, not a nudge fired after it closed.
+    check(DoseFollowUp.fireDate(scheduledAt: scheduled,
+                                policy: DosePolicy(lateWindowHours: 1, attributionGraceDays: 0)) == nil,
+          "1h window ⇒ no follow-up (never one that fires after the window shuts)")
+}
+
 // MARK: - Summary
 print("\n\(failures == 0 ? "✅ PASS" : "❌ FAIL") — \(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

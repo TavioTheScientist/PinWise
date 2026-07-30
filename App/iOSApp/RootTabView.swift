@@ -1,6 +1,15 @@
 import SwiftUI
 import SwiftData
 
+/// 30 days back — comfortably wider than the longest attribution grace, narrow enough that the
+/// reminder scheduler never loads a full dose history to answer a question about the last few days.
+///
+/// A file-level constant because `#Predicate` builds an expression tree and can only capture plain
+/// local/global values, not a member reference (`Self.x` compiles to a keypath the macro rejects).
+/// Resolved once per launch; a session left running for weeks only widens the window, which is
+/// wasteful rather than wrong.
+private let reminderLookbackCutoff = Date(timeIntervalSinceNow: -30 * 24 * 3600)
+
 /// The five app sections. Order is deliberate: Log sits in the center to make logging a
 /// dose the most reachable action.
 enum AppTab: Hashable {
@@ -18,13 +27,26 @@ struct RootTabView: View {
     @State private var showAssistant = false
     @Query(sort: \SavedProtocol.startDate) private var protocols: [SavedProtocol]
     @Query private var vials: [StoredVial]
+    /// Bounded on purpose. The scheduler only asks "was this day already resolved?" about days inside
+    /// the reminder window, so a full dose history — which grows without limit — would be loaded on
+    /// every launch to answer a question about the last few days.
+    @Query(filter: #Predicate<LoggedDose> { $0.timestamp > reminderLookbackCutoff },
+           sort: \LoggedDose.timestamp, order: .reverse) private var recentLogs: [LoggedDose]
+    @Query(filter: #Predicate<SkippedDose> { $0.scheduledFor > reminderLookbackCutoff })
+    private var recentSkips: [SkippedDose]
     @AppStorage("showCompoundNamesInNotifications") private var showCompoundNames = true
     @AppStorage("reminderLeadMinutes") private var reminderLeadMinutes = 0
 
     /// Changes whenever a reminder-relevant field changes (incl. the notification prefs), re-scheduling.
+    ///
+    /// The log/skip counts are in here so that **logging a dose silences its own reminders** — both
+    /// the primary for a day already resolved and the pending follow-up. A count, not a digest of
+    /// every timestamp: any insert or delete moves it, and it costs one integer instead of a string
+    /// built from the whole history on every render.
     private var reminderSignature: String {
         protocols.map { "\($0.id.uuidString)|\($0.remindersOn)|\($0.isActive)|\($0.reminderHour):\($0.reminderMinute)|\($0.scheduleKindRaw)|\($0.intervalDays)|\($0.weekdays)" }.joined()
         + "|names:\(showCompoundNames)|lead:\(reminderLeadMinutes)"
+        + "|logs:\(recentLogs.count)|skips:\(recentSkips.count)"
     }
 
     var body: some View {
@@ -53,7 +75,8 @@ struct RootTabView: View {
         // "on" state would lose its affordance app-wide. `controlOn` stays mid-dark (4.71:1).
         .tint(BrandColor.controlOn)
         .task(id: reminderSignature) {
-            await NotificationManager.reschedule(protocols: protocols, vials: vials)
+            await NotificationManager.reschedule(protocols: protocols, vials: vials,
+                                                  logs: recentLogs, skips: recentSkips)
         }
         // A tapped dose reminder (even a cold launch) jumps to Log; LogView consumes the ID.
         .onChange(of: reminderRouter.pendingProtocolID) { _, id in if id != nil { selected = .log } }

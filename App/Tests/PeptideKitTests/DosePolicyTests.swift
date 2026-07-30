@@ -163,3 +163,52 @@ struct SkipStreakTests {
         #expect(r.adherence < 1.0)
     }
 }
+
+/// One reminder, one follow-up, then quiet. The load-bearing property is that the follow-up always
+/// lands while the dose is still `.late` — if it could fire after the window closed, the banner and
+/// the in-app card would be telling the user two different stories about the same dose.
+@Suite("Dose follow-up")
+struct DoseFollowUpTests {
+    private let scheduled = TestSupport.day(2026, 7, 29).addingTimeInterval(9 * 3600)  // 09:00
+
+    @Test("an as-needed protocol gets no follow-up — it has no slot to be late for")
+    func asNeededIsSilent() {
+        #expect(DoseFollowUp.fireDate(scheduledAt: scheduled, policy: .asNeeded) == nil)
+    }
+
+    @Test("every shipped policy fires exactly once, while the dose still reads late")
+    func alwaysInsideTheLateWindow() {
+        for policy in [DosePolicy.short, .medium, .long] {
+            guard let fire = DoseFollowUp.fireDate(scheduledAt: scheduled, policy: policy) else {
+                Issue.record("expected a follow-up for \(policy)"); continue
+            }
+            #expect(DoseLateness.state(scheduledAt: scheduled, now: fire, policy: policy) == .late)
+        }
+    }
+
+    @Test("the follow-up never fires while the dose still reads merely due")
+    func neverInsideTheDueWindow() {
+        for policy in [DosePolicy.short, .medium, .long] {
+            let fire = DoseFollowUp.fireDate(scheduledAt: scheduled, policy: policy)!
+            #expect(fire.timeIntervalSince(scheduled) >= DoseFollowUp.minimumDelay)
+        }
+    }
+
+    @Test("the weekly case is capped rather than scaled — 12h, not 12h+")
+    func weeklyIsCapped() {
+        let fire = DoseFollowUp.fireDate(scheduledAt: scheduled, policy: .long)!
+        #expect(fire.timeIntervalSince(scheduled) == DoseFollowUp.maximumDelay)
+    }
+
+    @Test("daily lands two hours out — a third of its six-hour window")
+    func dailyIsTwoHours() {
+        let fire = DoseFollowUp.fireDate(scheduledAt: scheduled, policy: .short)!
+        #expect(fire.timeIntervalSince(scheduled) == 2 * 3600)
+    }
+
+    @Test("a window shorter than the due window yields no follow-up, not a late one")
+    func absurdlyShortWindowIsSilent() {
+        let tight = DosePolicy(lateWindowHours: 1, attributionGraceDays: 0)
+        #expect(DoseFollowUp.fireDate(scheduledAt: scheduled, policy: tight) == nil)
+    }
+}
