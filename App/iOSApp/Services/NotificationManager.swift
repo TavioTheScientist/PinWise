@@ -63,7 +63,21 @@ enum NotificationManager {
     // MARK: - Scheduling
 
     /// Clears PinWise dose reminders and reschedules the rolling window, grouping same-time doses.
-    static func reschedule(protocols: [SavedProtocol], vials: [StoredVial] = []) async {
+    ///
+    /// `logs` and `skips` are what make the schedule *honest*. Two things depend on them:
+    ///
+    /// 1. **A day the user already resolved gets no reminder at all.** Being told to take a dose you
+    ///    logged an hour ago is the fastest way to teach someone that PinWise's notifications aren't
+    ///    worth reading.
+    /// 2. **The single follow-up.** One nudge at the dose time, one while it's still actionable, then
+    ///    silence — see ``DoseFollowUp``. Because a local notification can't re-check state at fire
+    ///    time, suppression has to happen when the schedule is BUILT, which is why the caller's
+    ///    signature includes the log/skip counts: logging a dose rebuilds the schedule without its
+    ///    follow-up.
+    static func reschedule(protocols: [SavedProtocol],
+                           vials: [StoredVial] = [],
+                           logs: [LoggedDose] = [],
+                           skips: [SkippedDose] = []) async {
         let center = UNUserNotificationCenter.current()
 
         // Only touch our own reminders.
@@ -79,7 +93,7 @@ enum NotificationManager {
         let lead = Double(leadMinutes) * 60
 
         // 1) Flatten every upcoming (fireDate, protocol) across all enabled protocols.
-        struct Due { let fire: Date; let proto: SavedProtocol }
+        struct Due { let fire: Date; let scheduledAt: Date; let proto: SavedProtocol }
         var dues: [Due] = []
         for p in protocols where p.remindersOn && p.isActive {
             let end = cal.date(byAdding: .day, value: 45, to: today) ?? today
@@ -88,14 +102,20 @@ enum NotificationManager {
                 start: max(today, cal.startOfDay(for: p.startDate)),
                 end: end, calendar: cal
             ).prefix(perProtocolCap)
+            let resolved = p.ownedLogDates(in: logs) + p.ownedSkipSlots(in: skips)
             for day in dates {
+                // Logged or deliberately skipped already — say nothing. Only today's slot can
+                // realistically be resolved in advance, but the check is day-matched so an early log
+                // never silences a different day's reminder.
+                if resolved.contains(where: { cal.isDate($0, inSameDayAs: day) }) { continue }
                 var comps = cal.dateComponents([.year, .month, .day], from: day)
                 comps.hour = p.reminderHour
                 comps.minute = p.reminderMinute
-                guard var fire = cal.date(from: comps) else { continue }
+                guard let scheduledAt = cal.date(from: comps) else { continue }
+                var fire = scheduledAt
                 if lead > 0 { fire = fire.addingTimeInterval(-lead) }
                 if fire <= Date() { continue }   // skip past times
-                dues.append(Due(fire: fire, proto: p))
+                dues.append(Due(fire: fire, scheduledAt: scheduledAt, proto: p))
             }
         }
 
@@ -124,6 +144,48 @@ enum NotificationManager {
             try? await center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
             scheduled += 1
         }
+
+        // 4) One follow-up per protocol, for its NEXT occurrence only.
+        //
+        //    Only the next one, deliberately: a follow-up for a dose three weeks out is noise in the
+        //    64-request budget, and the schedule is rebuilt on every launch and every log anyway, so
+        //    the near occurrence is the only one that will ever actually be reached from here.
+        //
+        //    Not grouped with the primaries either. A follow-up is per-protocol by nature — its
+        //    timing comes from that protocol's own late window, and it has to disappear the moment
+        //    that one protocol is logged.
+        for p in nextOccurrencePerProtocol(dues.map { ($0.proto, $0.scheduledAt) }) {
+            guard scheduled < totalCap else { break }
+            guard let fire = DoseFollowUp.fireDate(scheduledAt: p.scheduledAt, policy: p.proto.dosePolicy),
+                  fire > Date() else { continue }
+            let content = buildFollowUpContent(for: p.proto, vials: vials)
+            let trigger = UNCalendarNotificationTrigger(
+                dateMatching: cal.dateComponents([.year, .month, .day, .hour, .minute], from: fire),
+                repeats: false)
+            try? await center.add(UNNotificationRequest(identifier: followUpID(p.proto.id, day: p.scheduledAt, calendar: cal),
+                                                       content: content, trigger: trigger))
+            scheduled += 1
+        }
+    }
+
+    /// The earliest still-unresolved occurrence of each protocol, one entry per protocol.
+    private static func nextOccurrencePerProtocol(
+        _ dues: [(proto: SavedProtocol, scheduledAt: Date)]
+    ) -> [(proto: SavedProtocol, scheduledAt: Date)] {
+        var earliest: [UUID: (proto: SavedProtocol, scheduledAt: Date)] = [:]
+        for d in dues {
+            if let existing = earliest[d.proto.id], existing.scheduledAt <= d.scheduledAt { continue }
+            earliest[d.proto.id] = d
+        }
+        return earliest.values.sorted { $0.scheduledAt < $1.scheduledAt }
+    }
+
+    /// Stable and day-scoped, so a rebuild replaces a protocol's follow-up rather than stacking a
+    /// second one, and so a stale request is identifiable by inspection.
+    static func followUpID(_ protocolID: UUID, day: Date, calendar: Calendar = .current) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: day)
+        return String(format: "%@followup-%@-%04d%02d%02d", idPrefix, protocolID.uuidString,
+                      c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
     // MARK: - Message building
@@ -168,6 +230,34 @@ enum NotificationManager {
             c.title = "Doses Due"
             c.body = "\(doseCount) doses due · \(shortNames(protos))"    // "3 doses due · Reta + BPC + 1 more"
         }
+        return c
+    }
+
+    /// The one follow-up. Deliberately *quieter* than the reminder it follows, in three ways:
+    ///
+    /// - `.active`, not `.timeSensitive` — the first reminder earns the right to break through a
+    ///   Focus; a second push does not. This also means the user's own Sleep Focus decides whether it
+    ///   makes a sound, which is a better answer than any quiet-hours window PinWise could invent.
+    /// - No sound.
+    /// - Phrased as a question about the record, not an accusation about the user. "Still to log" is a
+    ///   statement of fact; "You missed your dose!" is a verdict, and it's often wrong — plenty of
+    ///   people inject and forget to log.
+    static func buildFollowUpContent(for proto: SavedProtocol, vials: [StoredVial]) -> UNMutableNotificationContent {
+        let c = UNMutableNotificationContent()
+        c.sound = nil
+        c.interruptionLevel = .active
+        c.categoryIdentifier = categoryID
+        c.userInfo = ["protocolIDs": [proto.id.uuidString], "protocolNames": [proto.name]]
+
+        guard showCompoundNames else {
+            c.title = "PinWise"
+            c.body = "Still to log"
+            return c
+        }
+        c.title = "Still to log"
+        c.body = proto.items.count <= 1
+            ? proto.singleDoseLine(vials: vials)
+            : "\(proto.name) · \(proto.items.count) doses"
         return c
     }
 

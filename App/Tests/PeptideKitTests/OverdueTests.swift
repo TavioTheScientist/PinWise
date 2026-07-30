@@ -60,6 +60,19 @@ struct OverdueTests {
         #expect(lastOverdue(start: start, logs: []) == cal.startOfDay(for: expectedLast))
     }
 
+    /// The "This was Monday's dose" attribution writes the log at the slot's SCHEDULED TIME (09:00),
+    /// not at start-of-day. If matching were exact-instant rather than day-granular, that correction
+    /// would resolve nothing and the slot would stay Overdue forever — a phantom the user cannot clear.
+    @Test("a log stamped mid-day on the slot resolves it, not just one at start-of-day")
+    func middayLogResolvesTheSlot() {
+        let threeDaysAgo = cal.date(byAdding: .day, value: -3, to: today)!
+        let twoDaysAgo = cal.date(byAdding: .day, value: -2, to: today)!
+        let yesterday = cal.date(byAdding: .day, value: -1, to: today)!
+        let atNine: (Date) -> Date = { $0.addingTimeInterval(9 * 3600) }
+        #expect(lastOverdue(start: threeDaysAgo,
+                            logs: [atNine(threeDaysAgo), atNine(twoDaysAgo), atNine(yesterday)]) == nil)
+    }
+
     @Test("grace 0 makes yesterday immediately overdue")
     func zeroGrace() {
         let yesterday = cal.date(byAdding: .day, value: -1, to: today)!

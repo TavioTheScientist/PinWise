@@ -4,6 +4,23 @@ import PeptideKit
 
 private enum LogMode: String, CaseIterable { case protocolBased = "Protocol", compound = "One-time pin" }
 
+/// What a log MEANS when the protocol has an unresolved slot behind it.
+///
+/// The three answers are genuinely different facts, and until now the app silently assumed the first
+/// one. Someone logging a weekly injection two days after the scheduled day could mean "I took it
+/// Tuesday and forgot to log", or "I'm taking it now, Tuesday is gone", or "Tuesday is gone on
+/// purpose, and this is today's". Guessing produces a wrong PK curve, a wrong adherence figure, or a
+/// permanent phantom OVERDUE — depending on which way it guesses.
+private enum LateAttribution: Hashable {
+    /// Record it now; the earlier slot stays unresolved. The default, because it is the only option
+    /// that asserts nothing the user didn't say.
+    case today
+    /// A bookkeeping correction: the dose was taken at the earlier slot, just never logged.
+    case missedSlot
+    /// Record it now AND declare the earlier slot deliberately skipped.
+    case skipMissed
+}
+
 /// The Log tab — record a dose against a protocol (all its compounds at once) or a one-time
 /// pin. Protocol-first: pick a protocol, its entry fields appear, you log it, and it returns
 /// to the picker with that protocol removed for the day. When every due protocol is logged the
@@ -38,6 +55,8 @@ struct LogView: View {
     @State private var selectedVialID: UUID?
     /// Set when the user tapped a dose reminder — preselect that protocol on open.
     @State private var reminderRouter = DoseReminderRouter.shared
+    /// How to attribute this log when a past slot went unresolved. Reset after every save.
+    @State private var attribution: LateAttribution = .today
 
     private var activeProtocols: [SavedProtocol] { protocols.filter(\.isActive) }
     /// Protocols still worth logging right now: active, minus any that are due TODAY and have
@@ -81,6 +100,13 @@ struct LogView: View {
         return cal.date(bySettingHour: p.reminderHour, minute: p.reminderMinute, second: 0, of: day) ?? day
     }
     private var selectedProtocol: SavedProtocol? { activeProtocols.first { $0.id == selectedProtocolID } }
+
+    /// The most recent scheduled slot the selected protocol never resolved — past its clinical grace
+    /// window, unlogged, and not deliberately skipped. nil in the ordinary case.
+    private var overdueSlot: Date? {
+        guard mode == .protocolBased, let p = selectedProtocol else { return nil }
+        return p.lastOverdueDose(in: recent, skips: skips)
+    }
     private var doseValue: Double? {
         guard let d = Double(doseText), d > 0 else { return nil }
         return d
@@ -176,6 +202,7 @@ struct LogView: View {
                         if !loggableProtocols.isEmpty {
                             protocolCard
                             if let sel = selectedProtocolID, loggableProtocols.contains(where: { $0.id == sel }) {
+                                lateAttributionCard
                                 entrySection
                             }
                         } else {
@@ -248,6 +275,59 @@ struct LogView: View {
                 .disabled(!canSave)
                 .opacity(canSave ? 1 : 0.5)
         }
+    }
+
+    /// Asks what this log MEANS when a scheduled slot behind it was never resolved.
+    ///
+    /// Placement is deliberate: above the save button, inline, part of filling out the dose — not a
+    /// dialog after you tap Log. A post-hoc "wait, which dose was that?" is the pattern that trains
+    /// people to dismiss without reading, and it arrives after the decision feels made.
+    ///
+    /// Hidden while the When picker is expanded: a user who is manually setting the date has already
+    /// answered this question, and two controls competing to own one timestamp is a bug waiting to be
+    /// filed.
+    @ViewBuilder
+    private var lateAttributionCard: some View {
+        if let slot = overdueSlot, !showWhen {
+            let day = slot.formatted(.dateTime.weekday(.wide))
+            Card {
+                VStack(alignment: .leading, spacing: Space.md) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(day)'s dose was never logged")
+                            .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                        Text(slot.formatted(.dateTime.month(.abbreviated).day()))
+                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    }
+                    attributionOption(.today, "This is today's dose",
+                                      "\(day)'s stays unlogged.")
+                    attributionOption(.missedSlot, "This was \(day)'s dose",
+                                      "Records it at \(day)'s scheduled time — for when you took it and forgot to log.")
+                    attributionOption(.skipMissed, "Skip \(day)'s, log today's",
+                                      "Marks \(day) deliberately skipped so it stops resurfacing.")
+                }
+            }
+        }
+    }
+
+    private func attributionOption(_ value: LateAttribution, _ title: String, _ detail: String) -> some View {
+        Button {
+            attribution = value
+        } label: {
+            HStack(alignment: .top, spacing: Space.md) {
+                // `accent`, not `controlOn`: controlOn is calibrated to sit under the SYSTEM's white
+                // knobs and labels, and reads as a muted grey-pink when it IS the glyph.
+                Image(systemName: attribution == value ? "largecircle.fill.circle" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(attribution == value ? BrandColor.accent : BrandColor.textSecondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
+                    Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// Shown when every protocol due today has already been logged.
@@ -634,6 +714,12 @@ struct LogView: View {
 
     private func saveProtocol() {
         guard let p = selectedProtocol, !p.items.isEmpty else { return }
+        // The unresolved slot (if any) and the answer the user gave about it, resolved BEFORE any
+        // insert — writing the dose changes what `lastOverdueDose` returns.
+        let slot = overdueSlot
+        let choice = slot == nil || showWhen ? .today : attribution
+        let stamp = choice == .missedSlot ? (slot.flatMap { scheduledTime(of: $0, for: p) } ?? timestamp) : timestamp
+
         // Draw down each DISTINCT vial once per session, even when several stack items resolve
         // to the same blend vial (one physical injection) — prevents double-counting.
         var decremented = Set<UUID>()
@@ -642,7 +728,13 @@ struct LogView: View {
             let vial = item.vialID.flatMap { id in vials.first { $0.id == id } } ?? resolveVial(for: item.compoundName)
             let firstForThisVial = vial.map { decremented.insert($0.id).inserted } ?? false
             insertDose(compoundName: item.compoundName, doseMicrograms: doseFor(i, in: p).micrograms,
-                       vial: vial, decrement: firstForThisVial, protocolID: p.id)
+                       vial: vial, decrement: firstForThisVial, protocolID: p.id, at: stamp)
+        }
+        // "Skip the missed one" is the only branch that writes a second record. It declares the slot
+        // resolved without crediting a dose — see `SkippedDose` for why that can't be a flag on a log.
+        if choice == .skipMissed, let slot {
+            context.insert(SkippedDose(scheduledFor: Calendar.current.startOfDay(for: slot),
+                                       protocolID: p.id, protocolName: p.name))
         }
         try? context.save()
         // Off-schedule/early logs stay in the picker unchanged, so an explicit confirmation is what
@@ -650,8 +742,25 @@ struct LogView: View {
         let today = Calendar.current.isDateInToday(p.nextDose() ?? .distantPast)
         let names = p.compoundNames.joined(separator: " + ")
         let head = p.items.count > 1 ? "Logged \(p.items.count) doses" : "Logged"
-        confirm(today ? "\(head) · \(names)" : "\(head) early · \(names)")
+        switch choice {
+        case .missedSlot:
+            confirm("\(head) · \(stamp.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))")
+        case .skipMissed:
+            confirm("\(head) · \(names) · earlier dose skipped")
+        case .today:
+            confirm(today ? "\(head) · \(names)" : "\(head) early · \(names)")
+        }
         finishSave()
+    }
+
+    /// A past slot's nominal datetime: its day at the protocol's reminder time.
+    ///
+    /// The reminder time is used even when reminders are off. We genuinely don't know what time the
+    /// dose was taken — the user is telling us WHICH dose it was, not when — and the slot's own
+    /// scheduled time is the honest stand-in. Anyone who needs the real minute can expand When and
+    /// set it, which is exactly why this card hides while that picker is open.
+    private func scheduledTime(of slot: Date, for p: SavedProtocol) -> Date? {
+        Calendar.current.date(bySettingHour: p.reminderHour, minute: p.reminderMinute, second: 0, of: slot)
     }
 
     /// Show a brief confirmation banner (auto-dismisses via the .task in the body).
@@ -672,10 +781,10 @@ struct LogView: View {
     }
 
     private func insertDose(compoundName: String, doseMicrograms: Double, vial: StoredVial?, decrement: Bool,
-                            protocolID: UUID? = nil) {
+                            protocolID: UUID? = nil, at when: Date? = nil) {
         let willDecrement = decrement && (vial.map { $0.dosesTaken < $0.totalDoses } ?? false)
         let entry = LoggedDose(
-            timestamp: timestamp,
+            timestamp: when ?? timestamp,
             compoundName: compoundName,
             doseMicrograms: doseMicrograms,
             siteRaw: site?.rawValue,
@@ -709,6 +818,7 @@ struct LogView: View {
         // just-logged protocol has already dropped out of `loggableProtocols`. When it was the
         // last one, the all-set state shows instead. The success haptic confirms the save.
         selectedProtocolID = nil
+        attribution = .today   // never carry one protocol's answer into the next log
         // After a one-time pin, drop back to the default Log screen (the protocol picker) rather
         // than leaving the user parked in the one-time form — unless there are no protocols at all,
         // where the one-time pin is the only way to log. Mirrors onAppear.
