@@ -20,6 +20,14 @@ struct DataExportView: View {
     @Query private var testingRequests: [TestingRequest]
 
     @State private var exportURL: URL?
+    /// The COA document files that ship alongside the CSV.
+    ///
+    /// Without these, "Export data" quietly wasn't a backup: the CSV lists a COA's filename and the
+    /// values it reports, but the bytes stayed on the device — so a user who exported before losing
+    /// their phone would keep the numbers and lose the evidence. Sharing the files with the CSV is
+    /// what makes the export the durability story, given there is no iCloud sync and SwiftData+
+    /// CloudKit would sync the store rather than files in Application Support.
+    @State private var documentURLs: [URL] = []
 
     private var totalRows: Int {
         doses.count + protocols.count + vials.count + symptoms.count + biomarkers.count + health.count
@@ -30,7 +38,7 @@ struct DataExportView: View {
             Card {
                 VStack(alignment: .leading, spacing: Space.sm) {
                     SectionHeader(title: "Your data, as a CSV")
-                    Text("Exports everything you've logged in PinWise — doses, protocols, vials, symptoms, and lab/metric entries — plus your Apple Health snapshots if you've connected Health. It stays yours: the file goes wherever you send it, and nothing is uploaded here.")
+                    Text("Exports everything you've logged in PinWise — doses, protocols, vials, lots, symptoms, and lab/metric entries — plus your Apple Health snapshots if you've connected Health, and your COA documents themselves. It stays yours: the files go wherever you send them, and nothing is uploaded here.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                     countRow("Doses", doses.count)
                     countRow("Protocols", protocols.count)
@@ -43,9 +51,17 @@ struct DataExportView: View {
                 }
             }
 
+            Text("PinWise stores everything on this device and syncs nothing. This export is the way to keep a copy — including the COA files, which aren't part of any automatic backup.")
+                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                .padding(.horizontal, Space.lg)
+
             if let url = exportURL {
-                ShareLink(item: url) {
-                    Label("Export CSV", systemImage: "square.and.arrow.up")
+                ShareLink(items: [url] + documentURLs) { item in
+                    SharePreview(item.lastPathComponent)
+                } label: {
+                    Label(documentURLs.isEmpty ? "Export CSV"
+                                               : "Export CSV + \(documentURLs.count) document\(documentURLs.count == 1 ? "" : "s")",
+                          systemImage: "square.and.arrow.up")
                         .font(.body.weight(.semibold))
                         .frame(maxWidth: .infinity).frame(height: 52)
                         // This screen's one primary action → inverse-ink CTA, matching
@@ -81,6 +97,12 @@ struct DataExportView: View {
             doses: doses, protocols: protocols, vials: vials,
             symptoms: symptoms, biomarkers: biomarkers, health: health,
             lots: lots, coaDocs: coaDocs, testingRequests: testingRequests)
+        // Only files that actually exist — a record can outlive its bytes if the container is rebuilt,
+        // and handing ShareLink a dead URL fails the whole share rather than just that item.
+        documentURLs = coaDocs
+            .filter { COADocumentStore.exists(named: $0.filename) }
+            .map { COADocumentStore.url(named: $0.filename) }
+
         let name = "PinWise-export-\(Self.stamp.string(from: Date())).csv"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
