@@ -15,6 +15,7 @@ struct HomeView: View {
     @Binding var showMenu: Bool
     @Binding var showAssistant: Bool
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var recent: [LoggedDose]
+    @Query private var skips: [SkippedDose]
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
     @Query private var vials: [StoredVial]
     @State private var auth = AuthManager.shared
@@ -311,7 +312,7 @@ struct HomeView: View {
         return activeProtocols.prefix(4).map { p in
             StackRow(id: p.id, presentation: ProtocolPresentation(
                 p, vials: vials, todaysLogs: logs,
-                overdueSince: p.lastOverdueDose(in: recent)))
+                overdueSince: p.lastOverdueDose(in: recent, skips: skips)))
         }
     }
 

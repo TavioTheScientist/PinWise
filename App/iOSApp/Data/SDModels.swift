@@ -291,19 +291,32 @@ extension SavedProtocol {
         }
     }
 
-    /// The most recent dose this protocol genuinely MISSED — past its grace window and unlogged.
-    /// nil (the common case) when nothing is overdue.
+    /// The scheduled slots this protocol's owner DELIBERATELY declined.
+    func ownedSkipSlots(in skips: [SkippedDose]) -> [Date] {
+        skips.compactMap { $0.protocolID == id ? $0.scheduledFor : nil }
+    }
+
+    /// The most recent dose this protocol genuinely MISSED — past its grace window, unlogged, and
+    /// not deliberately skipped. nil (the common case) when nothing is overdue.
     ///
-    /// Delegates to `AdherenceCalculator.lastOverdue`, which is the same engine and the same grace
-    /// window behind the adherence ring — so a protocol can never read "Active" on a screen whose
-    /// ring is simultaneously reporting the miss.
+    /// Delegates to `AdherenceCalculator.lastOverdue`, the same engine and grace window behind the
+    /// adherence ring — so a protocol can never read "Active" on a screen whose ring is
+    /// simultaneously reporting the miss.
+    ///
+    /// **Skips resolve a slot but are NOT credited as taken.** They are folded into the date pool
+    /// handed to `lastOverdue` purely so a declined dose stops being nagged about; adherence and the
+    /// streak call the engine separately with logs only, so a skip still shows up honestly there. A
+    /// user who answers "Skip" on a reminder has told us their decision — resurfacing it as OVERDUE
+    /// days later would punish exactly the behavior clinical guidance sometimes prescribes.
     func lastOverdueDose(in logs: [LoggedDose],
+                         skips: [SkippedDose] = [],
                          graceDays: Int = AdherenceCalculator.defaultGraceDays,
                          now: Date = Date(),
                          calendar: Calendar = .current) -> Date? {
         guard isActive else { return nil }   // a paused protocol cannot be overdue
+        let resolved = ownedLogDates(in: logs) + ownedSkipSlots(in: skips)
         return AdherenceCalculator.lastOverdue(schedule: schedule, start: startDate, asOf: now,
-                                               logDates: ownedLogDates(in: logs),
+                                               logDates: resolved,
                                                graceDays: graceDays, calendar: calendar)
     }
 
