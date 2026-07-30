@@ -30,6 +30,24 @@ struct ProtocolsView: View {
         logs.filter { Calendar.current.isDateInToday($0.timestamp) }
     }
 
+    /// The slot a "Skip this dose" action would decline: the most recent unresolved one — an
+    /// overdue day if there is one, else today's dose if it is due and unlogged. nil when there is
+    /// nothing to decline, which is what hides the menu item rather than offering a no-op.
+    private func skippableSlot(for proto: SavedProtocol) -> Date? {
+        guard proto.isActive else { return nil }
+        if let overdue = proto.lastOverdueDose(in: logs, skips: skips) { return overdue }
+        guard let next = proto.nextDose(), Calendar.current.isDateInToday(next),
+              !proto.loggedToday(in: todaysLogs) else { return nil }
+        return Calendar.current.startOfDay(for: next)
+    }
+
+    /// Records the decision. Same shape as the notification path, so a skip declared in-app and one
+    /// declared from a banner are indistinguishable downstream.
+    private func skip(_ proto: SavedProtocol, slot: Date) {
+        context.insert(SkippedDose(scheduledFor: slot, protocolID: proto.id, protocolName: proto.name))
+        try? context.save()
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -96,6 +114,15 @@ struct ProtocolsView: View {
                 .contextMenu {
                     Button { editTarget = EditTarget(proto: proto) } label: {
                         Label("Edit", systemImage: "pencil")
+                    }
+                    // The first IN-APP way to skip. Until now Skip existed only as a notification
+                    // action, so a user who dismissed the banner (or never enabled reminders) had no
+                    // way to say "I'm deliberately not taking this" — and the dose would harden into
+                    // a red OVERDUE. Offered only while there is actually a slot to decline.
+                    if let slot = skippableSlot(for: proto) {
+                        Button { skip(proto, slot: slot) } label: {
+                            Label("Skip this dose", systemImage: "minus.circle")
+                        }
                     }
                     Button { proto.isActive.toggle() } label: {
                         Label(proto.isActive ? "Pause" : "Resume",
