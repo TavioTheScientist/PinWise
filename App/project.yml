@@ -13,9 +13,6 @@ options:
 packages:
   PeptideKit:
     path: .
-  MuscleMap:
-    url: https://github.com/melihcolpan/MuscleMap.git
-    from: "1.6.4"
   # Supabase Swift SDK — used for auth only (Apple id-token sign-in, anonymous guest sessions,
   # token refresh). The AI streaming call is hand-rolled over URLSession in CloudAIClient, since
   # the SDK's function-invoke doesn't stream SSE.
@@ -67,8 +64,6 @@ targets:
     dependencies:
       - package: PeptideKit
         product: PeptideKit
-      - package: MuscleMap
-        product: MuscleMap
       - package: Supabase
         product: Supabase
     settings:

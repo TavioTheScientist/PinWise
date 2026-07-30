@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 import PeptideKit
-import MuscleMap
 
 /// Explains the green→red scale + the research behind it. Presented from the map's "?" button.
 struct InjectionMapInfoView: View {
@@ -119,6 +118,11 @@ struct BodyMapView: View {
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var doses: [LoggedDose]
     @AppStorage("bodyGender") private var bodyGenderRaw = "male"
     @State private var side: BodySide = .front
+
+    /// Alias for the displayed view, read by `imageSide(for:)`. Named separately because
+    /// `MuscleSide` (anatomy of a muscle) and `BodySide` (front/back of the figure) are different
+    /// axes and confusing them is how the left/right flip gets lost.
+    private var bodySide: BodySide { side }
     @State private var showInfo = false
 
     private var bodyGender: BodyGender { bodyGenderRaw == "female" ? .female : .male }
@@ -142,18 +146,10 @@ struct BodyMapView: View {
     /// Absolute intensity: few uses → low (green), cap+ uses → 1.0 (red). Not relative to other sites.
     private func intensity(_ count: Int) -> Double { max(0, min(1, Double(count) / HeatWindow.cap)) }
 
-    /// The muscle region the body illustration FILLS for a given site.
-    ///
-    /// Abdomen maps to the parent `.abs`, not `upperAbs`/`lowerAbs`. Those sub-group paths exist but
-    /// are small marker ellipses rather than the abdominal region, so highlighting them drew two tiny
-    /// dots instead of shading the area — inconsistent with every other site, which fills its whole
-    /// region. `.abs` is the path that actually covers the abdomen. (It also means the map no longer
-    /// needs `showSubGroups()`, which had the side effect of subdividing every other muscle.)
-    ///
-    /// No `MuscleSide` is returned: MuscleMap's `heatmap(_:colorScale:)` keys highlights by `Muscle`
-    /// alone and discards side entirely, so returning one only implied a precision the render can't
-    /// deliver. The body is a REGION view; per-side counts live in the by-site list below it.
-    private func target(for site: InjectionSite) -> Muscle {
+    /// The muscle whose artwork covers a site. Abdomen uses the parent `.abs`, whose four paths per
+    /// side ARE the abdominal quadrants; the `upperAbs`/`lowerAbs` sub-group paths are small marker
+    /// ellipses, not regions, which is why targeting them drew dots.
+    private func muscle(for site: InjectionSite) -> Muscle {
         switch site {
         case .armLeft, .armRight:                   return .deltoids
         case .abdomenUpperLeft, .abdomenUpperRight,
@@ -166,28 +162,58 @@ struct BodyMapView: View {
         }
     }
 
-    /// Load per RENDERED region, aggregated with MAX rather than SUM.
+    /// ANATOMICAL side → IMAGE side, which is not the identity.
     ///
-    /// Max, because `HeatWindow.cap` is calibrated per SITE ("≈2 uses/week of one spot reads red")
-    /// and the map exists to catch over-use of a single spot. Summing would make good practice look
-    /// like overload: rotating four abdominal quadrants once each would read as four uses of the
-    /// abdomen and warm toward amber, punishing exactly the rotation the map is meant to encourage.
-    /// Max says "the hottest spot inside this region", which is the question a user is asking.
+    /// MuscleMap's path data labels sides by image position — `left` is the smaller-x side in BOTH
+    /// front and back views (verified across quadriceps, deltoids, gluteal, triceps). A front-facing
+    /// figure shows the subject's RIGHT on the image's left, so the subject's left maps to `.right`
+    /// on the front view and to `.left` on the back view.
     ///
-    /// This also fixes a silent pre-existing bug: intensities used to be emitted per SITE, and since
-    /// the library keys highlights by muscle, each left/right pair overwrote its partner — flank-left
-    /// ×8 with flank-right ×1 rendered as intensity 1, whichever happened to be processed last.
-    private var regionLoad: [Muscle: Int] {
-        var d: [Muscle: Int] = [:]
+    /// `InjectionSite`'s Left/Right are the USER'S own sides. Getting this backwards would put every
+    /// highlight on the wrong half of the body — a worse failure than the imprecision it replaces, and
+    /// invisible without checking, since the body is near-symmetric.
+    private func imageSide(for site: InjectionSite) -> MuscleSide {
+        let isUsersLeft = site.rawValue.hasSuffix("Left")
+        switch bodySide {
+        case .front: return isUsersLeft ? .right : .left
+        case .back:  return isUsersLeft ? .left : .right
+        }
+    }
+
+    /// Upper vs lower band within a side, for the sites that distinguish it. nil = the whole side.
+    private func band(for site: InjectionSite) -> MuscleBand? {
+        switch site {
+        case .abdomenUpperLeft, .abdomenUpperRight: return .upper
+        case .abdomenLowerLeft, .abdomenLowerRight: return .lower
+        default: return nil
+        }
+    }
+
+    /// Heat per addressable region, aggregated with MAX rather than SUM where several sites collapse
+    /// onto one region.
+    ///
+    /// Max, because `HeatWindow.cap` is calibrated per SITE ("≈2 uses/week of one spot reads red") and
+    /// the map exists to catch over-use of a single spot. Summing would make good practice look like
+    /// overload — rotating quadrants once each would warm the whole abdomen toward amber, punishing
+    /// exactly the rotation this map is meant to encourage. Max answers "how hot is the hottest spot
+    /// in here", which is what the user is asking.
+    ///
+    /// With the fork's region keys, the 16 sites now map 1:1 onto distinct regions, so in practice
+    /// nothing collapses any more — the aggregation remains as the correct guard if a future site
+    /// shares a region, and because it is what fixed each L/R pair silently overwriting its partner.
+    private var regionLoad: [MuscleRegionKey: Int] {
+        var d: [MuscleRegionKey: Int] = [:]
         for (site, count) in counts where count > 0 {
-            let muscle = target(for: site)
-            d[muscle] = max(d[muscle] ?? 0, count)
+            let key = MuscleRegionKey(muscle: muscle(for: site),
+                                      side: imageSide(for: site),
+                                      band: band(for: site))
+            d[key] = max(d[key] ?? 0, count)
         }
         return d
     }
 
-    private var intensities: [MuscleIntensity] {
-        regionLoad.map { MuscleIntensity(muscle: $0.key, intensity: intensity($0.value)) }
+    private var intensities: [RegionIntensity] {
+        regionLoad.map { RegionIntensity(region: $0.key, intensity: intensity($0.value)) }
     }
 
     /// Green (light use) → amber → red (heavy use), so color reads the way the user expects.
@@ -216,8 +242,12 @@ struct BodyMapView: View {
                         // drew two dots instead of shading the region and subdivided every other
                         // muscle as a side effect. Targeting the parent `.abs` (see `target(for:)`)
                         // fills the abdomen the same way every other site fills its region.
+                        // `regionHeatmap` is the PinWise fork's addition (Vendor/MuscleMap,
+                        // PINWISE_FORK.md). Upstream's `heatmap` keys highlights by muscle alone and
+                        // discards side, so it could only ever shade a whole region — which is why
+                        // choosing "abdomen upper left" lit the entire abdomen.
                         BodyView(gender: bodyGender, side: side)
-                            .heatmap(intensities, colorScale: heatScale)
+                            .regionHeatmap(intensities, colorScale: heatScale)
                             .frame(maxWidth: .infinity)
                             .frame(height: 420)
 
