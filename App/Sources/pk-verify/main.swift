@@ -460,6 +460,50 @@ do {
     let corrected = COACorrection.correctedMass(.mg(10), assayPercent: 99.5, contentPercent: 88, purityPercent: 99.8)
     check(abs(corrected.micrograms - 8738) < 10, "10 mg label ⇒ ≈8.74 mg active")
     check(approx(COACorrection.factor(assayPercent: 100, contentPercent: 100), 1.0), "100% values ⇒ no change")
+
+    // COAReport must DELEGATE to the formula above, never reimplement it.
+    let report = COAReport(assayPercent: 99.5, contentPercent: 88, purityPercent: 99.8)
+    check(report.netFactor == f, "COAReport.netFactor delegates to COACorrection.factor")
+    check(COAReport().netFactor == 1.0, "empty COAReport ⇒ factor 1.0")
+
+    // THE STRUCTURAL RULE: endotoxin is a safety datum, not a potency one. Two reports identical but
+    // for endotoxin must correct identically, or dose math would silently follow a pyrogen number.
+    var withEndotoxin = report
+    withEndotoxin.endotoxin = Endotoxin(value: 0.25, unit: .perMilligram)
+    check(withEndotoxin.netFactor == report.netFactor,
+          "REGRESSION: endotoxin does NOT participate in netFactor")
+    let safetyOnly = COAReport(endotoxin: Endotoxin(value: 12, unit: .perVial))
+    check(safetyOnly.netFactor == 1.0 && !safetyOnly.hasPotencyData,
+          "endotoxin-only COA corrects nothing and reports no potency data")
+    check(Endotoxin(value: 12, unit: .perVial).display == "12 EU/vial", "endotoxin renders verbatim with its unit")
+}
+
+// MARK: - Lot identity (near-duplicate detection, deliberately two-tier)
+section("Lot identity")
+do {
+    // Vendors punctuate lot numbers inconsistently across the label, COA and invoice for one batch.
+    let forms = ["A24-118", "a24 118", "A24118", "a24_118"].map(LotIdentity.normalizedLotNumber)
+    check(Set(forms).count == 1 && forms[0] == "a24118", "lot punctuation/case variants collapse to one key")
+
+    let acme = (compound: "Semaglutide", vendor: "Acme Labs", lotNumber: "A24-118")
+    let acmeAgain = (compound: "semaglutide", vendor: "acme labs.", lotNumber: "a24 118")
+    check(LotIdentity.compare(acme, acmeAgain) == .exact, "same triple (any punctuation) ⇒ exact match")
+    check(LotIdentity.matchKey(compound: acme.compound, vendor: acme.vendor, lotNumber: acme.lotNumber)
+          == LotIdentity.matchKey(compound: acmeAgain.compound, vendor: acmeAgain.vendor, lotNumber: acmeAgain.lotNumber),
+          "matchKey agrees with compare for exact matches")
+
+    // Two suppliers CAN share a lot string — advisory, never a block.
+    let other = (compound: "Semaglutide", vendor: "Other Supplier", lotNumber: "A24-118")
+    check(LotIdentity.compare(acme, other) == .sameLotNumberOnly, "same lot, different vendor ⇒ advisory only")
+
+    let otherCompound = (compound: "Tirzepatide", vendor: "Acme Labs", lotNumber: "A24-118")
+    check(LotIdentity.compare(acme, otherCompound) == .none, "different compound ⇒ never a match")
+
+    // A lot with no number carries no identity, so two of them are not evidence of the same batch.
+    let blank = (compound: "Semaglutide", vendor: "Acme Labs", lotNumber: "")
+    check(LotIdentity.compare(blank, blank) == .none, "empty lot number never matches itself")
+    let punctuationOnly = (compound: "Semaglutide", vendor: "Acme Labs", lotNumber: "--")
+    check(LotIdentity.compare(blank, punctuationOnly) == .none, "punctuation-only lot number is empty once normalized")
 }
 
 // MARK: - Subjective metric quick-reports
