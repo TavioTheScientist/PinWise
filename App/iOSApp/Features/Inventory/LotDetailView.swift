@@ -151,6 +151,14 @@ struct LotDetailView: View {
             }
             .buttonStyle(.plain)
         }
+        if !attachments.isEmpty {
+            // Truthful, not alarming. The app cannot claim to be a record of what was in the vial and
+            // simultaneously leave the user assuming their evidence is backed up — there is no iCloud
+            // sync today, and SwiftData+CloudKit would sync the STORE, not files in Application
+            // Support. Naming the escape hatch in the same breath keeps it useful rather than scary.
+            Text("COA documents are stored on this device only — they aren't backed up or synced. Use Share on a document, or Settings → Export data, to keep a copy elsewhere.")
+                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+        }
         ForEach(attachments) { doc in
             COADocumentCard(doc: doc,
                             isExpanded: expanded.contains(doc.id),
@@ -335,6 +343,20 @@ private struct COADocumentCard: View {
                         if canApply {
                             SecondaryButton(title: "Apply to vials on this lot", systemImage: "arrow.down.doc") { onApply() }
                         }
+                        // The user's OWN file, leaving on their own initiative — which is why this is
+                        // a share sheet and not an upload. It's also the practical answer to "I need
+                        // to send this to my doctor", and the per-document half of the backup story.
+                        if let url = fileURL {
+                            ShareLink(item: url) {
+                                Label("Share document", systemImage: "square.and.arrow.up")
+                                    .font(.caption.weight(.semibold))
+                                    .frame(maxWidth: .infinity).padding(.vertical, Space.md)
+                                    .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(BrandColor.stroke, lineWidth: 1))
+                                    .foregroundStyle(BrandColor.textPrimary)
+                            }
+                            .buttonStyle(.plain)
+                        }
                         Button(role: .destructive, action: onDelete) {
                             Label("Remove document", systemImage: "trash")
                                 .font(.caption.weight(.semibold))
@@ -376,6 +398,12 @@ private struct COADocumentCard: View {
         }
         .frame(width: 52, height: 52)
         .clipShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+    }
+
+    /// nil when the bytes are missing — a record can outlive its file if the app's container is
+    /// rebuilt, so the share affordance hides rather than offering a broken export.
+    private var fileURL: URL? {
+        COADocumentStore.exists(named: doc.filename) ? COADocumentStore.url(named: doc.filename) : nil
     }
 
     private func fmt(_ v: Double) -> String {
