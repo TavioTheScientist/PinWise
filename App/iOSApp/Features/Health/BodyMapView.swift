@@ -142,34 +142,52 @@ struct BodyMapView: View {
     /// Absolute intensity: few uses → low (green), cap+ uses → 1.0 (red). Not relative to other sites.
     private func intensity(_ count: Int) -> Double { max(0, min(1, Double(count) / HeatWindow.cap)) }
 
-    private func target(for site: InjectionSite) -> (Muscle, MuscleSide) {
+    /// The muscle region the body illustration FILLS for a given site.
+    ///
+    /// Abdomen maps to the parent `.abs`, not `upperAbs`/`lowerAbs`. Those sub-group paths exist but
+    /// are small marker ellipses rather than the abdominal region, so highlighting them drew two tiny
+    /// dots instead of shading the area — inconsistent with every other site, which fills its whole
+    /// region. `.abs` is the path that actually covers the abdomen. (It also means the map no longer
+    /// needs `showSubGroups()`, which had the side effect of subdividing every other muscle.)
+    ///
+    /// No `MuscleSide` is returned: MuscleMap's `heatmap(_:colorScale:)` keys highlights by `Muscle`
+    /// alone and discards side entirely, so returning one only implied a precision the render can't
+    /// deliver. The body is a REGION view; per-side counts live in the by-site list below it.
+    private func target(for site: InjectionSite) -> Muscle {
         switch site {
-        case .armLeft:           return (.deltoids, .left)
-        case .armRight:          return (.deltoids, .right)
-        case .abdomenUpperLeft:  return (.upperAbs, .left)
-        case .abdomenUpperRight: return (.upperAbs, .right)
-        case .abdomenLowerLeft:  return (.lowerAbs, .left)
-        case .abdomenLowerRight: return (.lowerAbs, .right)
-        case .flankLeft:         return (.obliques, .left)
-        case .flankRight:        return (.obliques, .right)
-        case .gluteLeft:         return (.gluteal, .left)
-        case .gluteRight:        return (.gluteal, .right)
-        case .thighLeft:         return (.quadriceps, .left)
-        case .thighRight:        return (.quadriceps, .right)
-        case .tricepLeft:        return (.triceps, .left)
-        case .tricepRight:       return (.triceps, .right)
-        case .lowerBackLeft:     return (.lowerBack, .left)
-        case .lowerBackRight:    return (.lowerBack, .right)
+        case .armLeft, .armRight:                   return .deltoids
+        case .abdomenUpperLeft, .abdomenUpperRight,
+             .abdomenLowerLeft, .abdomenLowerRight: return .abs
+        case .flankLeft, .flankRight:               return .obliques
+        case .gluteLeft, .gluteRight:               return .gluteal
+        case .thighLeft, .thighRight:               return .quadriceps
+        case .tricepLeft, .tricepRight:             return .triceps
+        case .lowerBackLeft, .lowerBackRight:       return .lowerBack
         }
     }
 
-    private var intensities: [MuscleIntensity] {
-        InjectionSite.allCases.compactMap { site in
-            let c = counts[site] ?? 0
-            guard c > 0 else { return nil }
-            let (muscle, mside) = target(for: site)
-            return MuscleIntensity(muscle: muscle, intensity: intensity(c), side: mside)
+    /// Load per RENDERED region, aggregated with MAX rather than SUM.
+    ///
+    /// Max, because `HeatWindow.cap` is calibrated per SITE ("≈2 uses/week of one spot reads red")
+    /// and the map exists to catch over-use of a single spot. Summing would make good practice look
+    /// like overload: rotating four abdominal quadrants once each would read as four uses of the
+    /// abdomen and warm toward amber, punishing exactly the rotation the map is meant to encourage.
+    /// Max says "the hottest spot inside this region", which is the question a user is asking.
+    ///
+    /// This also fixes a silent pre-existing bug: intensities used to be emitted per SITE, and since
+    /// the library keys highlights by muscle, each left/right pair overwrote its partner — flank-left
+    /// ×8 with flank-right ×1 rendered as intensity 1, whichever happened to be processed last.
+    private var regionLoad: [Muscle: Int] {
+        var d: [Muscle: Int] = [:]
+        for (site, count) in counts where count > 0 {
+            let muscle = target(for: site)
+            d[muscle] = max(d[muscle] ?? 0, count)
         }
+        return d
+    }
+
+    private var intensities: [MuscleIntensity] {
+        regionLoad.map { MuscleIntensity(muscle: $0.key, intensity: intensity($0.value)) }
     }
 
     /// Green (light use) → amber → red (heavy use), so color reads the way the user expects.
@@ -191,23 +209,14 @@ struct BodyMapView: View {
                         }
                         .pickerStyle(.segmented)
 
-                        // `.showSubGroups()` is REQUIRED for this map to work at all, not cosmetic.
-                        //
-                        // MuscleMap hides sub-group paths by default and draws only their parent
-                        // group. Of the muscles we target, `upperAbs` and `lowerAbs` are sub-groups
-                        // (parent `.abs`) — so the renderer skipped those paths entirely, looked up
-                        // `highlights[.abs]` (which we never set), found nothing, and painted default
-                        // grey. The result: all FOUR abdomen sites were invisible on the map while the
-                        // other twelve rendered fine. Abdomen is the most-used site for GLP-1s, so a
-                        // new user's first logged dose produced a body with no highlight anywhere and
-                        // the map looked broken — even though the count line correctly read
-                        // "1 injection".
-                        //
-                        // Enabling sub-groups is safe for the sites that already worked: the renderer
-                        // falls back to a parent's highlight for any sub-group that has none of its
-                        // own, so e.g. a `.quadriceps` highlight still fills inner/outer quad.
+                        // Sub-groups stay HIDDEN (the library default). Abdomen used to target the
+                        // `upperAbs`/`lowerAbs` sub-groups, which the renderer skips by default —
+                        // that made all four abdomen sites invisible. Briefly fixed with
+                        // `showSubGroups()`, but those paths are small marker ellipses, so the fix
+                        // drew two dots instead of shading the region and subdivided every other
+                        // muscle as a side effect. Targeting the parent `.abs` (see `target(for:)`)
+                        // fills the abdomen the same way every other site fills its region.
                         BodyView(gender: bodyGender, side: side)
-                            .showSubGroups()
                             .heatmap(intensities, colorScale: heatScale)
                             .frame(maxWidth: .infinity)
                             .frame(height: 420)
