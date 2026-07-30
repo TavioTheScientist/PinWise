@@ -15,6 +15,9 @@ struct DataExportView: View {
     @Query(sort: \SymptomEntry.timestamp, order: .reverse) private var symptoms: [SymptomEntry]
     @Query(sort: \BiomarkerEntry.timestamp, order: .reverse) private var biomarkers: [BiomarkerEntry]
     @Query(sort: \HealthSnapshot.timestamp, order: .reverse) private var health: [HealthSnapshot]
+    @Query(sort: \StoredLot.dateAdded, order: .reverse) private var lots: [StoredLot]
+    @Query private var coaDocs: [COAAttachment]
+    @Query private var testingRequests: [TestingRequest]
 
     @State private var exportURL: URL?
 
@@ -35,6 +38,8 @@ struct DataExportView: View {
                     countRow("Symptoms", symptoms.count)
                     countRow("Labs & metrics", biomarkers.count)
                     countRow("Apple Health days", health.count)
+                    countRow("Lots", lots.count)
+                    countRow("COA documents", coaDocs.count)
                 }
             }
 
@@ -74,7 +79,8 @@ struct DataExportView: View {
         guard totalRows > 0 else { return }
         let csv = DataExportBuilder.csv(
             doses: doses, protocols: protocols, vials: vials,
-            symptoms: symptoms, biomarkers: biomarkers, health: health)
+            symptoms: symptoms, biomarkers: biomarkers, health: health,
+            lots: lots, coaDocs: coaDocs, testingRequests: testingRequests)
         let name = "PinWise-export-\(Self.stamp.string(from: Date())).csv"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
@@ -97,14 +103,16 @@ struct DataExportView: View {
 /// 4180 quoted. Doses are exported in canonical micrograms (lossless); Health weight in kg.
 enum DataExportBuilder {
     static func csv(doses: [LoggedDose], protocols: [SavedProtocol], vials: [StoredVial],
-                    symptoms: [SymptomEntry], biomarkers: [BiomarkerEntry], health: [HealthSnapshot]) -> String {
+                    symptoms: [SymptomEntry], biomarkers: [BiomarkerEntry], health: [HealthSnapshot],
+                    lots: [StoredLot] = [], coaDocs: [COAAttachment] = [],
+                    testingRequests: [TestingRequest] = []) -> String {
         var out = "PinWise data export,generated,\(iso.string(from: Date()))\n"
 
         out += "\n# Doses\n"
-        out += row(["timestamp", "compound", "dose_mcg", "site", "energy_0_10", "side_effect_0_10", "notes"])
+        out += row(["timestamp", "compound", "dose_mcg", "site", "lot", "energy_0_10", "side_effect_0_10", "notes"])
         for d in doses {
             out += row([iso.string(from: d.timestamp), d.compoundName, num(d.doseMicrograms),
-                        d.siteRaw ?? "", optNum(d.energy), optNum(d.sideEffectSeverity), d.notes])
+                        d.siteRaw ?? "", d.lotNumber, optNum(d.energy), optNum(d.sideEffectSeverity), d.notes])
         }
 
         out += "\n# Protocols\n"
@@ -121,6 +129,39 @@ enum DataExportBuilder {
             out += row([v.displayName, contents, v.isPremixed ? "yes" : "no",
                         String(v.dosesTaken), String(v.totalDoses), iso.string(from: v.dateAcquired),
                         v.expirationDate.map { iso.string(from: $0) } ?? "", v.notes])
+        }
+
+        // Provenance sections — what makes the "system of record" claim externally verifiable rather
+        // than a screen you have to trust. Documents are exported by filename and reported values;
+        // the bytes stay on device.
+        out += "\n# Lots\n"
+        out += row(["compound", "vendor", "lot_number", "received", "opened", "reconstituted", "notes"])
+        for l in lots {
+            out += row([l.compoundName, l.vendor, l.lotNumber,
+                        l.dateReceived.map { iso.string(from: $0) } ?? "",
+                        l.dateOpened.map { iso.string(from: $0) } ?? "",
+                        l.dateReconstituted.map { iso.string(from: $0) } ?? "", l.notes])
+        }
+
+        out += "\n# COA documents\n"
+        out += row(["lot_number", "file", "kind", "report_date", "lab", "purity_pct", "assay_pct",
+                    "content_pct", "endotoxin", "endotoxin_unit", "net_factor", "method_notes"])
+        for c in coaDocs {
+            let lotNumber = lots.first { $0.id == c.lotID }?.lotNumber ?? ""
+            out += row([lotNumber, c.originalFilename, c.kind.rawValue,
+                        c.reportDate.map { iso.string(from: $0) } ?? "", c.labName,
+                        optNum(c.purityPercent), optNum(c.assayPercent), optNum(c.contentPercent),
+                        optNum(c.endotoxinValue), c.endotoxinUnitRaw,
+                        num(c.report.netFactor), c.methodNotes])
+        }
+
+        if !testingRequests.isEmpty {
+            out += "\n# Testing requests\n"
+            out += row(["date", "compound", "lot_number", "vendor", "kinds", "notes"])
+            for r in testingRequests {
+                out += row([iso.string(from: r.dateRequested), r.compoundName, r.lotNumber,
+                            r.vendor, r.kindsRaw, r.notes])
+            }
         }
 
         out += "\n# Symptoms\n"

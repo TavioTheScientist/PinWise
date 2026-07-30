@@ -57,7 +57,7 @@ enum PinWiseStore {
     static let models: [any PersistentModel.Type] = [
         LoggedDose.self, SavedProtocol.self, StoredVial.self, SymptomEntry.self,
         BiomarkerEntry.self, CustomCompound.self, PhysiquePhoto.self, HealthSnapshot.self,
-        SkippedDose.self, StoredLot.self, COAAttachment.self,
+        SkippedDose.self, StoredLot.self, COAAttachment.self, TestingRequest.self,
     ]
 
     /// Force-unwrapped deliberately, matching the previous `.modelContainer(for:)` behavior: if the

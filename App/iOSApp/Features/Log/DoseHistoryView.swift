@@ -56,7 +56,13 @@ struct DoseHistoryView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(vial?.isBlend == true ? vial!.apiNames.joined(separator: " + ") : entry.compoundName)
                         .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                    Text(entry.dose.displayString(in: unit) + (entry.site.map { " · \($0.displayName)" } ?? ""))
+                    // The lot rides on the SECONDARY line, appended after the site: this is the
+                    // cheapest place where "what the user took" becomes truthful about which batch,
+                    // and it's where denormalizing `lotNumber` onto the dose pays for itself — the
+                    // vial may be long gone (refill nils `vialID`) but the batch still reads.
+                    Text(entry.dose.displayString(in: unit)
+                         + (entry.site.map { " · \($0.displayName)" } ?? "")
+                         + (entry.lotNumber.isEmpty ? "" : " · LOT \(entry.lotNumber)"))
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                     if let blend {
                         Text("Delivers \(blend)").font(.caption2).foregroundStyle(BrandColor.textSecondary)
