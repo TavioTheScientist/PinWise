@@ -78,6 +78,9 @@ struct LogView: View {
         recent.filter { Calendar.current.isDateInToday($0.timestamp) }
     }
 
+    /// Whether the picker is also showing protocols that aren't due yet. Off by default.
+    @State private var showEarly = false
+
     /// The picker's rows, resolved ONCE per render instead of once per row per re-render.
     /// `ProtocolPresentation.init` is not cheap — it runs `nextDose()` (a 90-day expectedDates
     /// walk) and expands every blend vial — and every tap on any row re-renders the whole list,
@@ -90,6 +93,33 @@ struct LogView: View {
             ($0, ProtocolPresentation($0, vials: vials, todaysLogs: today,
                                       overdueSince: $0.lastOverdueDose(in: recent, skips: skips)))
         }
+    }
+
+    /// Rows worth acting on right now: due today, late, overdue, or as-needed.
+    ///
+    /// The status alone isn't enough. An OVERDUE protocol's `nextDose()` points at its *next* slot,
+    /// which can be days out, so a date test would file it as "early"; an as-needed protocol has no
+    /// scheduled date at all, so a date test would file it as "early" forever. Status answers the
+    /// first case and a nil next-dose answers the second.
+    private var dueRows: [(proto: SavedProtocol, presentation: ProtocolPresentation)] {
+        loggableRows.filter { row in
+            switch row.presentation.status {
+            case .dueToday, .late, .overdue: return true
+            case .active, .doneToday, .paused: return row.proto.nextDose() == nil
+            }
+        }
+    }
+
+    /// Everything else — a real protocol with a real future date. Logging one is logging EARLY, which
+    /// stays possible but shouldn't be the first thing the Log tab offers: a picker listing a dose
+    /// that isn't due for six days invites a mis-tap that writes a dose nobody took.
+    private var earlyRows: [(proto: SavedProtocol, presentation: ProtocolPresentation)] {
+        let dueIDs = Set(dueRows.map(\.proto.id))
+        return loggableRows.filter { !dueIDs.contains($0.proto.id) }
+    }
+
+    private var visibleRows: [(proto: SavedProtocol, presentation: ProtocolPresentation)] {
+        showEarly ? dueRows + earlyRows : dueRows
     }
 
     /// The next dose's full datetime: its scheduled day (`nextDose`) at the protocol's reminder time.
@@ -201,7 +231,9 @@ struct LogView: View {
                         // Protocol-first — the whole point of this tab: what you're actually running.
                         if !loggableProtocols.isEmpty {
                             protocolCard
-                            if let sel = selectedProtocolID, loggableProtocols.contains(where: { $0.id == sel }) {
+                            // Membership in the VISIBLE rows, not in every loggable protocol: collapsing
+                            // the early list must also retract the entry fields it opened.
+                            if let sel = selectedProtocolID, visibleRows.contains(where: { $0.proto.id == sel }) {
                                 lateAttributionCard
                                 entrySection
                             }
@@ -245,6 +277,7 @@ struct LogView: View {
                 // pre-selected — a one-time pin only when there are no protocols at all.
                 mode = activeProtocols.isEmpty ? .compound : .protocolBased
                 selectedProtocolID = nil
+                showEarly = false   // the tab reopens on what's due, never on what isn't
                 doseUnit = compound.preferredDoseUnit
                 // Do NOT auto-fill the site: a log must record where you ACTUALLY injected, not a
                 // rotation suggestion. The "Suggested" hint below applies the pick on tap.
@@ -353,22 +386,29 @@ struct LogView: View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Which protocol are you logging?").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                    // With nothing due, the card STATES that rather than asking a question it then
+                    // answers with "nothing". The prompt only earns the top line when there is
+                    // something to pick.
+                    Text(dueRows.isEmpty ? "Nothing due today" : "Which protocol are you logging?")
+                        .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                     // The ordering used to be implied by every row's "Due today · …" subtitle prefix.
                     // The timing now sits right-aligned in the row's own fact slot, so state the sort
                     // once, quietly — a hint under the prompt, not a heading.
-                    Text("Soonest first").font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    if !dueRows.isEmpty {
+                        Text("Soonest first").font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    }
                 }
                 // A vertical list of full-width rows — every protocol visible at a glance, soonest-due
                 // first. (Replaces a left-right chip scroll that hid protocols and wasted the tall screen.)
                 VStack(spacing: Space.sm) {
-                    ForEach(loggableRows, id: \.proto.id) { row in
+                    ForEach(visibleRows, id: \.proto.id) { row in
                         protocolRow(row.proto, presentation: row.presentation)
                     }
                 }
                 // Condition form: the onAppear default-seed (nil → first id) is programmatic,
                 // not a tap — only buzz once a selection already existed.
                 .sensoryFeedback(.selection, trigger: selectedProtocolID) { old, _ in old != nil }
+                if !earlyRows.isEmpty { earlyDisclosure }
                 if let p = selectedProtocol {
                     Divider().overlay(BrandColor.stroke)
                     ForEach(Array(p.items.enumerated()), id: \.offset) { i, item in
@@ -422,6 +462,46 @@ struct LogView: View {
         }
     }
 
+    /// The way in to protocols that aren't due yet.
+    ///
+    /// Reveal-on-demand rather than always-listed, matching the app's established filtering idiom: a
+    /// dose is an assertion that you injected a drug, so a protocol six days out shouldn't be one
+    /// mis-tap away in the same list as today's. When it's the only thing there is, the affordance
+    /// carries the next date so the tab still answers "when is my next dose" without being expanded.
+    @ViewBuilder
+    private var earlyDisclosure: some View {
+        Button {
+            withAnimation(Motion.emphasis) {
+                showEarly.toggle()
+                // Collapsing hides the row that opened the entry fields — drop the selection with it.
+                if !showEarly, let sel = selectedProtocolID,
+                   earlyRows.contains(where: { $0.proto.id == sel }) {
+                    selectedProtocolID = nil
+                }
+            }
+        } label: {
+            HStack(spacing: Space.xs) {
+                Image(systemName: showEarly ? "chevron.up" : "chevron.down")
+                    .font(.caption2.weight(.bold))
+                Text(earlyLabel)
+                Spacer(minLength: 0)
+            }
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(BrandColor.accentText)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var earlyLabel: String {
+        if showEarly { return "Hide what isn't due yet" }
+        // With nothing due, this row IS the answer to "what's next", so it names it.
+        if dueRows.isEmpty, let next = earlyRows.first {
+            return "Log \(next.presentation.name) early · \(next.presentation.rowFact)"
+        }
+        return earlyRows.count == 1 ? "Log a dose early" : "Log a dose early · \(earlyRows.count)"
+    }
+
     /// A full-width, tappable protocol row for the vertical picker: the shared `ProtocolSummary`
     /// `.row` payload plus this screen's selection chrome. Re-tapping the selected row deselects it.
     ///
@@ -445,7 +525,11 @@ struct LogView: View {
         Button {
             selectedProtocolID = isSelected ? nil : p.id
         } label: {
-            HStack(spacing: Space.md) {
+            // `.firstTextBaseline`, not the default `.center`: the summary is TWO lines, so a
+            // centered radio floats between them while the due-date text it belongs to sits on the
+            // first. Baseline-aligning puts the glyph on the same line as the fact it answers —
+            // `rowBody`'s own top line uses the same alignment for the same reason.
+            HStack(alignment: .firstTextBaseline, spacing: Space.md) {
                 // No Spacer needed: `.row`'s top line ends in one, so the summary already claims
                 // the width the radio leaves.
                 ProtocolSummary(presentation: presentation, layout: .row)
@@ -495,6 +579,11 @@ struct LogView: View {
         if loggableProtocols.contains(where: { $0.id == id }) {
             mode = .protocolBased
             selectedProtocolID = id
+            // A reminder points at a dose that IS due, so this normally lands in the due rows. It can
+            // still miss — a stale banner tapped after the schedule moved on — and a preselected row
+            // the picker doesn't show would leave the entry fields orphaned. Expanding is cheap
+            // insurance; a routed protocol must always be visible.
+            if !dueRows.contains(where: { $0.proto.id == id }) { showEarly = true }
         }
         reminderRouter.pendingProtocolID = nil   // consume once resolved (selected, or genuinely absent/already-logged)
     }
