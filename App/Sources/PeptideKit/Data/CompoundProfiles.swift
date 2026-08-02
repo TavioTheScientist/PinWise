@@ -131,6 +131,29 @@ public enum CompoundProfiles {
 
     /// A standard, reusable storage line for reconstituted peptides — mirrors the app's USP-aligned
     /// storage posture used elsewhere. Kept here so profiles stay consistent instead of drifting.
+    // MARK: - Khavinson bioregulator shared copy
+    //
+    // Eleven of these peptides exist in the catalog and the honest evidence answer is IDENTICAL for
+    // all of them: one research programme, largely Russian-language, little independent replication.
+    // Shared constants rather than eleven paraphrases — writing eleven differently-worded versions
+    // of "there is no good human evidence" would imply the strength of the evidence varies between
+    // them, and it does not.
+
+    static let bioregulatorEvidence = "Tier D — preclinical, and unusually weak even for that tier. The published work on the peptide bioregulators comes very largely from a single research programme (V. Kh. Khavinson's) and from Russian-language journals, with little independent replication. Not approved anywhere. Treat the mechanism itself as unproven, not merely the clinical effect: the claim that a three- or four-amino-acid peptide enters cells and regulates gene transcription is the part that has never been independently established."
+
+    static let bioregulatorDosing = "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself."
+
+    static let bioregulatorSideEffectsCommon = [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form",
+    ]
+
+    static let bioregulatorSideEffectsSerious = [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard",
+    ]
+
     static let standardStorage = "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged."
 
     /// All authored profiles. Add entries here in batches. compoundIDs reference `CompoundCatalog`
@@ -331,6 +354,15 @@ public enum CompoundProfiles {
             tagline: "Arginine-salt form of BPC-157; used off-label for recovery.",
             whatItIs: "BPC-157 arginate is the arginine-salt form of BPC-157, marketed as more stable in solution than the usual acetate form. Its evidence and regulatory status are the same as standard BPC-157.",
             evidenceSummary: "Tier C. Preclinical only, same as BPC-157. WADA-prohibited. The \"more stable\" claim refers to shelf chemistry, not efficacy.",
+            sideEffectsCommon: [
+                "Same profile as BPC-157 — this is the same molecule in a different salt",
+                "Generally reported as well tolerated at these doses",
+                "Occasional injection-site irritation, nausea, or lightheadedness",
+            ],
+            sideEffectsSerious: [
+                "Long-term safety has not been studied in humans — the main unknown",
+                "The arginate salt has no separate human safety data of its own; it inherits BPC-157's, which is preclinical",
+            ],
             storageHandling: standardStorage,
             misconceptions: [
                 "\"The arginate form is stronger.\" The salt form affects stability, not potency; the active peptide is the same BPC-157."
@@ -593,6 +625,10 @@ public enum CompoundProfiles {
                 "A wave of flushing, chest or abdominal tightness, and nausea if infused too quickly — uncomfortable but transient",
                 "Slowing the infusion rate reduces it",
             ],
+            sideEffectsSerious: [
+                "Pushing an injection or infusion too fast causes intense flushing, chest and throat tightness, cramping and nausea — the most consistently reported problem with injected NAD+, and the reason clinics infuse it slowly",
+                "Long-term safety of injected NAD+ is unstudied; the rigorous human data is on ORAL precursors (NR, NMN), which are different compounds",
+            ],
             misconceptions: [
                 "\"NAD+ is a peptide.\" It is a dinucleotide and coenzyme, grouped with peptides only by marketing.",
                 "\"Faster infusion is better.\" A faster rate increases flushing and nausea; the rate governs tolerability.",
@@ -845,6 +881,232 @@ public enum CompoundProfiles {
             storageHandling: standardStorage,
             misconceptions: [
                 "\"It only grows the muscle you inject.\" IGF-1 LR3 acts systemically; localized-growth claims aren't established in humans."
+            ]
+        ),
+
+        // MARK: — Batch 3a: Khavinson peptide bioregulators —
+        //
+        // Eleven short peptides (3–4 residues) from one research programme — V. Kh. Khavinson's,
+        // published very largely in Russian-language journals and rarely replicated independently.
+        // They are authored SHORT on purpose. There is no robust independent human evidence for any
+        // of them, and writing a full-length profile would manufacture an appearance of depth the
+        // literature does not support. `bioregulatorEvidence` and `bioregulatorSideEffects` are
+        // shared because the honest answer really is the same for all eleven — inventing
+        // per-compound distinctions would be fabrication, not detail.
+        //
+        // What each entry DOES carry that is specific and real: its sequence, its aliases, and the
+        // tissue its claims are aimed at. That is the part a reader can actually use.
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.epithalon.id,
+            goals: [.longevity],
+            tagline: "Tetrapeptide (AEDG) marketed for telomerase and longevity claims.",
+            whatItIs: "Epithalon (also spelled Epitalon) is a synthetic four-amino-acid peptide, Ala-Glu-Asp-Gly. It is the best known of the Khavinson bioregulators and the one most of the longevity claims attach to.",
+            howItWorks: "The proposed mechanism is that the peptide enters cells, binds DNA or histones, and alters gene transcription — including upregulating telomerase. That mechanism is not independently established, and the leap from a four-residue peptide to targeted gene regulation is the specific claim to be skeptical of.",
+            whatToExpect: "Reports describe sleep and general wellbeing effects. No controlled trial in humans has demonstrated an effect on lifespan, telomere length, or any hard clinical endpoint.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Sold both as an injectable powder and as oral capsules. Almost all of the published work is on the injectable form; oral bioavailability of a tetrapeptide is a real question, not a formality.",
+            timing: "No characterized human half-life. Protocols are conventionally short cycles rather than continuous use.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"Epithalon lengthens telomeres in people.\" No human trial has shown this. The telomerase claim comes from cell and animal work out of a single research programme.",
+                "\"It is proven to extend lifespan.\" Rodent lifespan reports exist from that same programme; no human lifespan data exists, and lifespan is not a measurable endpoint in the timeframes these protocols run."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.pinealon.id,
+            goals: [.cognitive, .longevity],
+            tagline: "Tripeptide (EDR) aimed at brain and neuroprotection claims.",
+            whatItIs: "Pinealon is Glu-Asp-Arg, a three-amino-acid Khavinson bioregulator whose claims are directed at the brain — neuroprotection and cognition.",
+            howItWorks: "Same proposed mechanism as the rest of the family: cell entry and transcriptional regulation. Preclinical reports describe protection against oxidative and hypoxic stress in neural tissue. Not independently established.",
+            whatToExpect: "Users report clearer thinking and better sleep. No controlled human cognitive trial supports this.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It is a proven nootropic.\" Nothing in the independent literature supports a cognitive effect in humans."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.cortagen.id,
+            goals: [.cognitive, .recovery],
+            tagline: "Tetrapeptide (AEDP) aimed at nerve and cortex claims.",
+            whatItIs: "Cortagen is Ala-Glu-Asp-Pro, directed at nerve tissue and described in the source literature as supporting peripheral nerve regeneration.",
+            howItWorks: "Proposed transcriptional regulation, as with the rest of the family. Preclinical nerve-regeneration reports exist; independent replication does not.",
+            whatToExpect: "No reliable human effect has been demonstrated. Anecdotal reports centre on recovery and nerve discomfort.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It repairs nerve damage.\" Nerve-regeneration claims come from animal work in one programme and have not been shown in people."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.cartalax.id,
+            goals: [.recovery, .longevity],
+            tagline: "Tripeptide (AED) aimed at cartilage and connective tissue.",
+            whatItIs: "Cartalax is Ala-Glu-Asp, a Khavinson bioregulator whose claims target cartilage and connective tissue — which is why it appears in joint-support marketing.",
+            howItWorks: "Proposed transcriptional regulation. Nothing establishes a cartilage-specific effect in humans.",
+            whatToExpect: "No demonstrated effect on joint pain, cartilage volume, or function in controlled human research.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It rebuilds cartilage.\" There is no human evidence of cartilage regeneration from this peptide. Compare BPC-157 or TB-500 for the recovery claims people usually mean — both also short of human trial support, but far more studied."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.vesugen.id,
+            goals: [.longevity],
+            tagline: "Tripeptide (KED) aimed at vascular tissue.",
+            whatItIs: "Vesugen is Lys-Glu-Asp, directed at blood-vessel and endothelial claims.",
+            howItWorks: "Proposed transcriptional regulation; described in the source literature as supporting vascular wall health. Not independently established.",
+            whatToExpect: "No demonstrated cardiovascular endpoint in controlled human research.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It protects the heart or arteries.\" No controlled human data supports a cardiovascular benefit, and cardiovascular risk is exactly the domain where unverified claims do the most harm."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.livagen.id,
+            goals: [.longevity, .immune],
+            tagline: "Tetrapeptide (KEDA) aimed at liver and immune claims.",
+            whatItIs: "Livagen is Lys-Glu-Asp-Ala, directed at liver function and immune claims. Closely related to Epithalon in the family's own framing.",
+            howItWorks: "Proposed transcriptional regulation, with source-literature reports of chromatin decondensation in lymphocytes. Not independently established.",
+            whatToExpect: "No demonstrated effect on liver enzymes, liver function, or immune endpoints in controlled human research.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It detoxifies or repairs the liver.\" Nothing in the independent literature supports a hepatic effect. If liver markers are the concern, they are directly measurable — track the labs rather than assuming an effect."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.crystagen.id,
+            goals: [.immune],
+            tagline: "Tripeptide (EDP) aimed at immune claims.",
+            whatItIs: "Crystagen is Glu-Asp-Pro, directed at immune-system claims.",
+            howItWorks: "Proposed transcriptional regulation. No independently established immune mechanism.",
+            whatToExpect: "No demonstrated immune endpoint in controlled human research.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It boosts the immune system.\" \"Immune boosting\" is not a measurable claim, and no controlled human data supports an immune effect here."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.testagen.id,
+            goals: [.immune, .longevity],
+            tagline: "Tetrapeptide (KEDG) aimed at thymus and immune claims.",
+            safetyFlag: "The name suggests testosterone. It has nothing to do with testosterone — it is aimed at the thymus.",
+            whatItIs: "Testagen is Lys-Glu-Asp-Gly, directed at thymus and immune claims. The name is a frequent source of confusion.",
+            howItWorks: "Proposed transcriptional regulation. Not independently established.",
+            whatToExpect: "No demonstrated immune or endocrine endpoint in controlled human research.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"Testagen raises testosterone.\" It does not, and the name is the only reason anyone thinks so. Nothing here acts on the gonadal axis."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.prostamax.id,
+            goals: [.longevity, .sexualHealth],
+            tagline: "Tetrapeptide (KEDP) aimed at prostate claims.",
+            safetyFlag: "Prostate symptoms need a clinical work-up. Urinary changes, and a rising PSA, are how prostate cancer is caught — self-treating around them delays diagnosis.",
+            whatItIs: "Prostamax is Lys-Glu-Asp-Pro, directed at prostate claims and marketed for benign prostatic symptoms.",
+            howItWorks: "Proposed transcriptional regulation. No independently established prostate effect.",
+            whatToExpect: "No demonstrated effect on prostate volume, urinary flow, or PSA in controlled human research.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It treats an enlarged prostate.\" There is no controlled human evidence for that, and prostate symptoms are one of the clearest cases for seeing a clinician rather than self-treating."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.bronchogen.id,
+            goals: [.immune, .recovery],
+            tagline: "Tetrapeptide (AEDL) aimed at bronchial and lung claims.",
+            safetyFlag: "Breathing symptoms are not something to self-treat. Asthma and COPD have effective prescribed treatments, and substituting an unproven peptide for an inhaler is dangerous.",
+            whatItIs: "Bronchogen is Ala-Glu-Asp-Leu, directed at bronchial and respiratory claims.",
+            howItWorks: "Proposed transcriptional regulation. Not independently established.",
+            whatToExpect: "No demonstrated respiratory endpoint — no spirometry, symptom-score, or exacerbation data — in controlled human research.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It helps asthma or COPD.\" No controlled human evidence supports this, and both conditions have treatments that are proven and prescribed."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.ovagen.id,
+            goals: [.immune, .longevity],
+            tagline: "Tripeptide (EDL) aimed at liver and gut claims.",
+            whatItIs: "Ovagen is Glu-Asp-Leu, directed at liver and gastrointestinal claims.",
+            howItWorks: "Proposed transcriptional regulation. Not independently established.",
+            whatToExpect: "No demonstrated hepatic or GI endpoint in controlled human research.",
+            evidenceSummary: bioregulatorEvidence,
+            dosingCommunity: bioregulatorDosing,
+            route: "Subcutaneous injection, or oral capsules.",
+            timing: "No characterized human half-life; conventionally short cycles.",
+            sideEffectsCommon: bioregulatorSideEffectsCommon,
+            sideEffectsSerious: bioregulatorSideEffectsSerious,
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"Ovagen is a fertility or hormone peptide.\" The name suggests it; the claims in the source literature are hepatic and gastrointestinal."
             ]
         ),
     ]

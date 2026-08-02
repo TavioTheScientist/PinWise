@@ -575,6 +575,20 @@ do {
     // Structured side-effect bullets are never blank (they render as list rows).
     check(CompoundProfiles.all.allSatisfy { ($0.sideEffectsCommon + $0.sideEffectsSerious).allSatisfy { !$0.isEmpty } },
           "no empty side-effect bullets")
+    // EVERY profile carries STRUCTURED side effects, not just the prose fallback. The detail page
+    // renders "is this normal?" vs "red flag" as two labeled lists when these are present and a
+    // single undifferentiated block when they aren't — and for a dosing app that distinction is the
+    // point. Asserted so a new profile cannot quietly ship prose-only.
+    check(CompoundProfiles.all.allSatisfy { !$0.sideEffectsCommon.isEmpty || !$0.sideEffectsSerious.isEmpty },
+          "every profile has structured side effects, not only the prose fallback")
+    // Thin-evidence compounds are the ones most likely to be written vaguely, so hold the honest
+    // line explicitly: a profile that admits no independent human evidence must still say what the
+    // serious risk is (at minimum "long-term safety unknown"), never leave it blank.
+    check(CompoundProfiles.all.allSatisfy { p in
+              guard let e = p.evidenceSummary, e.contains("Tier D") else { return true }
+              return !p.sideEffectsSerious.isEmpty
+          },
+          "every Tier D profile still states a serious-risk line")
 }
 
 // MARK: - DoseDrawResult protocol
