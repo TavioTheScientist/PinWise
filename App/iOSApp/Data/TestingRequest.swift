@@ -4,7 +4,7 @@ import SwiftData
 /// Interest in having a batch independently tested. **Demand capture only.**
 ///
 /// Explicitly NOT an order: no payment, no shipping label, no lab booking, no promise that testing
-/// will happen. It exists so PinWise can learn which compounds and which test types people actually
+/// will happen. It exists so Staxyz can learn which compounds and which test types people actually
 /// want covered, and prioritise partnerships accordingly. The confirmation copy says exactly that.
 ///
 /// Stored locally like everything else. If a backend arrives later these can sync; nothing here
@@ -22,7 +22,7 @@ final class TestingRequest {
     /// Comma-joined `TestingKind` raw values, so adding a kind later needs no migration.
     var kindsRaw: String = ""
     var notes: String = ""
-    /// How the user would prefer to be reached. Free text — PinWise stores no account contact fields.
+    /// How the user would prefer to be reached. Free text — Staxyz stores no account contact fields.
     var contactPreference: String = ""
 
     init(id: UUID = UUID(),

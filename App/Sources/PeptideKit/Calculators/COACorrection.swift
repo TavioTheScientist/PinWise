@@ -37,7 +37,7 @@ public enum COACorrection {
 }
 
 /// The unit an endotoxin result is reported in. The two are NOT interconvertible without the vial's
-/// mass, and only `EU/vial` can be compared against a per-dose exposure limit — so PinWise stores
+/// mass, and only `EU/vial` can be compared against a per-dose exposure limit — so Staxyz stores
 /// whichever the document states, alongside its unit, and displays it verbatim.
 public enum EndotoxinUnit: String, Codable, CaseIterable, Sendable {
     case perMilligram = "EU/mg"
@@ -48,7 +48,7 @@ public enum EndotoxinUnit: String, Codable, CaseIterable, Sendable {
 
 /// An endotoxin result as printed on a COA. Deliberately inert: a value and its unit, no arithmetic.
 ///
-/// PinWise does NOT compute per-dose endotoxin exposure or compare it against the USP 5 EU/kg/hr
+/// Staxyz does NOT compute per-dose endotoxin exposure or compare it against the USP 5 EU/kg/hr
 /// limit. That is a safety calculation where being half-right is worse than being absent — it needs
 /// body weight, infusion rate, and the correct unit basis, and a wrong answer would read as
 /// reassurance. Store it, show it, let a clinician interpret it.

@@ -1,4 +1,8 @@
-# PinWise — iOS app sources
+# Staxyz — iOS app sources
+
+> **Renamed 2026-08-01 — formerly PinWise.** The rename is complete in code; every name below is
+> current and correct. Still outstanding: the brand ARTWORK (app icon, launch wordmark/icon,
+> vials hero) is still the old PinWise mark. See the root `README.md`.
 
 These SwiftUI files are the **iOS app layer**. They are deliberately kept *outside*
 `App/Sources/` so the `PeptideKit` Swift package stays buildable and testable on any
@@ -11,18 +15,18 @@ builds the whole app project in one command — no manual clicking:
 ```sh
 brew install xcodegen        # once
 cd App
-xcodegen generate           # creates PinWise.xcodeproj (git-ignored)
-open PinWise.xcodeproj      # then ⌘R on a simulator
+xcodegen generate           # creates Staxyz.xcodeproj (git-ignored)
+open Staxyz.xcodeproj      # then ⌘R on a simulator
 ```
 This wires the local `PeptideKit` package, compiles `iOSApp/`, and applies `iOSApp/Info.plist`
 (HealthKit usage string, encryption exemption). Prefer the manual route? It's below.
 
 ## First run — once Xcode finishes installing
 1. `cd App && xcodegen generate` (already generated; re-run only if `project.yml` changed).
-2. `open PinWise.xcodeproj`.
+2. `open Staxyz.xcodeproj`.
 3. Pick an **iPhone simulator** in the toolbar (e.g. iPhone 16), then press **⌘R**. The first
    build compiles `PeptideKit` + the app. **Simulator runs need no signing.**
-4. Expect the dark PinWise shell + a working reconstitution calculator
+4. Expect the dark Staxyz shell + a working reconstitution calculator
    (5&nbsp;mg / 2&nbsp;mL / 250&nbsp;mcg → 10 units).
 
 ### Run on your own iPhone (optional, free)
@@ -46,7 +50,7 @@ This wires the local `PeptideKit` package, compiles `iOSApp/`, and applies `iOSA
   build and run. Links `PeptideKit` as a local package dependency.
 
 ## Wiring it into Xcode (one-time)
-1. In Xcode: **File ▸ New ▸ Project… ▸ iOS App**, product name `PinWise`, interface
+1. In Xcode: **File ▸ New ▸ Project… ▸ iOS App**, product name `Staxyz`, interface
    SwiftUI, language Swift. Delete the auto-generated `ContentView.swift` and the
    `App` struct.
 2. **File ▸ Add Package Dependencies… ▸ Add Local…** and select the `App/` folder
@@ -58,9 +62,9 @@ This wires the local `PeptideKit` package, compiles `iOSApp/`, and applies `iOSA
 5. Build & run on a simulator.
 
 ## What's implemented so far
-- `PinWiseApp.swift` — `@main` entry point.
-- `DesignSystem/` — the brand design system: `PinWiseTheme.swift` (color, type, spacing,
-  radius; dark + electric-accent) and `PinWiseComponents.swift` (`Card`, `PrimaryButton`,
+- `StaxyzApp.swift` — `@main` entry point.
+- `DesignSystem/` — the brand design system: `StaxyzTheme.swift` (color, type, spacing,
+  radius; dark + electric-accent) and `StaxyzComponents.swift` (`Card`, `PrimaryButton`,
   `StatTile`, `SectionHeader`, `DisclaimerBanner`, `AdvisoryRow`, `EvidenceBadge`).
 - `RootTabView.swift` — the dark-first, accent-tinted 5-tab shell.
 - `HomeView.swift` — branded dashboard (quick actions, today summary, disclaimer).

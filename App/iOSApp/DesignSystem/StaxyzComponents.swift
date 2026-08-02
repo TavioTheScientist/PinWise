@@ -243,7 +243,7 @@ struct CollapsibleNoteField: View {
             if expanded {
                 VStack(alignment: .leading, spacing: Space.xs) {
                     if let hint { Text(hint).font(.caption).foregroundStyle(BrandColor.textSecondary) }
-                    TextField(placeholder, text: $text, axis: .vertical).pinwiseField()
+                    TextField(placeholder, text: $text, axis: .vertical).staxyzField()
                 }
             }
         }
@@ -415,7 +415,7 @@ struct SelectableChip: View {
 
 /// The one search-input recipe (News, Compounds, …): leading magnifier, a themed field, and a
 /// clear button that appears once there's text. Pass an optional external `FocusState` binding
-/// when the caller drives focus (e.g. focus-on-appear). Uses `pinwiseField()` so the surface,
+/// when the caller drives focus (e.g. focus-on-appear). Uses `staxyzField()` so the surface,
 /// radius, and hairline match every other input.
 struct SearchField: View {
     let placeholder: String
@@ -434,7 +434,7 @@ struct SearchField: View {
                 .accessibilityLabel("Clear search")
             }
         }
-        .pinwiseField()
+        .staxyzField()
     }
 
     @ViewBuilder private var field: some View {
@@ -837,7 +837,7 @@ struct CompoundMenu: View {
 
 extension View {
     /// Styles a text/number field as a themed input (elevated surface, hairline border).
-    func pinwiseField() -> some View {
+    func staxyzField() -> some View {
         padding(.horizontal, Space.md)
             .padding(.vertical, Space.md - 2)
             .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))

@@ -19,7 +19,7 @@ struct VoiceInputView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
-                    Text("Say the vial's details out loud — for example, “BPC-157, 10 milligrams, expires December 2026.” PinWise transcribes it on your device; nothing is uploaded.")
+                    Text("Say the vial's details out loud — for example, “BPC-157, 10 milligrams, expires December 2026.” Staxyz transcribes it on your device; nothing is uploaded.")
                         .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
 
                     if !voice.isSupported {

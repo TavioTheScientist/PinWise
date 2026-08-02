@@ -6,19 +6,19 @@ import PeptideKit
 /// single repeating trigger, it schedules a rolling window of the next N expected dose dates and
 /// re-schedules on launch and whenever protocols (or the notification prefs) change.
 ///
-/// Design (see PinWise Notification Guidelines): short, useful, non-spammy.
+/// Design (see Staxyz Notification Guidelines): short, useful, non-spammy.
 /// - Detailed vs Private mode (`showCompoundNamesInNotifications`).
 /// - Doses due within ~30 min of each other are GROUPED into one notification.
 /// - Optional lead time (at dose time / 15 / 30 min before).
 /// - Quick actions: Log, Snooze (15/30/60), Skip.
 enum NotificationManager {
-    static let idPrefix = "pinwise-dose-"
-    static let categoryID = "PINWISE_DOSE"
-    static let actionLog = "PINWISE_LOG"
-    static let actionSnooze15 = "PINWISE_SNOOZE_15"
-    static let actionSnooze30 = "PINWISE_SNOOZE_30"
-    static let actionSnooze60 = "PINWISE_SNOOZE_60"
-    static let actionSkip = "PINWISE_SKIP"
+    static let idPrefix = "staxyz-dose-"
+    static let categoryID = "STAXYZ_DOSE"
+    static let actionLog = "STAXYZ_LOG"
+    static let actionSnooze15 = "STAXYZ_SNOOZE_15"
+    static let actionSnooze30 = "STAXYZ_SNOOZE_30"
+    static let actionSnooze60 = "STAXYZ_SNOOZE_60"
+    static let actionSkip = "STAXYZ_SKIP"
 
     // Preference keys (shared with the Settings @AppStorage toggles).
     static let prefShowNames = "showCompoundNamesInNotifications"   // Bool, default true (Detailed)
@@ -62,12 +62,12 @@ enum NotificationManager {
 
     // MARK: - Scheduling
 
-    /// Clears PinWise dose reminders and reschedules the rolling window, grouping same-time doses.
+    /// Clears Staxyz dose reminders and reschedules the rolling window, grouping same-time doses.
     ///
     /// `logs` and `skips` are what make the schedule *honest*. Two things depend on them:
     ///
     /// 1. **A day the user already resolved gets no reminder at all.** Being told to take a dose you
-    ///    logged an hour ago is the fastest way to teach someone that PinWise's notifications aren't
+    ///    logged an hour ago is the fastest way to teach someone that Staxyz's notifications aren't
     ///    worth reading.
     /// 2. **The single follow-up.** One nudge at the dose time, one while it's still actionable, then
     ///    silence — see ``DoseFollowUp``. Because a local notification can't re-check state at fire
@@ -210,7 +210,7 @@ enum NotificationManager {
 
         // Private mode — never name a compound on the lock screen.
         guard showCompoundNames else {
-            c.title = "PinWise"
+            c.title = "Staxyz"
             c.body = "Dose due now"
             return c
         }
@@ -237,7 +237,7 @@ enum NotificationManager {
     ///
     /// - `.active`, not `.timeSensitive` — the first reminder earns the right to break through a
     ///   Focus; a second push does not. This also means the user's own Sleep Focus decides whether it
-    ///   makes a sound, which is a better answer than any quiet-hours window PinWise could invent.
+    ///   makes a sound, which is a better answer than any quiet-hours window Staxyz could invent.
     /// - No sound.
     /// - Phrased as a question about the record, not an accusation about the user. "Still to log" is a
     ///   statement of fact; "You missed your dose!" is a verdict, and it's often wrong — plenty of
@@ -250,7 +250,7 @@ enum NotificationManager {
         c.userInfo = ["protocolIDs": [proto.id.uuidString], "protocolNames": [proto.name]]
 
         guard showCompoundNames else {
-            c.title = "PinWise"
+            c.title = "Staxyz"
             c.body = "Still to log"
             return c
         }

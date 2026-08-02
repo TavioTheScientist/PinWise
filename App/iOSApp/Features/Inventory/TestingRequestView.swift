@@ -84,7 +84,7 @@ struct TestingRequestView: View {
                     TextField("Email or handle", text: $contact)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
-                        .pinwiseField()
+                        .staxyzField()
                 }
             }
         }
@@ -92,7 +92,7 @@ struct TestingRequestView: View {
         PrimaryButton(title: "Register interest", systemImage: "flask") { submit() }
             .disabled(kinds.isEmpty)
 
-        Text("This is not an order. Nothing is charged, nothing is shipped, and no test is booked. PinWise uses these to decide which testing partnerships to pursue first.")
+        Text("This is not an order. Nothing is charged, nothing is shipped, and no test is booked. Staxyz uses these to decide which testing partnerships to pursue first.")
             .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
     }
 

@@ -11,7 +11,7 @@ import Foundation
 public enum Pharmacokinetics {
 
     /// A single dose administered at a point in time. `amount` is in whatever unit the caller uses
-    /// consistently (PinWise passes micrograms); the model is linear so the unit just scales the output.
+    /// consistently (Staxyz passes micrograms); the model is linear so the unit just scales the output.
     public struct DoseEvent: Sendable, Hashable {
         public let time: Date
         public let amount: Double

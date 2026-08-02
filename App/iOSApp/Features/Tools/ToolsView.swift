@@ -244,7 +244,7 @@ private struct ToolCard: View {
     /// only — text stays neutral. No default: every tool declares its domain.
     ///
     /// The DOSE domain is deliberately NEUTRAL rather than a hue. It used to be `accentText`,
-    /// which spent the brand metal decoratively across four of ten cards — and dose is PinWise's
+    /// which spent the brand metal decoratively across four of ten cards — and dose is Staxyz's
     /// core domain, so it is the right one to carry no color at all: the hues then mark only the
     /// peripheral domains, and the grid reads as one system instead of a rainbow.
     let hue: Color
@@ -340,19 +340,19 @@ struct ReverseDoseView: View {
                     VStack(alignment: .leading, spacing: Space.lg) {
                         FieldRow("How much peptide was in the vial?", hint: "The amount on the vial label.") {
                             HStack {
-                                TextField("e.g. 5", text: $massText).keyboardType(.decimalPad).pinwiseField()
+                                TextField("e.g. 5", text: $massText).keyboardType(.decimalPad).staxyzField()
                                 MassUnitPicker(selection: $massUnit)
                             }
                         }
                         FieldRow("How much water was added?", hint: "The water it was mixed with.") {
                             HStack {
-                                TextField("e.g. 2", text: $solventText).keyboardType(.decimalPad).pinwiseField()
+                                TextField("e.g. 2", text: $solventText).keyboardType(.decimalPad).staxyzField()
                                 Text("mL").foregroundStyle(BrandColor.textSecondary)
                             }
                         }
                         FieldRow("How many units did you draw?", hint: "The mark you filled to on the syringe.") {
                             HStack {
-                                TextField("e.g. 10", text: $unitsText).keyboardType(.decimalPad).pinwiseField()
+                                TextField("e.g. 10", text: $unitsText).keyboardType(.decimalPad).staxyzField()
                                 Text("units").foregroundStyle(BrandColor.textSecondary)
                             }
                         }
@@ -698,10 +698,10 @@ private struct RampBuilderSheet: View {
                 Divider().overlay(BrandColor.stroke)
                 ForEach($phases) { $phase in
                     HStack(spacing: Space.sm) {
-                        TextField("dose", text: $phase.doseText).keyboardType(.decimalPad).pinwiseField().frame(maxWidth: 84)
+                        TextField("dose", text: $phase.doseText).keyboardType(.decimalPad).staxyzField().frame(maxWidth: 84)
                         MassUnitPicker(selection: $phase.unit)
                         Text("for").font(.caption).foregroundStyle(BrandColor.textSecondary)
-                        TextField("4", text: $phase.weeksText).keyboardType(.numberPad).pinwiseField().frame(maxWidth: 44)
+                        TextField("4", text: $phase.weeksText).keyboardType(.numberPad).staxyzField().frame(maxWidth: 44)
                         Text("wks").font(.caption).foregroundStyle(BrandColor.textSecondary)
                         Spacer(minLength: 0)
                         if phases.count > 1 {

@@ -47,7 +47,7 @@ struct SettingsView: View {
                     section("About") {
                         sheetRow("Privacy Policy & Terms", icon: "doc.text.fill", tint: BrandColor.textSecondary) { showLegal = true }
                         rowDivider
-                        pushRow("About PinWise", icon: "info.circle.fill", tint: BrandColor.textSecondary) { AboutSettingsView() }
+                        pushRow("About Staxyz", icon: "info.circle.fill", tint: BrandColor.textSecondary) { AboutSettingsView() }
                     }
                 }
                 .padding(Space.lg)
@@ -222,7 +222,7 @@ private struct PrivacySecuritySettingsView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Unlock with \(BiometricLock.biometryName)")
                                         .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                                    Text("Require \(BiometricLock.biometryName) each time you open PinWise. Off by default.")
+                                    Text("Require \(BiometricLock.biometryName) each time you open Staxyz. Off by default.")
                                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
@@ -258,7 +258,7 @@ private struct PrivacySecuritySettingsView: View {
                 guard on else { faceIDLock = false; return }
                 Task {
                     faceIDLock = await BiometricLock.authenticate(
-                        reason: "Turn on \(BiometricLock.biometryName) so PinWise locks when you're away")
+                        reason: "Turn on \(BiometricLock.biometryName) so Staxyz locks when you're away")
                 }
             }
         )
@@ -277,13 +277,13 @@ private struct AboutSettingsView: View {
                         infoRow("Device", deviceModel)
                     }
                 }
-                Text("PinWise is for tracking and education — not medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
+                Text("Staxyz is for tracking and education — not medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
             }
             .padding(Space.lg)
         }
         .heroScreen()
-        .navigationTitle("About PinWise")
+        .navigationTitle("About Staxyz")
         .navigationBarTitleDisplayMode(.inline)
     }
 

@@ -3,7 +3,7 @@ import PeptideKit
 
 // Shared atoms for the Tools suite — the components every dose calculator reuses. These
 // reference PeptideKit types (MassUnit, SyringeScale), which keeps them out of the generic
-// kit in PinWiseComponents.swift: tool instruments live here, app-wide chrome lives there.
+// kit in StaxyzComponents.swift: tool instruments live here, app-wide chrome lives there.
 
 /// A flat schematic syringe barrel that visualizes a computed draw — display-only (WHOOP
 /// strain-bar register: an instrument readout, not a scrubber; the plunger marker is a
@@ -45,7 +45,7 @@ struct SyringeGauge: View {
                 let labelY = tickY + tickHeight + 2
 
                 ZStack(alignment: .topLeading) {
-                    // Barrel track — the pinwiseField vocabulary: an instrument, not a card.
+                    // Barrel track — the staxyzField vocabulary: an instrument, not a card.
                     RoundedRectangle(cornerRadius: 4)
                         .fill(BrandColor.surfaceElevated)
                         .overlay(

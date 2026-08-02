@@ -61,7 +61,7 @@ enum BiomarkerType: String, CaseIterable, Identifiable {
 /// Log labs and body metrics and watch them move as your protocol goes on.
 struct BiomarkersView: View {
     // Trend-chart trailing window. Default `.all` preserves the original full-history behavior;
-    // shorter windows are Oura-style trailing slices. Definition now shared (PinWiseComponents).
+    // shorter windows are Oura-style trailing slices. Definition now shared (StaxyzComponents).
     @Environment(\.modelContext) private var context
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("weightInPounds") private var weightInPounds = true
@@ -138,7 +138,7 @@ struct BiomarkersView: View {
                         FieldRow("Value") {
                             VStack(alignment: .leading, spacing: Space.sm) {
                                 HStack {
-                                    TextField(selected.placeholder, text: $valueText).keyboardType(.decimalPad).pinwiseField()
+                                    TextField(selected.placeholder, text: $valueText).keyboardType(.decimalPad).staxyzField()
                                     Text(selected.unit(pounds: weightInPounds)).foregroundStyle(BrandColor.textSecondary)
                                 }
                                 healthPrefillButton
@@ -310,7 +310,7 @@ struct BiomarkersView: View {
     }
 
     /// Value + short date over the scrubbed point. Real-time and deliberately silent — chart
-    /// scrubbing gets NO haptic (the Strava rule; see the haptic vocabulary in PinWiseTheme).
+    /// scrubbing gets NO haptic (the Strava rule; see the haptic vocabulary in StaxyzTheme).
     private func scrubBadge(for e: BiomarkerEntry) -> some View {
         HStack(spacing: Space.xs) {
             Text(format(e.value))

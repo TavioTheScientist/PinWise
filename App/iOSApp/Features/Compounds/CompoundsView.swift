@@ -584,9 +584,9 @@ struct CompoundDetailView: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            DisclaimerBanner(text: "PinWise is a tracking tool, not medical advice. This page is educational reference — it does not tell you whether, or how much, to use anything. Talk to a licensed clinician before you start, change, or stop any compound.")
+            DisclaimerBanner(text: "Staxyz is a tracking tool, not medical advice. This page is educational reference — it does not tell you whether, or how much, to use anything. Talk to a licensed clinician before you start, change, or stop any compound.")
             if let p = profile {
-                Text("Last reviewed \(p.lastReviewed) · PinWise editorial")
+                Text("Last reviewed \(p.lastReviewed) · Staxyz editorial")
                     .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
             }
         }
@@ -621,11 +621,11 @@ struct CompoundDetailView: View {
     }
 
     /// The one place a strong warning stays by design: compounds the user added themselves.
-    static let customCompoundNote = "You're adding this compound yourself, so PinWise has no verified data on it. Confirm its identity, purity, and handling against your supplier's certificate of analysis. PinWise makes no assurances for user-added compounds and takes no responsibility for them."
+    static let customCompoundNote = "You're adding this compound yourself, so Staxyz has no verified data on it. Confirm its identity, purity, and handling against your supplier's certificate of analysis. Staxyz makes no assurances for user-added compounds and takes no responsibility for them."
 
     /// Vendor-neutral certificate-of-analysis literacy — shared across compounds. Deliberately names
     /// no seller (the trust-killer on commercial peptide sites); teaches what a real COA shows.
-    static let coaLiteracy = "A certificate of analysis (COA) is a third-party lab report on a specific batch. A trustworthy one names an independent lab (not the seller), lists the batch/lot number, and reports identity and purity — typically by mass spectrometry (confirms it's the right molecule) and HPLC (reports % purity, ideally ≥98%). Match the lot on the COA to the lot on your vial; a COA for a different batch tells you nothing about yours. Be skeptical of a bare \"99% pure\" claim with no lab named, no method, and no date. PinWise names no vendors and does not verify supply — this is general literacy so you can read a COA yourself."
+    static let coaLiteracy = "A certificate of analysis (COA) is a third-party lab report on a specific batch. A trustworthy one names an independent lab (not the seller), lists the batch/lot number, and reports identity and purity — typically by mass spectrometry (confirms it's the right molecule) and HPLC (reports % purity, ideally ≥98%). Match the lot on the COA to the lot on your vial; a COA for a different batch tells you nothing about yours. Be skeptical of a bare \"99% pure\" claim with no lab named, no method, and no date. Staxyz names no vendors and does not verify supply — this is general literacy so you can read a COA yourself."
 
     private var regulatoryShort: String {
         switch compound.regulatoryStatus {
@@ -704,7 +704,7 @@ struct AddCustomCompoundView: View {
                     Card {
                         VStack(alignment: .leading, spacing: Space.lg) {
                             FieldRow("Compound name") {
-                                TextField("e.g. KPV", text: $name).pinwiseField()
+                                TextField("e.g. KPV", text: $name).staxyzField()
                             }
                             if isDuplicate {
                                 Text("Already in the library — search for it instead.")

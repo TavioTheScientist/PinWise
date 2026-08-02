@@ -46,8 +46,8 @@ jobs:
             "https://x-access-token:${FEED_REPO_TOKEN}@github.com/TavioTheScientist/PinWise-NewsFeed.git" out
           cp feed/feed.json out/feed.json
           cd out
-          git config user.name "pinwise-bot"
-          git config user.email "pinwise-bot@users.noreply.github.com"
+          git config user.name "staxyz-bot"
+          git config user.email "staxyz-bot@users.noreply.github.com"
           git add feed.json
           if git diff --staged --quiet; then
             echo "No feed changes."

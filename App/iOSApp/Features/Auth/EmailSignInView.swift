@@ -32,7 +32,7 @@ struct EmailSignInView: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .focused($focused)
-                            .pinwiseField()
+                            .staxyzField()
                         PrimaryButton(title: "Send code", systemImage: "paperplane") {
                             Task { await sendCode() }
                         }
@@ -43,7 +43,7 @@ struct EmailSignInView: View {
                             .textContentType(.oneTimeCode)
                             .keyboardType(.numberPad)
                             .focused($focused)
-                            .pinwiseField()
+                            .staxyzField()
                         PrimaryButton(title: "Verify & sign in", systemImage: "checkmark") {
                             Task { await verify() }
                         }

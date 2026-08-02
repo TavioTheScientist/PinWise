@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the PinWise icon: 'PW' in one consistent typeface (Futura Bold), with the ONLY
+"""Build the Staxyz icon: 'PW' in one consistent typeface (Futura Bold), with the ONLY
 modification being the base of the P growing into a syringe needle. Measures the P's real
 stem from a WebKit render so the needle matches its width, then centers the whole mark."""
 import subprocess, os

@@ -454,7 +454,7 @@ struct VialBuilderView: View {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     Card {
                         FieldRow("Nickname (optional)") {
-                            TextField("e.g. GLOW or Wolverine 3/3", text: $label).pinwiseField()
+                            TextField("e.g. GLOW or Wolverine 3/3", text: $label).staxyzField()
                         }
                     }
 
@@ -473,7 +473,7 @@ struct VialBuilderView: View {
                         captureButton("Scan", icon: "text.viewfinder") { showScanner = true }
                         captureButton("Speak", icon: "mic.fill") { showVoice = true }
                     }
-                    Text("Snap the label or say the details — PinWise fills in what it can, on your device.")
+                    Text("Snap the label or say the details — Staxyz fills in what it can, on your device.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -523,15 +523,15 @@ struct VialBuilderView: View {
                                         // Enter the strength the way the label reads — "4 mg per 0.5 mL".
                                         // Leave the volume at 1 for a plain "8 mg/mL" label.
                                         HStack(spacing: Space.xs) {
-                                            TextField("Strength", text: $entry.amountText).keyboardType(.decimalPad).pinwiseField()
+                                            TextField("Strength", text: $entry.amountText).keyboardType(.decimalPad).staxyzField()
                                             Text(concentrationUnit.rawValue).foregroundStyle(BrandColor.textSecondary)
                                             Text("per").foregroundStyle(BrandColor.textSecondary)
-                                            TextField("1", text: $strengthPerVolumeText).keyboardType(.decimalPad).pinwiseField().frame(maxWidth: 60)
+                                            TextField("1", text: $strengthPerVolumeText).keyboardType(.decimalPad).staxyzField().frame(maxWidth: 60)
                                             Text("mL").foregroundStyle(BrandColor.textSecondary)
                                         }
                                     } else {
                                         HStack {
-                                            TextField("Amount in vial", text: $entry.amountText).keyboardType(.decimalPad).pinwiseField()
+                                            TextField("Amount in vial", text: $entry.amountText).keyboardType(.decimalPad).staxyzField()
                                             unitPicker($entry.unit)
                                         }
                                     }
@@ -563,7 +563,7 @@ struct VialBuilderView: View {
                             FieldRow("Liquid volume",
                                      hint: isPremixed ? "Total mL in the vial (from the label)." : "Total mL once mixed — more liquid means more dilute.") {
                                 HStack {
-                                    TextField("e.g. 2", text: $solventText).keyboardType(.decimalPad).pinwiseField()
+                                    TextField("e.g. 2", text: $solventText).keyboardType(.decimalPad).staxyzField()
                                     Text("mL").foregroundStyle(BrandColor.textSecondary)
                                 }
                             }
@@ -572,7 +572,7 @@ struct VialBuilderView: View {
                                      : (primaryName.isEmpty ? "Dose per shot" : "Dose of \(primaryName) per shot"),
                                      hint: entries.count > 1 ? "You set \(anchorName)'s dose — everything else scales to it." : "The dose you intend to inject each time.") {
                                 HStack {
-                                    TextField("e.g. 2.5", text: $doseText).keyboardType(.decimalPad).pinwiseField()
+                                    TextField("e.g. 2.5", text: $doseText).keyboardType(.decimalPad).staxyzField()
                                     unitPicker($doseUnit)
                                 }
                             }
@@ -662,7 +662,7 @@ struct VialBuilderView: View {
                                 FieldRow("Cost", hint: "Optional — shows cost per dose.") {
                                     HStack {
                                         Text("$").foregroundStyle(BrandColor.textSecondary)
-                                        TextField("e.g. 200", text: $costText).keyboardType(.decimalPad).pinwiseField()
+                                        TextField("e.g. 200", text: $costText).keyboardType(.decimalPad).staxyzField()
                                     }
                                 }
                             }
@@ -974,12 +974,12 @@ struct VialBuilderView: View {
                     TextField("e.g. A24-118", text: $lotNumberText)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.characters)
-                        .pinwiseField()
+                        .staxyzField()
                 }
-                FieldRow("Vendor or source", hint: "Free text. PinWise doesn't vet suppliers or keep a vendor list.") {
+                FieldRow("Vendor or source", hint: "Free text. Staxyz doesn't vet suppliers or keep a vendor list.") {
                     TextField("Who you got it from", text: $lotVendorText)
                         .autocorrectionDisabled()
-                        .pinwiseField()
+                        .staxyzField()
                 }
 
                 if let advice = lotMatchAdvice {
@@ -994,18 +994,18 @@ struct VialBuilderView: View {
             VStack(alignment: .leading, spacing: Space.md) {
                 Text("Certificate of Analysis (COA)")
                     .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                Text("A peptide vial is labeled by total powder weight — but only part of that is active peptide. The rest is salt and water left over from how peptides are made and freeze-dried, so a “10 mg” vial is often only about 7–9 mg of actual peptide. If you dose off the label, you take a little less than you intend. Your COA reports the true fraction; enter whatever it lists and PinWise doses off the corrected amount — the most accurate way to reconstitute.")
+                Text("A peptide vial is labeled by total powder weight — but only part of that is active peptide. The rest is salt and water left over from how peptides are made and freeze-dried, so a “10 mg” vial is often only about 7–9 mg of actual peptide. If you dose off the label, you take a little less than you intend. Your COA reports the true fraction; enter whatever it lists and Staxyz doses off the corrected amount — the most accurate way to reconstitute.")
                     .font(.caption).foregroundStyle(BrandColor.textSecondary)
                 FieldRow("Assay %") {
-                    HStack { TextField("e.g. 99.5", text: $coaAssayText).keyboardType(.decimalPad).pinwiseField()
+                    HStack { TextField("e.g. 99.5", text: $coaAssayText).keyboardType(.decimalPad).staxyzField()
                              Text("%").foregroundStyle(BrandColor.textSecondary) }
                 }
                 FieldRow("Content %") {
-                    HStack { TextField("e.g. 88", text: $coaContentText).keyboardType(.decimalPad).pinwiseField()
+                    HStack { TextField("e.g. 88", text: $coaContentText).keyboardType(.decimalPad).staxyzField()
                              Text("%").foregroundStyle(BrandColor.textSecondary) }
                 }
                 FieldRow("Purity %") {
-                    HStack { TextField("e.g. 99.8", text: $coaPurityText).keyboardType(.decimalPad).pinwiseField()
+                    HStack { TextField("e.g. 99.8", text: $coaPurityText).keyboardType(.decimalPad).staxyzField()
                              Text("%").foregroundStyle(BrandColor.textSecondary) }
                 }
                 Text("Enter any your COA lists. Content = how much is peptide vs. salt/water (the one that changes your dose most). Purity = the right peptide vs. related impurities. Assay = a potency check (labs define it differently).")

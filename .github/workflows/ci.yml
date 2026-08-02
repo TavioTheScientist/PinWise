@@ -1,6 +1,6 @@
 name: CI
 
-# Builds and tests PinWise. The domain core (pure Swift/Foundation) runs on a cheap Linux
+# Builds and tests Staxyz. The domain core (pure Swift/Foundation) runs on a cheap Linux
 # runner (1× minutes); only the iOS app build needs macOS + Xcode (10× minutes), so we keep
 # that job as lean as possible.
 on:
@@ -51,8 +51,8 @@ jobs:
         working-directory: App
         run: |
           xcodebuild build \
-            -project PinWise.xcodeproj \
-            -scheme PinWise \
+            -project Staxyz.xcodeproj \
+            -scheme Staxyz \
             -destination 'generic/platform=iOS Simulator' \
             -skipPackagePluginValidation \
             COMPILER_INDEX_STORE_ENABLE=NO

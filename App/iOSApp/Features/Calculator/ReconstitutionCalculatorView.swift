@@ -216,7 +216,7 @@ struct ReconstitutionCalculatorView: View {
                             FieldRow("How much peptide is in the vial?", hint: "The amount printed on the vial label.") {
                                 VStack(alignment: .leading, spacing: Space.sm) {
                                     HStack {
-                                        TextField("e.g. 5", text: $model.vialMassText).keyboardType(.decimalPad).pinwiseField()
+                                        TextField("e.g. 5", text: $model.vialMassText).keyboardType(.decimalPad).staxyzField()
                                         MassUnitPicker(selection: $model.vialMassUnit)
                                     }
                                     coaChip
@@ -224,28 +224,28 @@ struct ReconstitutionCalculatorView: View {
                             }
                             FieldRow("How much water did you add?", hint: "The bacteriostatic or sterile water you mixed in.") {
                                 HStack {
-                                    TextField("e.g. 2", text: $model.solventText).keyboardType(.decimalPad).pinwiseField()
+                                    TextField("e.g. 2", text: $model.solventText).keyboardType(.decimalPad).staxyzField()
                                     Text("mL").foregroundStyle(BrandColor.textSecondary)
                                 }
                             }
                         } else {
                             FieldRow("What's the concentration?", hint: "On the pharmacy label, e.g. 2.5 mg/mL.") {
                                 HStack {
-                                    TextField("e.g. 2.5", text: $model.concentrationText).keyboardType(.decimalPad).pinwiseField()
+                                    TextField("e.g. 2.5", text: $model.concentrationText).keyboardType(.decimalPad).staxyzField()
                                     MassUnitPicker(selection: $model.concentrationUnit)
                                     Text("/mL").foregroundStyle(BrandColor.textSecondary)
                                 }
                             }
                             FieldRow("Vial size (optional)", hint: "Total liquid in the vial — we'll estimate how many doses it holds.") {
                                 HStack {
-                                    TextField("e.g. 4", text: $model.totalVolumeText).keyboardType(.decimalPad).pinwiseField()
+                                    TextField("e.g. 4", text: $model.totalVolumeText).keyboardType(.decimalPad).staxyzField()
                                     Text("mL").foregroundStyle(BrandColor.textSecondary)
                                 }
                             }
                         }
                         FieldRow("What dose do you want?", hint: "The dose you're aiming for this injection.") {
                             HStack {
-                                TextField("e.g. 2.5", text: $model.doseText).keyboardType(.decimalPad).pinwiseField()
+                                TextField("e.g. 2.5", text: $model.doseText).keyboardType(.decimalPad).staxyzField()
                                 MassUnitPicker(selection: $model.doseUnit)
                             }
                         }

@@ -120,12 +120,12 @@ struct LotBuilderView: View {
                                 TextField("e.g. A24-118", text: $lotNumber)
                                     .autocorrectionDisabled()
                                     .textInputAutocapitalization(.characters)
-                                    .pinwiseField()
+                                    .staxyzField()
                             }
-                            FieldRow("Vendor or source", hint: "Free text. PinWise doesn't vet suppliers or keep a vendor list.") {
+                            FieldRow("Vendor or source", hint: "Free text. Staxyz doesn't vet suppliers or keep a vendor list.") {
                                 TextField("Who you got it from", text: $vendor)
                                     .autocorrectionDisabled()
-                                    .pinwiseField()
+                                    .staxyzField()
                             }
                             Toggle("Record a received date", isOn: $hasReceived)
                                 .font(Typo.body).tint(BrandColor.controlOn)

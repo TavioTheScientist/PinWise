@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 import PeptideKit
 
-/// A compound the user added themselves — outside the verified catalog. PinWise has no data
+/// A compound the user added themselves — outside the verified catalog. Staxyz has no data
 /// on it, so it bridges with the most conservative posture (research-only, lowest evidence).
 /// CloudKit-safe like the other models (defaults everywhere, no unique keys).
 @Model

@@ -7,7 +7,7 @@ import PeptideKit
 private struct WebLink: Identifiable { let url: URL; var id: String { url.absoluteString } }
 
 /// In-app browser (SFSafariViewController) presented as a bottom sheet, so reading a source never
-/// kicks the user out to Safari. Keeps PinWise's reading flow intact.
+/// kicks the user out to Safari. Keeps Staxyz's reading flow intact.
 private struct SafariView: UIViewControllerRepresentable {
     let url: URL
     func makeUIViewController(context: Context) -> SFSafariViewController {
@@ -21,7 +21,7 @@ private struct SafariView: UIViewControllerRepresentable {
     func updateUIViewController(_ vc: SFSafariViewController, context: Context) {}
 }
 
-// The News tab — PinWise as the hub for sources of truth on peptides and performance medicine.
+// The News tab — Staxyz as the hub for sources of truth on peptides and performance medicine.
 // Editorial layout (Apple-News style): a masthead, search + category filters, a popular lead
 // story, then the latest. Neutral, cited summaries linked to the original sources.
 
@@ -543,7 +543,7 @@ struct NewsDetailView: View {
             .padding(Space.lg)
         }
         .screenBackground()
-        // Sources open in an in-app browser sheet — the user stays inside PinWise.
+        // Sources open in an in-app browser sheet — the user stays inside Staxyz.
         .sheet(item: $webLink) { SafariView(url: $0.url).ignoresSafeArea() }
         .navigationTitle("Article")
         .navigationBarTitleDisplayMode(.inline)

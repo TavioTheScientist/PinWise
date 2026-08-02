@@ -261,9 +261,9 @@ struct ProfileView: View {
                     .font(Typo.title)
                     .foregroundStyle(BrandColor.textPrimary)
                     .multilineTextAlignment(.center)
-                // "Guest" is taxonomy (neutral); "PinWise Member" is the app's ONE sanctioned
+                // "Guest" is taxonomy (neutral); "Staxyz Member" is the app's ONE sanctioned
                 // `.brand` chip — nothing else on this screen competes for the accent.
-                TagChip(text: auth.isGuest ? "Guest" : "PinWise Member",
+                TagChip(text: auth.isGuest ? "Guest" : "Staxyz Member",
                         style: auth.isGuest ? .neutral : .brand,
                         systemImage: auth.isGuest ? "person.crop.circle.dashed" : "checkmark.seal.fill")
             }
@@ -291,7 +291,7 @@ struct ProfileView: View {
                 SectionHeader(title: "Account")
                 FieldRow("Your name", hint: "Shown on your profile and used to personalize the app.") {
                     TextField("Name", text: $name)
-                        .pinwiseField()
+                        .staxyzField()
                         .textContentType(.name)
                         .onSubmit { auth.updateDisplayName(name) }
                 }

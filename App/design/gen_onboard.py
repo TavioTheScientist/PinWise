@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Faithful mockups of the three pipeline screens for onboarding. Matches PinWiseTheme, shows the
+"""Faithful mockups of the three pipeline screens for onboarding. Matches StaxyzTheme, shows the
 bottom tab bar (correct tab highlighted) + the Protocols 'My Protocols/My Inventory' segments, and
 uses one coherent example throughout: a WOLVERINE vial (BPC-157 + TB-500) -> protocol -> log."""
 import subprocess, os

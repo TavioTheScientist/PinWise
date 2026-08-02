@@ -1,4 +1,4 @@
--- PinWise hosted-AI backend: per-user tier + daily usage quota.
+-- Staxyz hosted-AI backend: per-user tier + daily usage quota.
 --
 -- Design notes:
 --  * `profiles.tier` is SERVER-CONTROLLED. Clients can read their own row but never write it —

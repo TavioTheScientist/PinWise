@@ -1,4 +1,10 @@
-# PinWise — Figma AI briefs
+# Staxyz — Figma AI briefs
+
+> **Renamed 2026-08-01 — formerly PinWise.** The wordmark and in-app copy below now say
+> **Staxyz**. Two things this rename does NOT settle: the social handle `@PinWiseApp` (still the
+> registered one — decide before it appears in shipped copy), and the fact that these briefs
+> describe **iOS**; an Android variant of each screen is now in scope (see the root `README.md`),
+> so treat these as the iOS column of a two-platform spec.
 
 Paste-ready content/structure prompts for Figma's built-in AI (First Draft / Make). **Do one
 screen at a time.** Always paste the **Brand block** first (or once per session), then the screen
@@ -24,7 +30,7 @@ Apple/native style, then refine.
 > Fitness restraint with Nike product luxury. NOT flashy; no glows, and the only gradient in the
 > system is the metallic chrome on the Log disc.
 >
-> (There is **no royal blue** in PinWise. `#2536E6` was retired in the 2026-07 chrome revision —
+> (There is **no royal blue** in Staxyz. `#2536E6` was retired in the 2026-07 chrome revision —
 > ignore any older brief or screenshot that shows it.)
 
 ---
@@ -106,20 +112,20 @@ Apple/native style, then refine.
 > **Settings** — grouped rows: Units (Pounds / Kilograms toggle), Appearance (System / Light / Dark),
 > Week starts on. Minimal, native iOS settings list style.
 >
-> **Connections** — intro "PinWise reads your data from Apple Health…"; a Connect Apple Health
+> **Connections** — intro "Staxyz reads your data from Apple Health…"; a Connect Apple Health
 > button; a "Sources" list (Apple Health = hub, Oura, Whoop, Garmin — each "turn on Apple Health
 > sharing"); a "Show on Home" toggle.
 >
-> **About & Legal** — "PinWise" + version; an "Important" disclaimer card ("for tracking and
+> **About & Legal** — "Staxyz" + version; an "Important" disclaimer card ("for tracking and
 > education, not medical advice"); "Terms of Service & Privacy Policy" row; a "Follow along" footer
 > with X / Instagram / TikTok (@PinWiseApp) and Reddit (u/TavioTheScientist).
 
 ## 7. Onboarding (first-run, full-screen covers)
 
 > A sequence of full-screen dark covers, one per step:
-> 1. **Welcome** — centered: small "Welcome to" + a large "PinWise" wordmark; one-line tagline;
+> 1. **Welcome** — centered: small "Welcome to" + a large "Staxyz" wordmark; one-line tagline;
 >    "Get started" button.
-> 2. **Terms gate** — "Before you start" — one plain-language line ("PinWise is a tracking &
+> 2. **Terms gate** — "Before you start" — one plain-language line ("Staxyz is a tracking &
 >    education tool, not medical advice") + link to full Terms & Privacy; "I agree" button.
 > 3. **Make it yours** — optional profile setup: name field, sex, birthday, height (skippable).
 > 4. **Intro tour** — 5 swipeable slides, each: a large icon, a title, and one line — covering the
@@ -140,4 +146,4 @@ Apple/native style, then refine.
 - If it invents extra sections, add "only the sections listed, in this order."
 - Ask for it at **iPhone 16 size (393×852)**.
 - After it generates, tell me which screen you liked and paste the Figma link (from *your* copy) —
-  I'll match PinWise's real SwiftUI to it.
+  I'll match Staxyz's real SwiftUI to it.

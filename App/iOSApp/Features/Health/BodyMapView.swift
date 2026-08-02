@@ -242,8 +242,8 @@ struct BodyMapView: View {
                         // drew two dots instead of shading the region and subdivided every other
                         // muscle as a side effect. Targeting the parent `.abs` (see `target(for:)`)
                         // fills the abdomen the same way every other site fills its region.
-                        // `regionHeatmap` is the PinWise fork's addition (Vendor/MuscleMap,
-                        // PINWISE_FORK.md). Upstream's `heatmap` keys highlights by muscle alone and
+                        // `regionHeatmap` is the Staxyz fork's addition (Vendor/MuscleMap,
+                        // STAXYZ_FORK.md). Upstream's `heatmap` keys highlights by muscle alone and
                         // discards side, so it could only ever shade a whole region — which is why
                         // choosing "abdomen upper left" lit the entire abdomen.
                         BodyView(gender: bodyGender, side: side)

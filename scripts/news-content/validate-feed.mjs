@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// PinWise News — feed validator (the "validate" step of the content iteration cycle).
+// Staxyz News — feed validator (the "validate" step of the content iteration cycle).
 //
-// Checks a feed against BOTH the NewsFeed Codable contract and PinWise's editorial rules,
+// Checks a feed against BOTH the NewsFeed Codable contract and Staxyz's editorial rules,
 // so a regenerated feed can't silently drift (missing citation, hype language, broken date,
 // over-long teaser, unknown compound name, placeholder URL, …).
 //
@@ -145,7 +145,7 @@ async function main() {
   const n = feed.items?.length ?? 0;
   const majors = (feed.items ?? []).filter((x) => x.isMajorUpdate).length;
   const compounds = new Set((feed.items ?? []).flatMap((x) => x.compounds ?? []));
-  console.log(`PinWise feed: ${n} items, ${majors} major, ${compounds.size} distinct compounds covered.`);
+  console.log(`Staxyz feed: ${n} items, ${majors} major, ${compounds.size} distinct compounds covered.`);
   console.log(`Source: ${path}`);
   for (const w of warns) console.log(`  ⚠ ${w}`);
   for (const e of errors) console.log(`  ✗ ${e}`);

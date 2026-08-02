@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds PinWise's News feed.json — HYBRID model:
+// Builds Staxyz's News feed.json — HYBRID model:
 //   • a CURATED evergreen base (the polished, hand-verified items that ship in the app's
 //     NewsFeed.sampleJSON) is read straight from the Swift source so there's ONE source of
 //     truth, and
@@ -388,7 +388,7 @@ async function loadFreshTerms() {
 // Never touches compounds/sources/dates — only headline, teaser (key finding), and summary.
 // -------------------------------------------------------------------------------------
 const REWRITE_MODEL = process.env.NEWS_REWRITE_MODEL || "claude-haiku-4-5";
-const REWRITE_SYSTEM = `You rewrite biomedical news items for PinWise, a peptide/GLP-1 dose-tracking app. Turn a raw clinical-trial or journal title and summary into clear, engaging, ACCURATE copy for an informed layperson.
+const REWRITE_SYSTEM = `You rewrite biomedical news items for Staxyz, a peptide/GLP-1 dose-tracking app. Turn a raw clinical-trial or journal title and summary into clear, engaging, ACCURATE copy for an informed layperson.
 Hard rules:
 - Use ONLY facts present in the provided text. NEVER invent numbers, percentages, outcomes, drug names, approvals, dates, or any claim that is not there.
 - If the source is a trial registration or has no results yet, describe what the study IS (its phase, population, and what it tests) — do NOT fabricate findings.

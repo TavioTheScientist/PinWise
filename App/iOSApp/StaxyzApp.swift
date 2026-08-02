@@ -9,24 +9,24 @@ import PeptideKit
 // to the Xcode app project that links the PeptideKit Swift package.
 // Fastest setup: `cd App && xcodegen generate` (see App/iOSApp/README.md).
 @main
-struct PinWiseApp: App {
-    // Owns the notification-center delegate so dose reminders show even when PinWise is open.
+struct StaxyzApp: App {
+    // Owns the notification-center delegate so dose reminders show even when Staxyz is open.
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
         WindowGroup {
             RootView()
         }
-        // Local-first store, shared with the notification-center delegate (see PinWiseStore) so a
+        // Local-first store, shared with the notification-center delegate (see StaxyzStore) so a
         // Skip tapped on a reminder banner can be recorded even when the app isn't running. To
         // enable iCloud private-database sync later, add the iCloud + CloudKit capability and a
         // ModelConfiguration(cloudKitDatabase:) — the models are already CloudKit-safe.
-        .modelContainer(PinWiseStore.shared)
+        .modelContainer(StaxyzStore.shared)
     }
 }
 
 /// Registers as the notification-center delegate so scheduled dose reminders present while
-/// PinWise is in the foreground — iOS suppresses them by default, which makes an in-app dose
+/// Staxyz is in the foreground — iOS suppresses them by default, which makes an in-app dose
 /// reminder useless (people often have the app open around dose time).
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
@@ -75,7 +75,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let info = request.content.userInfo
         let ids = (info["protocolIDs"] as? [String]) ?? (info["protocolID"] as? String).map { [$0] } ?? []
         let slot = Calendar.current.startOfDay(for: firedAt)
-        let context = PinWiseStore.shared.mainContext
+        let context = StaxyzStore.shared.mainContext
         let names = (info["protocolNames"] as? [String]) ?? []
 
         for (i, raw) in ids.enumerated() {
@@ -221,7 +221,7 @@ struct BiometricLockView: View {
                 Image(systemName: "faceid")
                     .font(.system(size: 46))
                     .foregroundStyle(BrandColor.accentText)
-                Text("PinWise is locked")
+                Text("Staxyz is locked")
                     .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
                 Button { Task { await unlock() } } label: {
                     Label("Unlock with \(BiometricLock.biometryName)", systemImage: "lock.open")
@@ -240,6 +240,6 @@ struct BiometricLockView: View {
     }
 
     private func unlock() async {
-        if await BiometricLock.authenticate(reason: "Unlock PinWise") { onUnlock() }
+        if await BiometricLock.authenticate(reason: "Unlock Staxyz") { onUnlock() }
     }
 }

@@ -131,7 +131,7 @@ public enum CompoundProfiles {
 
     /// A standard, reusable storage line for reconstituted peptides — mirrors the app's USP-aligned
     /// storage posture used elsewhere. Kept here so profiles stay consistent instead of drifting.
-    static let standardStorage = "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. PinWise tracks this window when a vial is logged."
+    static let standardStorage = "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged."
 
     /// All authored profiles. Add entries here in batches. compoundIDs reference `CompoundCatalog`
     /// directly so the two can never drift out of sync.
@@ -149,7 +149,7 @@ public enum CompoundProfiles {
             whatToExpect: "In trials, approximately 15% average body-weight loss over about 68 weeks at the top dose (STEP program), with improvements in blood sugar. Appetite suppression is typically reported within the first week or two; weight loss develops over months. Effects are dose-dependent, which is the rationale for gradual titration.",
             evidenceSummary: "Tier A. FDA-approved. Supported by the SUSTAIN (diabetes) and STEP (obesity) trial programs, involving tens of thousands of participants, and the SELECT cardiovascular-outcomes trial.",
             dosingStudied: "The Wegovy label titrates monthly: 0.25 → 0.5 → 1.0 → 1.7 → 2.4 mg once weekly, subcutaneous. Ozempic ranges to 1.0–2.0 mg weekly. The gradual ramp is intended to limit nausea.",
-            dosingCommunity: "Compounded semaglutide is often dosed to mirror the label titration. Compounded vials are sometimes labeled in \"units\" rather than mg, which has been associated with accidental overdoses; confirm the concentration and calculate the dose (PinWise's reconstitution calculator supports this). Reported, not recommended.",
+            dosingCommunity: "Compounded semaglutide is often dosed to mirror the label titration. Compounded vials are sometimes labeled in \"units\" rather than mg, which has been associated with accidental overdoses; confirm the concentration and calculate the dose (Staxyz's reconstitution calculator supports this). Reported, not recommended.",
             route: "Subcutaneous injection, once weekly. Rotate between the abdomen (avoiding approximately 2 in around the navel), the front or outer thigh, and the back of the upper arm. Small-volume injection with a short insulin-style needle.",
             timing: "Half-life is approximately 1 week; taken once weekly on the same day. Levels build over the first several weeks and take weeks to clear after discontinuation.",
             sideEffectsCommon: [
