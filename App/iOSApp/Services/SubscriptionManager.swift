@@ -80,7 +80,24 @@ final class SubscriptionManager {
 
     /// Called once the user is authenticated. Idempotent — a second call is a no-op, so the trial
     /// cannot be extended by signing out and back in.
-    func beginTrialIfNeeded() {
+    ///
+    /// Asks the SERVER first (`claim_trial_start`, write-once, keyed to the auth user) and caches
+    /// the answer locally. The server value is authoritative precisely because the local one is
+    /// resettable by delete-and-reinstall; the local copy exists so the gate still resolves offline.
+    ///
+    /// An EARLIER server date always wins. A reinstall stamps a fresh local date, and taking the
+    /// later of the two would hand out a brand-new 21 days — which is the whole hole this closes.
+    func beginTrialIfNeeded() async {
+        if let serverStart = await SupabaseService.shared.claimTrialStart() {
+            let local = store.double(forKey: K.trialStart)
+            let serverStamp = serverStart.timeIntervalSinceReferenceDate
+            if local == 0 || serverStamp < local {
+                store.set(serverStamp, forKey: K.trialStart)
+            }
+            return
+        }
+        // Offline, or the backend isn't configured. Stamp locally so the trial starts now; the next
+        // successful launch reconciles against the server.
         guard store.double(forKey: K.trialStart) == 0 else { return }
         store.set(Date().timeIntervalSinceReferenceDate, forKey: K.trialStart)
     }
@@ -173,7 +190,15 @@ final class SubscriptionManager {
         notice = nil
         defer { isWorking = false }
         do {
-            switch try await product.purchase() {
+            // `appAccountToken` is how the App Store Server Notifications webhook finds the user:
+            // Apple identifies a subscription only by originalTransactionId, so the Supabase user
+            // UUID rides along and comes back in every signed transaction. Without it, renewals and
+            // expirations arrive unmappable and the tier never flips to 'pro' server-side.
+            var options: Set<Product.PurchaseOption> = []
+            if let uuid = await SupabaseService.shared.currentUserUUID() {
+                options.insert(.appAccountToken(uuid))
+            }
+            switch try await product.purchase(options: options) {
             case .success(let verification):
                 if case .verified(let transaction) = verification {
                     await transaction.finish()

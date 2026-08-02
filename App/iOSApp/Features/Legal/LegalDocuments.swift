@@ -10,16 +10,22 @@ import SwiftUI
 // analytics/improvement/sharing uses per App Review 5.1.3. Liability for personal injury
 // is NOT nominally excluded (void in many jurisdictions); it is capped only where lawful.
 //
-// BEFORE SUBMISSION, WITH COUNSEL: confirm the registered address for Arias Labs LLC, the
-// arbitration provider election (AAA consumer rules below), and the California venue.
+// BEFORE SUBMISSION, WITH COUNSEL: confirm the registered entity name and address, the
+// arbitration provider election (AAA consumer rules below), and the governing-law choice.
 //
-// STILL OUTSTANDING (2026-08-02): `entityName` now names the LEGAL entity rather than the
-// product, and governing law / injunctive-relief venue moved Delaware → California to match
-// where the LLC is formed. Two things counsel must still supply:
-//   1. The registered street address — consumer-arbitration and CCPA notice provisions
-//      conventionally state one, and there is no placeholder for it here on purpose (an invented
+// STILL OUTSTANDING (2026-08-02) — the entity is Staxyz, a C corp not yet formed:
+//   1. The EXACT registered name, with suffix ("Staxyz, Inc." / "Staxyz Corp."). `entityName` is
+//      bare "Staxyz" until the certificate issues, because an unregistered name in a signed
+//      agreement is worse than an unadorned one. Bump `Disclaimer.currentVersion` when it changes.
+//   2. GOVERNING LAW IS AN OPEN QUESTION AGAIN. It currently reads California. That was chosen
+//      when the entity was a California LLC; a C corp will most likely be incorporated in
+//      DELAWARE, and the venue/governing-law clauses below should be revisited against the actual
+//      state of incorporation. Incorporation state and governing law need not match — but the
+//      choice should be deliberate rather than inherited from a superseded plan.
+//   3. The registered street address — consumer-arbitration and CCPA notice provisions
+//      conventionally state one, and there is deliberately no placeholder here (an invented
 //      address in a signed legal document is worse than an absent one).
-//   2. A real contact channel. `contactChannel` still points at the App Store listing, which is
+//   4. A real contact channel. `contactChannel` still points at the App Store listing, which is
 //      adequate pre-launch but is NOT a durable notice address for arbitration opt-out.
 
 struct LegalSection: Identifiable {
@@ -30,17 +36,24 @@ struct LegalSection: Identifiable {
 
 enum LegalDocuments {
     static let effectiveDate = "July 21, 2026"
-    /// The contracting party. This is the LEGAL ENTITY, not the product: the counterparty to a
-    /// user's agreement is the company, and Apple's Schedule 2 / App Review both expect the
-    /// developer of record to be named. "Staxyz" is the app; `Arias Labs LLC` is who is bound.
-    /// Counsel still needs to confirm the registered address (see the header note).
-    static let entityName = "Arias Labs LLC"
-    /// The product name, for sentences that are about the APP rather than the company.
+    /// The contracting party. Company and product share the name: Staxyz is both the app and the
+    /// entity being formed (a C corp).
+    ///
+    /// **MUST BE UPDATED AT FORMATION.** A registered corporation's legal name carries a suffix —
+    /// "Staxyz, Inc." or "Staxyz Corp." depending on the filing — and the ToS has to name the
+    /// entity exactly as registered. It is bare "Staxyz" here because the corp does not exist yet
+    /// and inventing a suffix would put an unregistered name in a signed agreement. When the
+    /// certificate of incorporation issues: set the exact name, and bump
+    /// `Disclaimer.currentVersion` so users consent to the real counterparty.
+    static let entityName = "Staxyz"
+    /// The product name. Identical to `entityName` today, but kept as a separate token so the two
+    /// can diverge the moment the entity gains its suffix — at that point sentences about the APP
+    /// should keep saying "Staxyz" while the contracting clauses say "Staxyz, Inc."
     static let productName = "Staxyz"
     /// Upper-case entity, for the all-caps statutory clauses (warranty disclaimer, liability
-    /// cap, jury/class waiver). Those clauses bind the COMPANY — a product name in a warranty
-    /// disclaimer names nobody who can actually be held to it.
-    static let entityNameCaps = "ARIAS LABS LLC"
+    /// cap, jury/class waiver). Those clauses bind the COMPANY, so this follows `entityName`
+    /// including whatever suffix formation produces.
+    static let entityNameCaps = "STAXYZ"
     /// The only contact mechanism the documents reference until a business/email exists.
     static let contactChannel = "the support contact listed on the app's App Store page"
 

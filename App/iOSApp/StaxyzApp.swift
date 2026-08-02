@@ -198,9 +198,9 @@ struct RootView: View {
             // resolves, which is the right direction to fail: a billing glitch must not lock a
             // paying user out of their own dose history.
             await subs.load()
-            // The trial clock starts at SIGN-IN, not launch. Idempotent, so signing out and back
-            // in cannot extend it.
-            if auth.isAuthenticated { subs.beginTrialIfNeeded() }
+            // The trial clock starts at SIGN-IN, not launch. Idempotent, and reconciled against the
+            // server's write-once stamp so a reinstall cannot restart it.
+            if auth.isAuthenticated { await subs.beginTrialIfNeeded() }
             // Give HealthManager the store so a refresh can persist a daily on-device snapshot,
             // then refresh silently if Health was connected in a past session (no re-prompt).
             HealthManager.shared.modelContext = modelContext
@@ -228,7 +228,7 @@ struct RootView: View {
             }
             // Start the trial the moment an account exists, so day 1 is the first day the user
             // could actually use the app.
-            if isAuth { subs.beginTrialIfNeeded() }
+            if isAuth { Task { await subs.beginTrialIfNeeded() } }
         }
         .animation(.easeInOut(duration: 0.55), value: subs.hasAccess)
         .preferredColorScheme(AppearanceMode.from(appearanceRaw).colorScheme)

@@ -65,6 +65,62 @@ final class SupabaseService {
         return try? await client.auth.session.accessToken
     }
 
+    /// The Supabase user's UUID, used as StoreKit's `appAccountToken`.
+    ///
+    /// This is the join key between an Apple subscription and a Staxyz account: Apple identifies a
+    /// subscription only by `originalTransactionId` and knows nothing about our users, so the UUID
+    /// rides along on the purchase and comes back in every signed transaction. Supabase user ids
+    /// are already UUIDs, which is why no separate token needs minting or storing.
+    func currentUserUUID() async -> UUID? {
+        guard let client else { return nil }
+        return try? await client.auth.session.user.id
+    }
+
+    /// Write-once server-side stamp of when this user's trial began, via the `claim_trial_start`
+    /// RPC. Returns the effective start date — the existing one if already stamped.
+    ///
+    /// This exists because the local trial clock is resettable: the 21-day trial is app-managed
+    /// (Apple has no 21-day intro offer), so there is no receipt to appeal to, and a
+    /// `UserDefaults` date dies with a reinstall. The server value follows the ACCOUNT.
+    func claimTrialStart() async -> Date? {
+        guard let client else { return nil }
+        // Decoded as a STRING and parsed explicitly rather than letting the SDK decode straight to
+        // `Date`. A scalar `timestamptz` RPC comes back as a JSON string like
+        // "2026-08-02T05:12:33.123456+00:00", and Postgres emits SIX fractional digits — more than
+        // `ISO8601DateFormatter` accepts by default. Decoding to `Date` therefore fails, and since
+        // the whole call is wrapped in `try?`, that failure would be invisible: the app would
+        // silently fall back to the resettable local clock forever, which is exactly the bug this
+        // method exists to fix.
+        guard let raw: String = try? await client.rpc("claim_trial_start").execute().value else {
+            return nil
+        }
+        return Self.parsePostgresTimestamp(raw)
+    }
+
+    /// Parses a Postgres `timestamptz`. Tries fractional seconds first, then without, then trims
+    /// over-long fractional digits — `ISO8601DateFormatter` rejects more than three.
+    static func parsePostgresTimestamp(_ raw: String) -> Date? {
+        let withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = withFraction.date(from: raw) { return d }
+
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        if let d = plain.date(from: raw) { return d }
+
+        // Truncate microseconds to milliseconds: "…:33.123456+00:00" → "…:33.123+00:00".
+        if let dot = raw.firstIndex(of: "."),
+           let tzStart = raw[dot...].firstIndex(where: { $0 == "+" || $0 == "-" || $0 == "Z" }) {
+            let fraction = raw[raw.index(after: dot)..<tzStart]
+            if fraction.count > 3 {
+                let trimmed = raw.replacingOccurrences(of: String(fraction),
+                                                       with: String(fraction.prefix(3)))
+                return withFraction.date(from: trimmed)
+            }
+        }
+        return nil
+    }
+
     func signOut() async {
         guard let client else { return }
         try? await client.auth.signOut()
@@ -76,6 +132,8 @@ final class SupabaseService {
     func sendEmailCode(_ email: String) async throws { throw SupabaseAuthError.notConfigured }
     func verifyEmailCode(email: String, code: String) async throws -> SupabaseAuthedUser { throw SupabaseAuthError.notConfigured }
     func accessToken() async -> String? { nil }
+    func currentUserUUID() async -> UUID? { nil }
+    func claimTrialStart() async -> Date? { nil }
     func signOut() async {}
     #endif
 }
