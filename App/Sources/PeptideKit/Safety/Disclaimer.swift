@@ -16,7 +16,12 @@ public enum Disclaimer {
     /// v6: Natt consent gate now also states the daily message limits (free trial vs Pro), is the
     ///     single place disclaimers are surfaced (so Natt stops repeating them in chat), and
     ///     continuing past it opts into sharing Apple Health with Natt (revocable in Settings).
-    public static let currentVersion = 6
+    /// v7: the CONTRACTING PARTY changed. The Terms previously named the product as the
+    ///     counterparty; they now name the legal entity (Arias Labs LLC), and governing law +
+    ///     injunctive-relief venue moved Delaware → California. Who a user is contracting with,
+    ///     and where a dispute is heard, are the two most material terms in the document — so
+    ///     this re-prompts consent rather than changing the agreement under existing users.
+    public static let currentVersion = 7
 
     /// The short, always-visible line for calculator and dosing surfaces.
     public static let calculator = """

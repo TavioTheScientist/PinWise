@@ -10,8 +10,17 @@ import SwiftUI
 // analytics/improvement/sharing uses per App Review 5.1.3. Liability for personal injury
 // is NOT nominally excluded (void in many jurisdictions); it is capped only where lawful.
 //
-// BEFORE SUBMISSION, WITH COUNSEL: confirm the legal entity name and registered address,
-// the arbitration provider election (AAA consumer rules below), and the Delaware venue.
+// BEFORE SUBMISSION, WITH COUNSEL: confirm the registered address for Arias Labs LLC, the
+// arbitration provider election (AAA consumer rules below), and the California venue.
+//
+// STILL OUTSTANDING (2026-08-02): `entityName` now names the LEGAL entity rather than the
+// product, and governing law / injunctive-relief venue moved Delaware → California to match
+// where the LLC is formed. Two things counsel must still supply:
+//   1. The registered street address — consumer-arbitration and CCPA notice provisions
+//      conventionally state one, and there is no placeholder for it here on purpose (an invented
+//      address in a signed legal document is worse than an absent one).
+//   2. A real contact channel. `contactChannel` still points at the App Store listing, which is
+//      adequate pre-launch but is NOT a durable notice address for arbitration opt-out.
 
 struct LegalSection: Identifiable {
     let id = UUID()
@@ -21,10 +30,17 @@ struct LegalSection: Identifiable {
 
 enum LegalDocuments {
     static let effectiveDate = "July 21, 2026"
-    // No legal entity, contact email, or person is referenced yet (none exists pre-launch,
-    // per founder). Before App Store submission: substitute the registered legal entity,
-    // add a real contact channel, and have counsel review. "Staxyz" stands in as the party.
-    static let entityName = "Staxyz"
+    /// The contracting party. This is the LEGAL ENTITY, not the product: the counterparty to a
+    /// user's agreement is the company, and Apple's Schedule 2 / App Review both expect the
+    /// developer of record to be named. "Staxyz" is the app; `Arias Labs LLC` is who is bound.
+    /// Counsel still needs to confirm the registered address (see the header note).
+    static let entityName = "Arias Labs LLC"
+    /// The product name, for sentences that are about the APP rather than the company.
+    static let productName = "Staxyz"
+    /// Upper-case entity, for the all-caps statutory clauses (warranty disclaimer, liability
+    /// cap, jury/class waiver). Those clauses bind the COMPANY — a product name in a warranty
+    /// disclaimer names nobody who can actually be held to it.
+    static let entityNameCaps = "ARIAS LABS LLC"
     /// The only contact mechanism the documents reference until a business/email exists.
     static let contactChannel = "the support contact listed on the app's App Store page"
 
@@ -33,8 +49,8 @@ enum LegalDocuments {
     static let terms: [LegalSection] = [
         LegalSection(heading: "1. Acceptance of These Terms", body: """
         These Terms of Service (the "Terms") constitute a legally binding agreement between you \
-        and the developer of the Staxyz application ("Staxyz," \
-        "we," "us," or "our"), governing your access to and use of the Staxyz application, \
+        and \(entityName), the developer of the \(productName) application ("\(entityName)," \
+        "we," "us," or "our"), governing your access to and use of the \(productName) application, \
         including all related features, content, and services (collectively, the "Service"). \
         You accept these Terms through the in-app acceptance flow presented before first use \
         and again whenever the Terms materially change. If you do not agree to these Terms, \
@@ -146,13 +162,13 @@ enum LegalDocuments {
 
         LegalSection(heading: "11. Disclaimer of Warranties", body: """
         THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITH ALL FAULTS AND WITHOUT \
-        WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, STAXYZ \
+        WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, \(entityNameCaps) \
         DISCLAIMS ALL WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING WITHOUT LIMITATION \
         IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, \
         QUIET ENJOYMENT, AND NON-INFRINGEMENT, AND ANY WARRANTY THAT THE SERVICE WILL BE \
         UNINTERRUPTED, ERROR-FREE, OR FREE OF HARMFUL COMPONENTS, OR THAT ANY CALCULATION, \
         REMINDER, PROJECTION, OR ITEM OF INFORMATION WILL BE ACCURATE, COMPLETE, OR RELIABLE. \
-        NO ORAL OR WRITTEN INFORMATION OBTAINED FROM STAXYZ SHALL CREATE ANY WARRANTY. Some \
+        NO ORAL OR WRITTEN INFORMATION OBTAINED FROM \(entityNameCaps) SHALL CREATE ANY WARRANTY. Some \
         jurisdictions do not allow the exclusion of implied warranties, so some of the above \
         may not apply to you.
         """),
@@ -166,10 +182,10 @@ enum LegalDocuments {
         BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE \
         DAMAGES, OR FOR ANY LOSS OF DATA OR LOSS OF PROFITS, ARISING OUT OF OR RELATING TO THE \
         SERVICE OR THESE TERMS, WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING \
-        NEGLIGENCE), PRODUCT LIABILITY, OR ANY OTHER LEGAL THEORY, AND WHETHER OR NOT STAXYZ \
+        NEGLIGENCE), PRODUCT LIABILITY, OR ANY OTHER LEGAL THEORY, AND WHETHER OR NOT \(entityNameCaps) \
         HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES; AND (B) THE AGGREGATE LIABILITY \
         OF \(entityName) FOR ALL CLAIMS ARISING OUT OF OR RELATING TO THE SERVICE SHALL NOT \
-        EXCEED THE GREATER OF (i) THE AMOUNTS YOU PAID TO STAXYZ FOR THE SERVICE IN THE \
+        EXCEED THE GREATER OF (i) THE AMOUNTS YOU PAID TO \(entityNameCaps) FOR THE SERVICE IN THE \
         TWELVE (12) MONTHS PRECEDING THE CLAIM AND (ii) FIFTY U.S. DOLLARS (US $50). Statutory \
         rights you hold as a consumer remain unaffected.
         """),
@@ -189,21 +205,21 @@ enum LegalDocuments {
         to attempt informal resolution for thirty (30) days. Except for disputes that qualify \
         for small-claims court in your county of residence, or claims for injunctive relief \
         for intellectual-property misuse (which may be brought in the state or federal courts \
-        located in Delaware), any dispute, claim, or controversy arising out of or relating to \
+        located in California), any dispute, claim, or controversy arising out of or relating to \
         these Terms or the Service shall be resolved by binding individual arbitration \
         administered by the American Arbitration Association ("AAA") under its Consumer \
         Arbitration Rules then in effect. The arbitrator, and not any court, has exclusive \
         authority to resolve disputes about the interpretation, applicability, or \
         enforceability of this arbitration agreement. Arbitration fees are allocated as \
         provided in the AAA Consumer Arbitration Rules; we will pay filing and arbitrator \
-        fees the Rules assign to us. YOU AND STAXYZ EACH WAIVE THE RIGHT TO A TRIAL BY JURY \
+        fees the Rules assign to us. YOU AND \(entityNameCaps) EACH WAIVE THE RIGHT TO A TRIAL BY JURY \
         AND TO PARTICIPATE IN A CLASS ACTION, CLASS ARBITRATION, OR REPRESENTATIVE PROCEEDING. \
         If the class action waiver is found unenforceable as to a particular claim, that claim \
         (and only that claim) shall proceed in court, and the waiver shall remain enforceable \
         as to all other claims. You may opt out of this arbitration agreement by submitting \
         written notice through \(contactChannel) within thirty (30) days of first accepting \
         these Terms, stating that you decline arbitration. These Terms are governed by the laws of \
-        the State of Delaware, USA, without regard to conflict-of-law principles, except where \
+        the State of California, USA, without regard to conflict-of-law principles, except where \
         the mandatory consumer-protection law of your place of residence applies.
         """),
 
