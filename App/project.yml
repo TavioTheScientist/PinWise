@@ -89,3 +89,13 @@ schemes:
         Staxyz: all
     run:
       config: Debug
+      # Local StoreKit testing WITHOUT App Store Connect products existing yet. With this
+      # attached, the simulator serves the two subscriptions from Staxyz.storekit, so the paywall,
+      # purchase, restore and expiry paths are all exercisable now. Xcode's Debug ▸ StoreKit
+      # ▸ Manage Transactions pane can then expire/refund a purchase on demand.
+      #
+      # This affects the Debug RUN action only — it is not compiled into the app, so a release
+      # build still talks to the real App Store. The product IDs here MUST stay identical to
+      # SubscriptionManager.ProductID and to the eventual App Store Connect products; a mismatch
+      # fails silently (products just don't load).
+      storeKitConfiguration: Staxyz.storekit

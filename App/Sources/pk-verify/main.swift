@@ -714,6 +714,59 @@ do {
           "1h window ⇒ no follow-up (never one that fires after the window shuts)")
 }
 
+// MARK: - Trial window + entitlement
+//
+// The paywall is a HARD gate, so the arithmetic that decides whether a paying user is locked out
+// gets the same treatment as the dose math. Two things are asserted: the boundary is generous
+// (a late-evening install is not charged a day), and a subscription always beats the clock.
+do {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+
+    func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 0, _ min: Int = 0) -> Date {
+        cal.date(from: DateComponents(year: y, month: m, day: d, hour: h, minute: min))!
+    }
+
+    // Installed at 11:30pm on Aug 1. Expiry anchors to the START of Aug 1, so the trial runs
+    // through Aug 21 and ends at midnight entering Aug 22 — 21 whole calendar days, not 20.
+    let lateInstall = date(2026, 8, 1, 23, 30)
+    check(TrialWindow.expiry(start: lateInstall, calendar: cal) == date(2026, 8, 22),
+          "trial anchors to start-of-day: an 11:30pm install still gets 21 whole days")
+    check(TrialWindow.isActive(start: lateInstall, now: date(2026, 8, 21, 23, 59), calendar: cal),
+          "trial is still active on its final day")
+    check(!TrialWindow.isActive(start: lateInstall, now: date(2026, 8, 22, 0, 0), calendar: cal),
+          "trial closes exactly at expiry, not after")
+
+    check(TrialWindow.daysRemaining(start: lateInstall, now: date(2026, 8, 1, 23, 45), calendar: cal) == 21,
+          "day 0 ⇒ 21 days remaining")
+    check(TrialWindow.daysRemaining(start: lateInstall, now: date(2026, 8, 21, 12), calendar: cal) == 1,
+          "final day ⇒ 1 day remaining, never 0 while access still holds")
+    check(TrialWindow.daysRemaining(start: lateInstall, now: date(2026, 9, 1), calendar: cal) == 0,
+          "past expiry ⇒ floored at 0, never negative")
+
+    // A subscription outranks the clock — a paying user must never see trial state or a paywall.
+    check(Entitlement.resolve(isSubscribed: true, trialStart: lateInstall,
+                              now: date(2027, 1, 1), calendar: cal) == .pro,
+          "subscribed ⇒ .pro even long after the trial elapsed")
+    check(Entitlement.resolve(isSubscribed: false, trialStart: lateInstall,
+                              now: date(2026, 9, 1), calendar: cal) == .expired,
+          "unsubscribed + elapsed trial ⇒ .expired (the hard gate)")
+    check(Entitlement.resolve(isSubscribed: false, trialStart: lateInstall,
+                              now: date(2026, 8, 10), calendar: cal) == .trial(daysRemaining: 12),
+          "mid-trial ⇒ .trial with the right day count")
+    // No recorded start must not lock anyone out of an app they have not opened yet.
+    check(Entitlement.resolve(isSubscribed: false, trialStart: nil, calendar: cal).hasAccess,
+          "no trial start recorded ⇒ access granted, not denied")
+
+    check(Entitlement.expired.hasAccess == false, "only .expired loses access")
+    check(Entitlement.pro.aiDailyLimit == 10 && Entitlement.trial(daysRemaining: 5).aiDailyLimit == 2,
+          "AI cap: 10/day Pro, 2/day trial")
+    check(Entitlement.expired.aiDailyLimit == 0,
+          "expired ⇒ no AI at all (it cannot reach the assistant)")
+    check(Entitlement.pro.serverTier == "pro" && Entitlement.trial(daysRemaining: 5).serverTier == "free",
+          "server tier mirrors the client entitlement")
+}
+
 // MARK: - Summary
 print("\n\(failures == 0 ? "✅ PASS" : "❌ FAIL") — \(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

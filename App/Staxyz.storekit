@@ -1,0 +1,67 @@
+{
+  "identifier" : "F3A1C2D4",
+  "nonRenewingSubscriptions" : [ ],
+  "products" : [ ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_storeKitErrors" : [ ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21548712",
+      "localizations" : [ ],
+      "name" : "Staxyz Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [ ],
+          "codeOffers" : [ ],
+          "displayPrice" : "7.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6742001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full access to Staxyz, including every tool and Natt.",
+              "displayName" : "Staxyz Pro — Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.staxyz.app.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Staxyz Pro Monthly",
+          "subscriptionGroupID" : "21548712",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [ ]
+        },
+        {
+          "adHocOffers" : [ ],
+          "codeOffers" : [ ],
+          "displayPrice" : "50.40",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6742002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full access to Staxyz for a year — the same as monthly, billed once.",
+              "displayName" : "Staxyz Pro — Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.staxyz.app.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Staxyz Pro Yearly",
+          "subscriptionGroupID" : "21548712",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [ ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
