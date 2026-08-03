@@ -14,8 +14,8 @@ struct BodyRenderer {
     let gender: BodyGender
     let side: BodySide
     let highlights: [Muscle: MuscleHighlight]
-    /// PinWise fork addition — region-precise highlights (side and/or vertical band). Defaulted
-    /// empty so every upstream call site behaves exactly as before. See PINWISE_FORK.md.
+    /// Staxyz fork addition — region-precise highlights (side and/or vertical band). Defaulted
+    /// empty so every upstream call site behaves exactly as before. See STAXYZ_FORK.md.
     let regionHighlights: [MuscleRegionKey: MuscleHighlight]
     let style: BodyViewStyle
     let selectedMuscles: Set<Muscle>
@@ -98,7 +98,7 @@ struct BodyRenderer {
                 bodyPart.left.map { ($0, .left) } +
                 bodyPart.right.map { ($0, .right) }
 
-            // PinWise fork: classify each side's paths into vertical bands, derived from the
+            // Staxyz fork: classify each side's paths into vertical bands, derived from the
             // TRANSFORMED artwork rather than hard-coded coordinates, so this survives the viewBox
             // re-centering upstream does per gender/side. A single-path side has no meaningful band.
             func bands(_ paths: [String]) -> [String: MuscleBand] {
@@ -122,7 +122,7 @@ struct BodyRenderer {
                     offsetY: offsetY
                 )
 
-                // PinWise fork: the fill is resolved PER PATH now, not once per body part, so one
+                // Staxyz fork: the fill is resolved PER PATH now, not once per body part, so one
                 // side (or one band of one side) can differ from its neighbour. With no region
                 // highlights supplied this collapses to the upstream per-body-part result.
                 let band: MuscleBand? = pathSide == .left ? leftBands[pathString]
@@ -276,7 +276,7 @@ struct BodyRenderer {
 
     // MARK: - Private
 
-    /// PinWise fork: most-specific-first lookup — (muscle, side, band), then (muscle, side), then
+    /// Staxyz fork: most-specific-first lookup — (muscle, side, band), then (muscle, side), then
     /// nil so the caller falls back to upstream's per-muscle highlight.
     private func resolveRegionHighlight(muscle: Muscle?, side: MuscleSide,
                                        band: MuscleBand?) -> MuscleHighlight? {

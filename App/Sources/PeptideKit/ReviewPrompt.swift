@@ -1,7 +1,7 @@
 import Foundation
 
 /// Decides when to surface an App Store review request based on how long someone has used the
-/// app. PinWise asks at tenure milestones — day 8, 30, 60 — and never more than once per
+/// app. Staxyz asks at tenure milestones — day 8, 30, 60 — and never more than once per
 /// milestone. Apple itself still throttles the real prompt (max 3/year, and the system decides
 /// whether to actually display it), so these are *requests*, not guaranteed dialogs.
 public enum ReviewPrompt {

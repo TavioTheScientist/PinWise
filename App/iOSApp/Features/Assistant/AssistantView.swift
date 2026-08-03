@@ -145,7 +145,7 @@ struct AssistantView: View {
     @AppStorage("aiConsentVersion") private var aiConsentVersion = 0
     private var aiAccepted: Bool { aiConsentVersion >= Disclaimer.currentVersion }
     // Opt-in (Settings → Security & Privacy), OFF by default: when on, the Apple Health metrics
-    // PinWise reads are included in Natt's context so she can personalize with them.
+    // Staxyz reads are included in Natt's context so she can personalize with them.
     @AppStorage("shareHealthWithNatt") private var shareHealthWithNatt = false
     @State private var engine = AssistantEngine.shared
     @State private var input = ""
@@ -164,7 +164,7 @@ struct AssistantView: View {
         return counts.max { $0.value < $1.value }?.key
     }
 
-    /// A rich, bounded snapshot of everything PinWise knows about this user, so the assistant can
+    /// A rich, bounded snapshot of everything Staxyz knows about this user, so the assistant can
     /// actually reason about their stack, logs, symptoms, labs, and connected health.
     private var contextString: String {
         func day(_ d: Date) -> String { d.formatted(.dateTime.month().day()) }
@@ -218,7 +218,7 @@ struct AssistantView: View {
         // opted in (Settings → Security & Privacy) AND connected Health. Guideline 5.1.3 permits
         // sharing HealthKit data with a third party (the cloud assistant) with the user's consent
         // for managing their health; it's off by default and otherwise stays walled off on-device.
-        // Data the user typed into PinWise (above) is always fair game to send.
+        // Data the user typed into Staxyz (above) is always fair game to send.
         if shareHealthWithNatt && health.authorized {
             var h: [String] = []
             if let w = health.latestWeightKg {
@@ -241,11 +241,11 @@ struct AssistantView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Label("Natt", systemImage: "sparkles")
                         .font(.system(size: 22, weight: .bold)).foregroundStyle(BrandColor.textPrimary)
-                    Text("PinWise's AI assistant")
+                    Text("Staxyz's AI assistant")
                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Natt, PinWise's AI assistant")
+                .accessibilityLabel("Natt, Staxyz's AI assistant")
                 Spacer()
                 Button { close() } label: {
                     Image(systemName: "xmark").font(.headline.weight(.semibold))
@@ -301,7 +301,7 @@ struct AssistantView: View {
                         .font(.largeTitle).foregroundStyle(BrandColor.accentText)
                     Text("Sign in to chat with Natt")
                         .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
-                    Text("Natt, PinWise's AI assistant, comes with your account. Sign in with Apple or email to start chatting — everything else stays free for guests.")
+                    Text("Natt, Staxyz's AI assistant, comes with your account. Sign in with Apple or email to start chatting — everything else stays free for guests.")
                         .font(.callout).foregroundStyle(BrandColor.textSecondary)
                 }
                 .padding(Space.lg)
@@ -324,7 +324,7 @@ struct AssistantView: View {
                         .font(.largeTitle).foregroundStyle(BrandColor.accentText)
                     Text("Before you chat with Natt")
                         .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
-                    Text("Natt is PinWise's AI assistant. A few things to know first.")
+                    Text("Natt is Staxyz's AI assistant. A few things to know first.")
                         .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     VStack(alignment: .leading, spacing: Space.md) {
                         gatePoint("Daily limits", "Free trial: 2 messages a day. Pro (monthly or yearly): 10 a day.")
@@ -332,7 +332,7 @@ struct AssistantView: View {
                         gatePoint("Uses your Apple Health", "Continuing turns on sharing your Apple Health metrics — weight, heart rate, HRV, sleep, steps — so Natt can tailor answers. Turn it off anytime in Settings › Security & Privacy.")
                         gatePoint("Can be wrong", "AI answers may be inaccurate or out of date. Check them against the sources Natt cites.")
                         gatePoint("Not medical advice", "Natt won't diagnose, treat, or set your dose. It explains what the research shows — including the doses studied in trials — and leaves health decisions to you and your clinician.")
-                        gatePoint("Your responsibility", "You use Natt at your own risk. PinWise isn't liable for actions taken on its answers.")
+                        gatePoint("Your responsibility", "You use Natt at your own risk. Staxyz isn't liable for actions taken on its answers.")
                     }
                     Text("Tap Accept & continue to agree to the points above.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)

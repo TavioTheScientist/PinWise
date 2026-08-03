@@ -39,7 +39,7 @@ struct LotDetailView: View {
                 documentsSection
                 linkedSection
                 requestTestingCard
-                DisclaimerBanner(text: "These are documents and values you entered yourself. PinWise doesn't verify certificates of analysis and doesn't vet suppliers.")
+                DisclaimerBanner(text: "These are documents and values you entered yourself. Staxyz doesn't verify certificates of analysis and doesn't vet suppliers.")
                 literacyCard
             }
             .padding(Space.lg)
@@ -202,7 +202,7 @@ struct LotDetailView: View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
                 SectionHeader(title: "Independent testing")
-                Text("Want this batch tested by a lab rather than trusting the COA that came with it? Register interest and PinWise will use it to prioritise testing partnerships.")
+                Text("Want this batch tested by a lab rather than trusting the COA that came with it? Register interest and Staxyz will use it to prioritise testing partnerships.")
                     .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
                 SecondaryButton(title: "Request testing", systemImage: "flask") { showTestingRequest = true }
             }
@@ -323,7 +323,7 @@ private struct COADocumentCard: View {
                         FieldRow("Endotoxin", hint: "Recorded for safety. Never used in potency math.") {
                             HStack {
                                 TextField("e.g. 0.25", text: $endotoxin)
-                                    .keyboardType(.decimalPad).pinwiseField()
+                                    .keyboardType(.decimalPad).staxyzField()
                                     .onChange(of: endotoxin) { _, v in doc.endotoxinValue = v.decimalValue }
                                 Picker("", selection: Binding(
                                     get: { doc.endotoxinUnit },
@@ -334,11 +334,11 @@ private struct COADocumentCard: View {
                                 .frame(width: 150)
                             }
                         }
-                        FieldRow("Lab", hint: "Free text — PinWise keeps no lab list.") {
-                            TextField("Who tested it", text: $doc.labName).pinwiseField()
+                        FieldRow("Lab", hint: "Free text — Staxyz keeps no lab list.") {
+                            TextField("Who tested it", text: $doc.labName).staxyzField()
                         }
                         FieldRow("Method notes") {
-                            TextField("e.g. HPLC-UV, MS identity", text: $doc.methodNotes).pinwiseField()
+                            TextField("e.g. HPLC-UV, MS identity", text: $doc.methodNotes).staxyzField()
                         }
                         if canApply {
                             SecondaryButton(title: "Apply to vials on this lot", systemImage: "arrow.down.doc") { onApply() }
@@ -377,7 +377,7 @@ private struct COADocumentCard: View {
                             set: @escaping (Double?) -> Void) -> some View {
         FieldRow(title) {
             HStack {
-                TextField("e.g. 99.5", text: text).keyboardType(.decimalPad).pinwiseField()
+                TextField("e.g. 99.5", text: text).keyboardType(.decimalPad).staxyzField()
                     .onChange(of: text.wrappedValue) { _, v in set(v.decimalValue) }
                 Text("%").foregroundStyle(BrandColor.textSecondary)
             }

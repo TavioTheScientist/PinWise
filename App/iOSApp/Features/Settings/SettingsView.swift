@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import PeptideKit   // TrialWindow.trialDays — the trial length is stated once, in the domain core
 
 /// The Settings hub — a clean, grouped list of icon-tile navigation rows (Apple-Settings register).
 /// Every control lives on a focused subpage; the top level stays scannable rather than a wall of
@@ -47,7 +48,7 @@ struct SettingsView: View {
                     section("About") {
                         sheetRow("Privacy Policy & Terms", icon: "doc.text.fill", tint: BrandColor.textSecondary) { showLegal = true }
                         rowDivider
-                        pushRow("About PinWise", icon: "info.circle.fill", tint: BrandColor.textSecondary) { AboutSettingsView() }
+                        pushRow("About Staxyz", icon: "info.circle.fill", tint: BrandColor.textSecondary) { AboutSettingsView() }
                     }
                 }
                 .padding(Space.lg)
@@ -222,7 +223,7 @@ private struct PrivacySecuritySettingsView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Unlock with \(BiometricLock.biometryName)")
                                         .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                                    Text("Require \(BiometricLock.biometryName) each time you open PinWise. Off by default.")
+                                    Text("Require \(BiometricLock.biometryName) each time you open Staxyz. Off by default.")
                                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
@@ -258,7 +259,7 @@ private struct PrivacySecuritySettingsView: View {
                 guard on else { faceIDLock = false; return }
                 Task {
                     faceIDLock = await BiometricLock.authenticate(
-                        reason: "Turn on \(BiometricLock.biometryName) so PinWise locks when you're away")
+                        reason: "Turn on \(BiometricLock.biometryName) so Staxyz locks when you're away")
                 }
             }
         )
@@ -277,13 +278,13 @@ private struct AboutSettingsView: View {
                         infoRow("Device", deviceModel)
                     }
                 }
-                Text("PinWise is for tracking and education — not medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
+                Text("Staxyz is for tracking and education — not medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
             }
             .padding(Space.lg)
         }
         .heroScreen()
-        .navigationTitle("About PinWise")
+        .navigationTitle("About Staxyz")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -304,9 +305,15 @@ private struct AboutSettingsView: View {
     }
 }
 
-/// Membership / subscription management. Placeholder until StoreKit lands — it shows the plans and
-/// where status will appear; the live trial/monthly/yearly state wires in with the subscription build.
+/// Membership / subscription management — live StoreKit state.
+///
+/// Prices come from `SubscriptionManager.displayPrice`, never hardcoded: they differ by storefront,
+/// and a hardcoded "$7.99" is both wrong abroad and an App Review rejection. When no products have
+/// loaded (offline, or purchases restricted) the rows fall back to "—" rather than a stale figure.
 struct MembershipView: View {
+    @State private var subs = SubscriptionManager.shared
+    @State private var showPaywall = false
+
     var body: some View {
         MenuSheet(title: "Membership") {
             Card {
@@ -315,22 +322,111 @@ struct MembershipView: View {
                     HStack {
                         Text("Status").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                         Spacer()
-                        Text("Free trial").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                        Text(statusWord)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(statusColor)
                     }
-                    Text("Subscriptions aren't live yet. Once they are, manage your plan here — trial, monthly, or yearly.")
+                    Text(statusDetail)
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+
             Card {
                 VStack(alignment: .leading, spacing: Space.md) {
                     SectionHeader(title: "Plans")
-                    planRow("Monthly", "$7.99 / month")
-                    planRow("Yearly", "$4.20 / month")
-                    Text("Yearly bills once at $50.40 — about 47% off monthly. Your 3-week free trial comes first; after it, a subscription keeps the app and Natt unlocked.")
+                    planRow("Monthly",
+                            subs.displayPrice(for: SubscriptionManager.ProductID.monthly)
+                                .map { "\($0) / month" } ?? "—")
+                    planRow("Yearly",
+                            subs.yearlyMonthlyEquivalent.map { "\($0) / month" } ?? "—")
+                    Text(yearlyCopy)
                         .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+
+            // A subscriber manages or cancels in the App Store — Apple owns that flow, and
+            // re-implementing it in-app is both impossible and a review violation.
+            if subs.isSubscribed {
+                Card {
+                    VStack(alignment: .leading, spacing: Space.sm) {
+                        SectionHeader(title: "Manage")
+                        Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
+                            HStack {
+                                Text("Change or cancel plan")
+                                    .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(BrandColor.textSecondary)
+                            }
+                        }
+                        Text("Subscriptions are managed by Apple in your App Store account.")
+                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    }
+                }
+            } else {
+                PrimaryButton(title: "See plans", systemImage: "sparkles") { showPaywall = true }
+            }
+
+            Button { Task { await subs.restore() } } label: {
+                Text(subs.isWorking ? "Restoring…" : "Restore purchases")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(BrandColor.accentText)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+            .disabled(subs.isWorking)
         }
+        .task { await subs.load() }
+        // Dismissible here — the user still has access and chose to look at plans. The expiry
+        // gate in StaxyzApp presents the same view with `dismissible: false`.
+        .sheet(isPresented: $showPaywall) { PaywallView(dismissible: true) }
+        .alert("Heads up", isPresented: Binding(
+            get: { subs.notice != nil },
+            set: { if !$0 { subs.clearNotice() } })
+        ) {
+            Button("Got it", role: .cancel) { subs.clearNotice() }
+        } message: { Text(subs.notice ?? "") }
+    }
+
+    private var statusWord: String {
+        switch subs.entitlement {
+        case .pro: return "Subscribed"
+        case .trial: return "Free trial"
+        case .expired: return "Expired"
+        }
+    }
+
+    private var statusColor: Color {
+        switch subs.entitlement {
+        case .pro: return BrandColor.success
+        case .trial: return BrandColor.accentText
+        case .expired: return BrandColor.danger
+        }
+    }
+
+    private var statusDetail: String {
+        switch subs.entitlement {
+        case .pro:
+            return "Thanks for supporting Staxyz. Natt is unlocked at 10 messages a day."
+        case .trial(let days):
+            let plural = days == 1 ? "day" : "days"
+            return "\(days) \(plural) left. During the trial Natt is limited to 2 messages a day; "
+                + "a subscription raises it to 10."
+        case .expired:
+            return "Your trial has ended. Subscribe to keep your stack, logs, and Natt."
+        }
+    }
+
+    private var yearlyCopy: String {
+        guard let yearly = subs.displayPrice(for: SubscriptionManager.ProductID.yearly) else {
+            return "Yearly bills once and works out cheaper per month. A subscription keeps the "
+                + "app and Natt unlocked after your free trial."
+        }
+        return "Yearly bills once at \(yearly). Your \(TrialWindow.trialDays)-day free trial comes "
+            + "first; after it, a subscription keeps the app and Natt unlocked."
     }
 
     private func planRow(_ name: String, _ price: String) -> some View {

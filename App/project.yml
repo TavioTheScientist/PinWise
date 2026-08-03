@@ -1,11 +1,11 @@
-# XcodeGen spec — generates the PinWise iOS app project with one command.
+# XcodeGen spec — generates the Staxyz iOS app project with one command.
 #   brew install xcodegen   # if needed
-#   cd App && xcodegen generate && open PinWise.xcodeproj
+#   cd App && xcodegen generate && open Staxyz.xcodeproj
 # The app links the local PeptideKit package (this same directory) and compiles the
 # SwiftUI sources under iOSApp/. Keeps the manual-setup steps in iOSApp/README.md optional.
-name: PinWise
+name: Staxyz
 options:
-  bundleIdPrefix: com.pinwise
+  bundleIdPrefix: com.staxyz
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
@@ -21,7 +21,7 @@ packages:
     from: "2.0.0"
 
 targets:
-  PinWise:
+  Staxyz:
     type: application
     platform: iOS
     sources:
@@ -33,23 +33,23 @@ targets:
     info:
       path: iOSApp/Info.plist
       properties:
-        CFBundleDisplayName: PinWise
-        # Launch: metallic PW icon tile on PURE BLACK + PinWise wordmark (no glow — founder removed it).
+        CFBundleDisplayName: Staxyz
+        # Launch: metallic PW icon tile on PURE BLACK + Staxyz wordmark (no glow — founder removed it).
         # Config must live HERE — xcodegen regenerates Info.plist. Bumping the storyboard filename
         # (V12 = black bg, no glow) is a fresh launch-snapshot cache key.
         UILaunchStoryboardName: LaunchScreenV12
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
-        NSHealthShareUsageDescription: "PinWise displays the weight, resting heart rate, HRV, sleep, and step values you choose to share from Health alongside your dose logs."
-        NSCameraUsageDescription: "PinWise uses the camera so you can photograph a vial label or take a progress photo. Photos stay on your device."
-        NSMicrophoneUsageDescription: "PinWise uses the microphone so you can speak a vial's details to fill them in. Audio is transcribed on your device and isn't uploaded."
-        NSSpeechRecognitionUsageDescription: "PinWise transcribes your speech on your device to fill in vial details. Nothing is sent to Apple or any server."
-        NSFaceIDUsageDescription: "PinWise uses Face ID to lock the app, so only you can open it. This is optional and off by default."
+        NSHealthShareUsageDescription: "Staxyz displays the weight, resting heart rate, HRV, sleep, and step values you choose to share from Health alongside your dose logs."
+        NSCameraUsageDescription: "Staxyz uses the camera so you can photograph a vial label or take a progress photo. Photos stay on your device."
+        NSMicrophoneUsageDescription: "Staxyz uses the microphone so you can speak a vial's details to fill them in. Audio is transcribed on your device and isn't uploaded."
+        NSSpeechRecognitionUsageDescription: "Staxyz transcribes your speech on your device to fill in vial details. Nothing is sent to Apple or any server."
+        NSFaceIDUsageDescription: "Staxyz uses Face ID to lock the app, so only you can open it. This is optional and off by default."
     # HealthKit read access (weight, resting HR, HRV). XcodeGen generates the entitlements
     # file; the usage string lives in info.NSHealthShareUsageDescription above.
     entitlements:
-      path: iOSApp/PinWise.entitlements
+      path: iOSApp/Staxyz.entitlements
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
@@ -68,7 +68,7 @@ targets:
         product: Supabase
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.pinwise.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.staxyz.app
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
@@ -81,11 +81,21 @@ targets:
         # early iteration; PeptideKit stays on Swift 6. Bump to "6.0" once the UI settles.
         SWIFT_VERSION: "5.0"
 
-# Explicit shared scheme so CI (`xcodebuild -scheme PinWise`) works headlessly.
+# Explicit shared scheme so CI (`xcodebuild -scheme Staxyz`) works headlessly.
 schemes:
-  PinWise:
+  Staxyz:
     build:
       targets:
-        PinWise: all
+        Staxyz: all
     run:
       config: Debug
+      # Local StoreKit testing WITHOUT App Store Connect products existing yet. With this
+      # attached, the simulator serves the two subscriptions from Staxyz.storekit, so the paywall,
+      # purchase, restore and expiry paths are all exercisable now. Xcode's Debug ▸ StoreKit
+      # ▸ Manage Transactions pane can then expire/refund a purchase on demand.
+      #
+      # This affects the Debug RUN action only — it is not compiled into the app, so a release
+      # build still talks to the real App Store. The product IDs here MUST stay identical to
+      # SubscriptionManager.ProductID and to the eventual App Store Connect products; a mismatch
+      # fails silently (products just don't load).
+      storeKitConfiguration: Staxyz.storekit

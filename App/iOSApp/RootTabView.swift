@@ -60,7 +60,7 @@ struct RootTabView: View {
             }
         }
         .overlay(alignment: .bottom) {
-            PinWiseTabBar(selected: $selected)
+            StaxyzTabBar(selected: $selected)
         }
         // Drawers sit above the tab bar so they cover the full screen when open.
         .overlay {
@@ -125,7 +125,7 @@ extension View {
 /// content passing visibly beneath it. Five equal-width, center-aligned tabs, four of them
 /// strictly monochrome; Log is a metallic chrome disc with a near-black glyph that crests
 /// above the capsule's top edge — the single colored element in the app's chrome.
-private struct PinWiseTabBar: View {
+private struct StaxyzTabBar: View {
     @Binding var selected: AppTab
     @Environment(TabScrollCoordinator.self) private var scrollCoordinator
 

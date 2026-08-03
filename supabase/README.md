@@ -1,6 +1,13 @@
-# PinWise backend (Supabase)
+# Staxyz backend (Supabase)
 
-Hosted AI proxy + per-user usage quota for the PinWise iOS app. The app never holds a provider API
+> **Renamed 2026-08-01 — formerly PinWise. ACTION REQUIRED HERE.** The app's bundle ID changed
+> from `com.pinwise.app` to **`com.staxyz.app`**, but this Supabase project was NOT touched. Its
+> **Apple Services ID and auth redirect URLs still point at `com.pinwise.app`**, so
+> Continue-with-Apple will fail until they are repointed in the dashboard
+> (Authentication ▸ Providers ▸ Apple). The Supabase project's own name, `pinwise_backend`, is
+> server-side and was deliberately left alone.
+
+Hosted AI proxy + per-user usage quota for the Staxyz app. The app never holds a provider API
 key — it calls the `ai-chat` Edge Function with a Supabase JWT; the function enforces the quota,
 injects the safety guardrails server-side, and streams the model response back.
 

@@ -84,14 +84,57 @@ final class AuthManager {
                 name: parts.isEmpty ? nil : parts.joined(separator: " "),
                 email: cred.email)
             // Bridge to the backend: exchange Apple's identity token for a Supabase session so the
-            // hosted AI can authenticate the user. Best-effort — the on-device session set above
-            // stands regardless, and this is a no-op until the backend is configured.
+            // hosted AI can authenticate the user. The on-device session set above still stands if
+            // this fails, but the assistant and the server-side trial clock both need a real
+            // Supabase session — so a failure here is reported, never discarded.
             if let tokenData = cred.identityToken, let idToken = String(data: tokenData, encoding: .utf8) {
-                Task { try? await SupabaseService.shared.signInWithApple(idToken: idToken) }
+                Task {
+                    do { try await SupabaseService.shared.signInWithApple(idToken: idToken) }
+                    catch { self.reportBackendExchangeFailure(error) }
+                }
             }
-        case .failure:
-            notice = nil   // user canceled — don't nag
+        case .failure(let error):
+            notice = Self.appleFailureNotice(for: error)
         }
+    }
+
+    /// Apple reports a *server-side* authorization failure to the app as `.canceled` (1001) — the
+    /// same code a real cancel produces — so treating 1001 as "user canceled" makes a genuine
+    /// failure indistinguishable from a dead screen. Release stays quiet on a cancel, because
+    /// nagging someone who tapped X is wrong; DEBUG always names the code so the cause is visible.
+    private static func appleFailureNotice(for error: Error) -> String? {
+        guard let code = (error as? ASAuthorizationError)?.code else {
+            return "Apple sign-in didn't complete. Try again, or use email."
+        }
+        switch code {
+        case .canceled:
+            #if DEBUG
+            return """
+            Apple returned .canceled (1001). If you didn't tap cancel, the authorization failed on \
+            Apple's side before any credential reached the app — check the akd log for the real cause.
+            """
+            #else
+            return nil
+            #endif
+        case .notHandled:      return "Apple couldn't handle that request. Try again in a moment."
+        case .invalidResponse: return "Apple returned an invalid response. Try again."
+        case .failed:          return "Apple sign-in failed. Check your connection and try again."
+        // A plain `default` (not `@unknown default`) on purpose: ASAuthorizationError.Code is a
+        // resilient system enum that gains cases across SDKs, and every remaining one warrants the
+        // same generic retry message — so listing them buys nothing and breaks on the next SDK.
+        default:               return "Apple sign-in didn't complete. Try again, or use email."
+        }
+    }
+
+    /// The token exchange finishes after the local session is already set, so the sign-in screen may
+    /// be gone by now and `notice` can go unseen — hence the DEBUG console line as well.
+    private func reportBackendExchangeFailure(_ error: Error) {
+        #if DEBUG
+        print("[Auth] Apple sign-in succeeded but the Supabase exchange failed: \(error)")
+        notice = "Signed in with Apple, but the server session failed: \(error.localizedDescription)"
+        #else
+        notice = "You're signed in, but we couldn't reach our server — the assistant may be unavailable."
+        #endif
     }
 
     func continueAsGuest() { set(provider: .guest, uid: "guest", name: nil, email: nil) }

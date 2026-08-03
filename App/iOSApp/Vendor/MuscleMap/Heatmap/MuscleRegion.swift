@@ -1,6 +1,6 @@
 //
 //  MuscleRegion.swift
-//  MuscleMap — PinWise fork addition (see PINWISE_FORK.md)
+//  MuscleMap — Staxyz fork addition (see STAXYZ_FORK.md)
 //
 //  Upstream MuscleMap keys highlights by `Muscle` alone, which is right for a workout tracker (you
 //  train a muscle, not half of one) and wrong for an injection map, where the whole point is showing
@@ -25,7 +25,7 @@ public enum MuscleBand: Sendable, Hashable {
 /// vertical band of that side.
 ///
 /// `side` is in **IMAGE** coordinates, matching the path data — `.left` is the smaller-x side in both
-/// front and back views. On a FRONT view that is the subject's RIGHT. See PINWISE_FORK.md.
+/// front and back views. On a FRONT view that is the subject's RIGHT. See STAXYZ_FORK.md.
 public struct MuscleRegionKey: Sendable, Hashable {
     public let muscle: Muscle
     /// `.both` targets the whole muscle regardless of side.

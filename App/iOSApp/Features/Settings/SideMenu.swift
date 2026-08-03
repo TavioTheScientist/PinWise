@@ -55,7 +55,7 @@ struct SideMenuDrawer: View {
     private func panel(topInset: CGFloat, bottomInset: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("PinWise")
+                Text("Staxyz")
                     .font(.system(size: 26, weight: .bold))
                     .foregroundStyle(BrandColor.textPrimary)
                 Spacer()
@@ -258,7 +258,7 @@ struct HealthConnectionsView: View {
 
     var body: some View {
         MenuSheet(title: "Connections") {
-            Text("PinWise reads your data from Apple Health — it never connects to your ring or watch directly. Your Oura, Whoop, Apple Watch, or Garmin writes into Apple Health, and PinWise reads it back out. Both sides need Apple Health sharing turned on, or nothing flows. You'll see standard metrics — weight, resting heart rate, HRV, sleep, steps — not app-specific scores like Oura Readiness. No separate logins.")
+            Text("Staxyz reads your data from Apple Health — it never connects to your ring or watch directly. Your Oura, Whoop, Apple Watch, or Garmin writes into Apple Health, and Staxyz reads it back out. Both sides need Apple Health sharing turned on, or nothing flows. You'll see standard metrics — weight, resting heart rate, HRV, sleep, steps — not app-specific scores like Oura Readiness. No separate logins.")
                 .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
             HealthWidget()
             Card {
@@ -319,7 +319,7 @@ struct AboutView: View {
         MenuSheet(title: "About & Legal") {
             Card {
                 VStack(alignment: .leading, spacing: Space.sm) {
-                    Text("PinWise").font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                    Text("Staxyz").font(Typo.title).foregroundStyle(BrandColor.textPrimary)
                     Text("The source of truth for peptides and dose tracking — transparent about where the evidence stands.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                     HStack {
@@ -333,7 +333,7 @@ struct AboutView: View {
             Card {
                 VStack(alignment: .leading, spacing: Space.sm) {
                     SectionHeader(title: "Important")
-                    Text("PinWise is for tracking and education. It doesn't provide medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
+                    Text("Staxyz is for tracking and education. It doesn't provide medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                 }
             }

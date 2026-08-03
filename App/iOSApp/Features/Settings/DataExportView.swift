@@ -1,9 +1,9 @@
 import SwiftUI
 import SwiftData
 
-/// Exports the user's PinWise data — plus, if Apple Health is connected, the on-device health
+/// Exports the user's Staxyz data — plus, if Apple Health is connected, the on-device health
 /// snapshots — to a single CSV the user saves or shares via the system share sheet. This is the
-/// USER exporting their OWN data (not PinWise disclosing to a third party), so it's compliant to
+/// USER exporting their OWN data (not Staxyz disclosing to a third party), so it's compliant to
 /// include the read Health metrics. The file is written to a temporary location and handed to
 /// ShareLink; nothing is uploaded anywhere by this screen.
 struct DataExportView: View {
@@ -38,7 +38,7 @@ struct DataExportView: View {
             Card {
                 VStack(alignment: .leading, spacing: Space.sm) {
                     SectionHeader(title: "Your data, as a CSV")
-                    Text("Exports everything you've logged in PinWise — doses, protocols, vials, lots, symptoms, and lab/metric entries — plus your Apple Health snapshots if you've connected Health, and your COA documents themselves. It stays yours: the files go wherever you send them, and nothing is uploaded here.")
+                    Text("Exports everything you've logged in Staxyz — doses, protocols, vials, lots, symptoms, and lab/metric entries — plus your Apple Health snapshots if you've connected Health, and your COA documents themselves. It stays yours: the files go wherever you send them, and nothing is uploaded here.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                     countRow("Doses", doses.count)
                     countRow("Protocols", protocols.count)
@@ -51,7 +51,7 @@ struct DataExportView: View {
                 }
             }
 
-            Text("PinWise stores everything on this device and syncs nothing. This export is the way to keep a copy — including the COA files, which aren't part of any automatic backup.")
+            Text("Staxyz stores everything on this device and syncs nothing. This export is the way to keep a copy — including the COA files, which aren't part of any automatic backup.")
                 .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
                 .padding(.horizontal, Space.lg)
 
@@ -103,7 +103,7 @@ struct DataExportView: View {
             .filter { COADocumentStore.exists(named: $0.filename) }
             .map { COADocumentStore.url(named: $0.filename) }
 
-        let name = "PinWise-export-\(Self.stamp.string(from: Date())).csv"
+        let name = "Staxyz-export-\(Self.stamp.string(from: Date())).csv"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
         do {
             try csv.data(using: .utf8)?.write(to: url, options: .atomic)
@@ -128,7 +128,7 @@ enum DataExportBuilder {
                     symptoms: [SymptomEntry], biomarkers: [BiomarkerEntry], health: [HealthSnapshot],
                     lots: [StoredLot] = [], coaDocs: [COAAttachment] = [],
                     testingRequests: [TestingRequest] = []) -> String {
-        var out = "PinWise data export,generated,\(iso.string(from: Date()))\n"
+        var out = "Staxyz data export,generated,\(iso.string(from: Date()))\n"
 
         out += "\n# Doses\n"
         out += row(["timestamp", "compound", "dose_mcg", "site", "lot", "energy_0_10", "side_effect_0_10", "notes"])

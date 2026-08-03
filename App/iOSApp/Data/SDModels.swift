@@ -450,7 +450,7 @@ final class PhysiquePhoto {
     }
 }
 
-/// A daily snapshot of the Apple Health metrics PinWise reads (weight, resting HR, HRV, sleep,
+/// A daily snapshot of the Apple Health metrics Staxyz reads (weight, resting HR, HRV, sleep,
 /// steps), captured on-device so the app has a HISTORY instead of only the latest live value.
 /// This powers CSV export of trends and lets Natt reason about change over time (only when the
 /// user has opted into sharing Health with the assistant). Stays on-device; CloudKit-safe

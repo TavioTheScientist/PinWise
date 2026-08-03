@@ -4,12 +4,12 @@ import PeptideKit
 
 /// A manufacturing lot — the batch a vial actually came from.
 ///
-/// This is the first leg of PinWise's "system of record" claim: *what was actually in the vial*, as
+/// This is the first leg of Staxyz's "system of record" claim: *what was actually in the vial*, as
 /// distinct from what the label said. Until now a lot number had nowhere to live, so the label
 /// scanner appended it to the vial's free-text `notes` as `"Lot A24-118"` — unqueryable, unlinkable,
 /// and invisible to anything that mattered.
 ///
-/// **Vendor is deliberately free text and always will be.** PinWise names no vendors and vets no
+/// **Vendor is deliberately free text and always will be.** Staxyz names no vendors and vets no
 /// suppliers (see `CompoundDetailView.coaLiteracy`), so a curated vendor list would be both a
 /// product-posture violation and a claim we cannot back. The consequence — that vendor cannot carry
 /// identity reliably — is why `LotIdentity.compare` is two-tier rather than an equality check.
@@ -106,7 +106,7 @@ extension StoredLot {
 /// label), and recording both is what makes this a record rather than a form. The divergence is
 /// information; the UI's job is to surface it and let the user resolve it explicitly.
 ///
-/// PinWise never verifies a COA. These are user-supplied documents.
+/// Staxyz never verifies a COA. These are user-supplied documents.
 @Model
 final class COAAttachment {
     var id: UUID = UUID()

@@ -10,8 +10,23 @@ import SwiftUI
 // analytics/improvement/sharing uses per App Review 5.1.3. Liability for personal injury
 // is NOT nominally excluded (void in many jurisdictions); it is capped only where lawful.
 //
-// BEFORE SUBMISSION, WITH COUNSEL: confirm the legal entity name and registered address,
-// the arbitration provider election (AAA consumer rules below), and the Delaware venue.
+// BEFORE SUBMISSION, WITH COUNSEL: confirm the registered entity name and address, the
+// arbitration provider election (AAA consumer rules below), and the governing-law choice.
+//
+// STILL OUTSTANDING (2026-08-02) — the entity is Staxyz, a C corp not yet formed:
+//   1. The EXACT registered name, with suffix ("Staxyz, Inc." / "Staxyz Corp."). `entityName` is
+//      bare "Staxyz" until the certificate issues, because an unregistered name in a signed
+//      agreement is worse than an unadorned one. Bump `Disclaimer.currentVersion` when it changes.
+//   2. GOVERNING LAW IS AN OPEN QUESTION AGAIN. It currently reads California. That was chosen
+//      when the entity was a California LLC; a C corp will most likely be incorporated in
+//      DELAWARE, and the venue/governing-law clauses below should be revisited against the actual
+//      state of incorporation. Incorporation state and governing law need not match — but the
+//      choice should be deliberate rather than inherited from a superseded plan.
+//   3. The registered street address — consumer-arbitration and CCPA notice provisions
+//      conventionally state one, and there is deliberately no placeholder here (an invented
+//      address in a signed legal document is worse than an absent one).
+//   4. A real contact channel. `contactChannel` still points at the App Store listing, which is
+//      adequate pre-launch but is NOT a durable notice address for arbitration opt-out.
 
 struct LegalSection: Identifiable {
     let id = UUID()
@@ -21,10 +36,24 @@ struct LegalSection: Identifiable {
 
 enum LegalDocuments {
     static let effectiveDate = "July 21, 2026"
-    // No legal entity, contact email, or person is referenced yet (none exists pre-launch,
-    // per founder). Before App Store submission: substitute the registered legal entity,
-    // add a real contact channel, and have counsel review. "PinWise" stands in as the party.
-    static let entityName = "PinWise"
+    /// The contracting party. Company and product share the name: Staxyz is both the app and the
+    /// entity being formed (a C corp).
+    ///
+    /// **MUST BE UPDATED AT FORMATION.** A registered corporation's legal name carries a suffix —
+    /// "Staxyz, Inc." or "Staxyz Corp." depending on the filing — and the ToS has to name the
+    /// entity exactly as registered. It is bare "Staxyz" here because the corp does not exist yet
+    /// and inventing a suffix would put an unregistered name in a signed agreement. When the
+    /// certificate of incorporation issues: set the exact name, and bump
+    /// `Disclaimer.currentVersion` so users consent to the real counterparty.
+    static let entityName = "Staxyz"
+    /// The product name. Identical to `entityName` today, but kept as a separate token so the two
+    /// can diverge the moment the entity gains its suffix — at that point sentences about the APP
+    /// should keep saying "Staxyz" while the contracting clauses say "Staxyz, Inc."
+    static let productName = "Staxyz"
+    /// Upper-case entity, for the all-caps statutory clauses (warranty disclaimer, liability
+    /// cap, jury/class waiver). Those clauses bind the COMPANY, so this follows `entityName`
+    /// including whatever suffix formation produces.
+    static let entityNameCaps = "STAXYZ"
     /// The only contact mechanism the documents reference until a business/email exists.
     static let contactChannel = "the support contact listed on the app's App Store page"
 
@@ -33,8 +62,8 @@ enum LegalDocuments {
     static let terms: [LegalSection] = [
         LegalSection(heading: "1. Acceptance of These Terms", body: """
         These Terms of Service (the "Terms") constitute a legally binding agreement between you \
-        and the developer of the PinWise application ("PinWise," \
-        "we," "us," or "our"), governing your access to and use of the PinWise application, \
+        and \(entityName), the developer of the \(productName) application ("\(entityName)," \
+        "we," "us," or "our"), governing your access to and use of the \(productName) application, \
         including all related features, content, and services (collectively, the "Service"). \
         You accept these Terms through the in-app acceptance flow presented before first use \
         and again whenever the Terms materially change. If you do not agree to these Terms, \
@@ -50,7 +79,7 @@ enum LegalDocuments {
         """),
 
         LegalSection(heading: "3. Nature of the Service; No Medical Advice; No Clinician Relationship; Not for Emergencies", body: """
-        PinWise is a personal record-keeping, organization, and general-wellness tool. THE \
+        Staxyz is a personal record-keeping, organization, and general-wellness tool. THE \
         SERVICE IS NOT A MEDICAL DEVICE AND IS NOT INTENDED TO DIAGNOSE, TREAT, CURE, MITIGATE, \
         OR PREVENT ANY DISEASE OR CONDITION. Nothing contained in or produced by the Service — \
         including calculators, reference information, evidence tiers, news summaries, reminders, \
@@ -79,7 +108,7 @@ enum LegalDocuments {
         of safety, efficacy, legality, or fitness for any purpose. You are solely responsible \
         for ensuring that your acquisition, possession, and use of any substance complies with \
         all laws, regulations, and rules applicable to you, including anti-doping rules where \
-        relevant. PinWise does not sell, supply, prescribe, or facilitate the acquisition of \
+        relevant. Staxyz does not sell, supply, prescribe, or facilitate the acquisition of \
         any substance.
         """),
 
@@ -97,13 +126,13 @@ enum LegalDocuments {
         The Service permits you to record notes, protocols, vials, measurements, photographs, \
         and other materials ("User Content"), and to define compounds that are not part of the \
         verified reference library ("User-Added Compounds"). You retain ownership of your User \
-        Content. You grant PinWise a limited, non-exclusive license to process User Content \
+        Content. You grant Staxyz a limited, non-exclusive license to process User Content \
         solely to operate and display the Service on your device and, where you enable a \
         synchronization or backup feature, to transmit and store it as you direct. With \
-        respect to User-Added Compounds, you acknowledge that PinWise possesses no data \
+        respect to User-Added Compounds, you acknowledge that Staxyz possesses no data \
         regarding, and makes no representation whatsoever concerning, their identity, purity, \
         stability, safety, legality, or handling; that all information associated with a \
-        User-Added Compound is supplied entirely by you; and that PinWise expressly disclaims \
+        User-Added Compound is supplied entirely by you; and that Staxyz expressly disclaims \
         all responsibility and liability arising from or relating to User-Added Compounds. If \
         you send us suggestions or feedback, we may use them without restriction or obligation \
         to you.
@@ -117,7 +146,7 @@ enum LegalDocuments {
         """),
 
         LegalSection(heading: "8. License and Intellectual Property", body: """
-        Subject to these Terms, PinWise grants you a personal, limited, non-exclusive, \
+        Subject to these Terms, Staxyz grants you a personal, limited, non-exclusive, \
         non-transferable, revocable license to use the Service on Apple-branded devices that \
         you own or control, as permitted by the Usage Rules set forth in the Apple Media \
         Services Terms and Conditions. The Service, including its software, design, text, \
@@ -139,20 +168,20 @@ enum LegalDocuments {
         The Service interoperates with third-party services you elect to connect, including \
         Apple Health, and may display summaries of, and links to, third-party publications and \
         registries. Third-party services are governed by their own terms and privacy policies, \
-        and PinWise is not responsible for third-party content, accuracy, or practices. News \
+        and Staxyz is not responsible for third-party content, accuracy, or practices. News \
         summaries are provided for general information only and may contain errors; always \
         consult the linked primary source.
         """),
 
         LegalSection(heading: "11. Disclaimer of Warranties", body: """
         THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITH ALL FAULTS AND WITHOUT \
-        WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, PINWISE \
+        WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, \(entityNameCaps) \
         DISCLAIMS ALL WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING WITHOUT LIMITATION \
         IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY, \
         QUIET ENJOYMENT, AND NON-INFRINGEMENT, AND ANY WARRANTY THAT THE SERVICE WILL BE \
         UNINTERRUPTED, ERROR-FREE, OR FREE OF HARMFUL COMPONENTS, OR THAT ANY CALCULATION, \
         REMINDER, PROJECTION, OR ITEM OF INFORMATION WILL BE ACCURATE, COMPLETE, OR RELIABLE. \
-        NO ORAL OR WRITTEN INFORMATION OBTAINED FROM PINWISE SHALL CREATE ANY WARRANTY. Some \
+        NO ORAL OR WRITTEN INFORMATION OBTAINED FROM \(entityNameCaps) SHALL CREATE ANY WARRANTY. Some \
         jurisdictions do not allow the exclusion of implied warranties, so some of the above \
         may not apply to you.
         """),
@@ -166,10 +195,10 @@ enum LegalDocuments {
         BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE \
         DAMAGES, OR FOR ANY LOSS OF DATA OR LOSS OF PROFITS, ARISING OUT OF OR RELATING TO THE \
         SERVICE OR THESE TERMS, WHETHER BASED ON WARRANTY, CONTRACT, TORT (INCLUDING \
-        NEGLIGENCE), PRODUCT LIABILITY, OR ANY OTHER LEGAL THEORY, AND WHETHER OR NOT PINWISE \
+        NEGLIGENCE), PRODUCT LIABILITY, OR ANY OTHER LEGAL THEORY, AND WHETHER OR NOT \(entityNameCaps) \
         HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES; AND (B) THE AGGREGATE LIABILITY \
         OF \(entityName) FOR ALL CLAIMS ARISING OUT OF OR RELATING TO THE SERVICE SHALL NOT \
-        EXCEED THE GREATER OF (i) THE AMOUNTS YOU PAID TO PINWISE FOR THE SERVICE IN THE \
+        EXCEED THE GREATER OF (i) THE AMOUNTS YOU PAID TO \(entityNameCaps) FOR THE SERVICE IN THE \
         TWELVE (12) MONTHS PRECEDING THE CLAIM AND (ii) FIFTY U.S. DOLLARS (US $50). Statutory \
         rights you hold as a consumer remain unaffected.
         """),
@@ -189,21 +218,21 @@ enum LegalDocuments {
         to attempt informal resolution for thirty (30) days. Except for disputes that qualify \
         for small-claims court in your county of residence, or claims for injunctive relief \
         for intellectual-property misuse (which may be brought in the state or federal courts \
-        located in Delaware), any dispute, claim, or controversy arising out of or relating to \
+        located in California), any dispute, claim, or controversy arising out of or relating to \
         these Terms or the Service shall be resolved by binding individual arbitration \
         administered by the American Arbitration Association ("AAA") under its Consumer \
         Arbitration Rules then in effect. The arbitrator, and not any court, has exclusive \
         authority to resolve disputes about the interpretation, applicability, or \
         enforceability of this arbitration agreement. Arbitration fees are allocated as \
         provided in the AAA Consumer Arbitration Rules; we will pay filing and arbitrator \
-        fees the Rules assign to us. YOU AND PINWISE EACH WAIVE THE RIGHT TO A TRIAL BY JURY \
+        fees the Rules assign to us. YOU AND \(entityNameCaps) EACH WAIVE THE RIGHT TO A TRIAL BY JURY \
         AND TO PARTICIPATE IN A CLASS ACTION, CLASS ARBITRATION, OR REPRESENTATIVE PROCEEDING. \
         If the class action waiver is found unenforceable as to a particular claim, that claim \
         (and only that claim) shall proceed in court, and the waiver shall remain enforceable \
         as to all other claims. You may opt out of this arbitration agreement by submitting \
         written notice through \(contactChannel) within thirty (30) days of first accepting \
         these Terms, stating that you decline arbitration. These Terms are governed by the laws of \
-        the State of Delaware, USA, without regard to conflict-of-law principles, except where \
+        the State of California, USA, without regard to conflict-of-law principles, except where \
         the mandatory consumer-protection law of your place of residence applies.
         """),
 
@@ -250,9 +279,9 @@ enum LegalDocuments {
 
     static let privacy: [LegalSection] = [
         LegalSection(heading: "1. Scope; Controller; Consent", body: """
-        This Privacy Policy describes how the developer of the PinWise application ("PinWise," \
+        This Privacy Policy describes how the developer of the Staxyz application ("Staxyz," \
         "we," "us" — the data controller where that concept applies) collects, uses, discloses, \
-        and safeguards information in connection with the PinWise application. It is \
+        and safeguards information in connection with the Staxyz application. It is \
         incorporated into and forms part of the Terms of Service. This Policy also serves as \
         our consumer health data privacy policy for purposes of the Washington My Health My \
         Data Act and similar state laws. Where processing is based on consent — including for \
@@ -334,7 +363,7 @@ enum LegalDocuments {
         (c) in aggregated or de-identified form that cannot reasonably be used to identify \
         you, for product improvement and analytics, and only if such data is collected under \
         Section 2(d); (d) to comply with law, regulation, legal process, or enforceable \
-        governmental request, or to protect the rights, property, or safety of PinWise, our \
+        governmental request, or to protect the rights, property, or safety of Staxyz, our \
         users, or the public; and (e) in connection with a merger, acquisition, financing, or \
         sale of assets, subject to this Policy. Apple Health data is never shared under \
         subsections (c) or (e) and is disclosed only as required to provide the features you \

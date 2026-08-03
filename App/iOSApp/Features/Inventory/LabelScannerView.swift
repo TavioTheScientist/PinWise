@@ -255,7 +255,7 @@ struct LabelScannerView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
-                    Text("Choose a clear photo of the pharmacy label. PinWise reads it on your device — the photo isn't uploaded anywhere.")
+                    Text("Choose a clear photo of the pharmacy label. Staxyz reads it on your device — the photo isn't uploaded anywhere.")
                         .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
 
                     HStack(spacing: Space.md) {

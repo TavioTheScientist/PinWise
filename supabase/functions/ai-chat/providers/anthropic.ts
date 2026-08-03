@@ -6,7 +6,7 @@ import type { ChatEvent, ChatProvider, ChatRequest } from "./types.ts";
 const API_URL = "https://api.anthropic.com/v1/messages";
 const API_VERSION = "2023-06-01";
 // Decision (deep-research, 2026-07): Haiku 4.5 is the pick — wins the health-data privacy
-// criterion, ~$1/$5 per M tokens, trivial cost at PinWise's volume. Runner-up: claude-sonnet-4-6
+// criterion, ~$1/$5 per M tokens, trivial cost at Staxyz's volume. Runner-up: claude-sonnet-4-6
 // (same adapter/API, ~3x cost) if refusal-robustness or extraction accuracy needs it. Verify the
 // exact model id against Anthropic's live catalog at deploy time; override with AI_MODEL.
 const DEFAULT_MODEL = "claude-haiku-4-5";

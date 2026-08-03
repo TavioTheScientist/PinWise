@@ -9,24 +9,24 @@ import PeptideKit
 // to the Xcode app project that links the PeptideKit Swift package.
 // Fastest setup: `cd App && xcodegen generate` (see App/iOSApp/README.md).
 @main
-struct PinWiseApp: App {
-    // Owns the notification-center delegate so dose reminders show even when PinWise is open.
+struct StaxyzApp: App {
+    // Owns the notification-center delegate so dose reminders show even when Staxyz is open.
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
         WindowGroup {
             RootView()
         }
-        // Local-first store, shared with the notification-center delegate (see PinWiseStore) so a
+        // Local-first store, shared with the notification-center delegate (see StaxyzStore) so a
         // Skip tapped on a reminder banner can be recorded even when the app isn't running. To
         // enable iCloud private-database sync later, add the iCloud + CloudKit capability and a
         // ModelConfiguration(cloudKitDatabase:) — the models are already CloudKit-safe.
-        .modelContainer(PinWiseStore.shared)
+        .modelContainer(StaxyzStore.shared)
     }
 }
 
 /// Registers as the notification-center delegate so scheduled dose reminders present while
-/// PinWise is in the foreground — iOS suppresses them by default, which makes an in-app dose
+/// Staxyz is in the foreground — iOS suppresses them by default, which makes an in-app dose
 /// reminder useless (people often have the app open around dose time).
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
@@ -75,7 +75,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let info = request.content.userInfo
         let ids = (info["protocolIDs"] as? [String]) ?? (info["protocolID"] as? String).map { [$0] } ?? []
         let slot = Calendar.current.startOfDay(for: firedAt)
-        let context = PinWiseStore.shared.mainContext
+        let context = StaxyzStore.shared.mainContext
         let names = (info["protocolNames"] as? [String]) ?? []
 
         for (i, raw) in ids.enumerated() {
@@ -113,6 +113,7 @@ struct RootView: View {
     @AppStorage(BiometricLock.prefKey) private var faceIDLock = false
     @Environment(\.scenePhase) private var scenePhase
     @State private var auth = AuthManager.shared
+    @State private var subs = SubscriptionManager.shared
     @State private var unlocked = false   // biometric session state; re-locks when backgrounded
     @Environment(\.modelContext) private var modelContext
 
@@ -155,6 +156,18 @@ struct RootView: View {
                     .transition(.opacity)
                     .zIndex(4)
             }
+            // Second gate: the hard paywall. Only reachable once signed in — an unauthenticated
+            // user has no trial clock yet, and stacking a paywall over the welcome screen would
+            // ask for money before the app has shown anything.
+            //
+            // NOT dismissible here (see PaywallView): `.expired` has no path back in except
+            // subscribing or restoring. Sits BELOW the biometric lock on purpose — if the user
+            // enabled Face ID, their data stays covered even while they are locked out on billing.
+            if auth.isAuthenticated && !subs.hasAccess {
+                PaywallView()
+                    .transition(.opacity)
+                    .zIndex(6)
+            }
             // Optional Face ID / Touch ID lock (opt-in under Security & Privacy). Covers everything
             // once the user is signed in; clears on a successful biometric check, re-locks on background.
             if auth.isAuthenticated && faceIDLock && !unlocked {
@@ -180,6 +193,14 @@ struct RootView: View {
             }
             // Stamp the install/first-use date once — anchors the review-prompt milestones.
             if firstLaunchAt == 0 { firstLaunchAt = Date().timeIntervalSinceReferenceDate }
+            // Load products + entitlement before the first frame settles, so a subscriber never
+            // sees the paywall flash on a cold launch. `hasAccess` defaults open until this
+            // resolves, which is the right direction to fail: a billing glitch must not lock a
+            // paying user out of their own dose history.
+            await subs.load()
+            // The trial clock starts at SIGN-IN, not launch. Idempotent, and reconciled against the
+            // server's write-once stamp so a reinstall cannot restart it.
+            if auth.isAuthenticated { await subs.beginTrialIfNeeded() }
             // Give HealthManager the store so a refresh can persist a daily on-device snapshot,
             // then refresh silently if Health was connected in a past session (no re-prompt).
             HealthManager.shared.modelContext = modelContext
@@ -190,7 +211,13 @@ struct RootView: View {
             maybeRequestReview()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { maybeRequestReview() }
+            if phase == .active {
+                maybeRequestReview()
+                // Re-check entitlement on foreground. A subscription can lapse, be cancelled, or
+                // be refunded while backgrounded, and Transaction.updates does NOT reliably fire
+                // for a lapse — nothing new is issued, an existing entitlement simply ages out.
+                Task { await subs.refreshEntitlement() }
+            }
             else if phase == .background { unlocked = false }   // re-lock behind Face ID next foreground
         }
         // Sign-in IS Terms acceptance (WelcomeView's consent line). The moment auth succeeds,
@@ -199,7 +226,11 @@ struct RootView: View {
             if isAuth && acceptedVersion < Disclaimer.currentVersion {
                 acceptedVersion = Disclaimer.currentVersion
             }
+            // Start the trial the moment an account exists, so day 1 is the first day the user
+            // could actually use the app.
+            if isAuth { Task { await subs.beginTrialIfNeeded() } }
         }
+        .animation(.easeInOut(duration: 0.55), value: subs.hasAccess)
         .preferredColorScheme(AppearanceMode.from(appearanceRaw).colorScheme)
         // Also force the window's UIKit style so dynamic BrandColor tokens resolve to the same
         // appearance as SwiftUI-native views (prevents invisible native text on mismatch).
@@ -221,7 +252,7 @@ struct BiometricLockView: View {
                 Image(systemName: "faceid")
                     .font(.system(size: 46))
                     .foregroundStyle(BrandColor.accentText)
-                Text("PinWise is locked")
+                Text("Staxyz is locked")
                     .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
                 Button { Task { await unlock() } } label: {
                     Label("Unlock with \(BiometricLock.biometryName)", systemImage: "lock.open")
@@ -240,6 +271,6 @@ struct BiometricLockView: View {
     }
 
     private func unlock() async {
-        if await BiometricLock.authenticate(reason: "Unlock PinWise") { onUnlock() }
+        if await BiometricLock.authenticate(reason: "Unlock Staxyz") { onUnlock() }
     }
 }

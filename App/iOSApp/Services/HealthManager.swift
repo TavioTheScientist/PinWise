@@ -3,7 +3,7 @@ import HealthKit
 import SwiftData
 
 /// Reads the health metrics most relevant when tracking peptides/doses — body weight,
-/// resting heart rate, and HRV. Oura, Whoop, etc. write into Apple Health, so PinWise picks
+/// resting heart rate, and HRV. Oura, Whoop, etc. write into Apple Health, so Staxyz picks
 /// them up here without per-vendor SDKs. Read-only.
 @Observable
 @MainActor

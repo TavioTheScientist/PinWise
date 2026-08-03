@@ -10,7 +10,7 @@ import SwiftData
 /// exclude a row that otherwise looks exactly like a dose. One missed exclusion and a skip becomes
 /// a phantom injection in a PK model. A distinct type makes that class of bug unrepresentable.
 ///
-/// Why it exists at all: PinWise has always offered a **Skip** action on dose reminders, and the
+/// Why it exists at all: Staxyz has always offered a **Skip** action on dose reminders, and the
 /// handler was `case actionSkip: return   // just dismiss` — it asked the user to declare a skip
 /// and discarded the answer. That became actively harmful once the Overdue state shipped, because a
 /// deliberately skipped dose would resurface days later as a red "OVERDUE", punishing someone for
@@ -53,7 +53,7 @@ final class SkippedDose {
 /// to write too — recording a Skip tapped from a reminder banner while the app may not even be
 /// running. Two independently-created containers over one store is a footgun, so scene and delegate
 /// share this one.
-enum PinWiseStore {
+enum StaxyzStore {
     static let models: [any PersistentModel.Type] = [
         LoggedDose.self, SavedProtocol.self, StoredVial.self, SymptomEntry.self,
         BiomarkerEntry.self, CustomCompound.self, PhysiquePhoto.self, HealthSnapshot.self,
@@ -64,6 +64,6 @@ enum PinWiseStore {
     /// local store cannot be opened the app has no data layer and cannot meaningfully continue.
     @MainActor static let shared: ModelContainer = {
         do { return try ModelContainer(for: Schema(models)) }
-        catch { fatalError("PinWise could not open its local store: \(error)") }
+        catch { fatalError("Staxyz could not open its local store: \(error)") }
     }()
 }

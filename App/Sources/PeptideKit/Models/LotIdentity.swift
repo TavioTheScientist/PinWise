@@ -3,7 +3,7 @@ import Foundation
 /// Identity and near-duplicate detection for a manufacturing lot.
 ///
 /// A lot is nominally identified by **compound + vendor + lot number**, but that triple has a weak
-/// leg: vendor is free text by product mandate (PinWise names no vendors and vets no suppliers), so
+/// leg: vendor is free text by product mandate (Staxyz names no vendors and vets no suppliers), so
 /// `"Acme Peptides"`, `"acme peptides."` and `"ACME"` are the same supplier to a human and three
 /// different strings to `==`. Meanwhile two genuinely unrelated vendors can issue the same lot
 /// string, so lot number alone cannot carry identity either.

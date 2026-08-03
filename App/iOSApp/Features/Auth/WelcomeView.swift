@@ -3,7 +3,7 @@ import AuthenticationServices
 import PeptideKit
 
 /// First-launch sign-in gate. Cinematic hero: two stainless-steel vials (Retatrutide + GLOW)
-/// over a silver→pale-pink metallic bloom on pitch black, then the PinWise mark + tagline, then
+/// over a silver→pale-pink metallic bloom on pitch black, then the Staxyz mark + tagline, then
 /// auth — three groups with generous vertical spacing, the whole block vertically centered.
 /// Sign in with Apple works on-device; "Continue as guest" keeps the app usable locally;
 /// "Log in" routes to the (backend-pending) email path. Terms/Privacy reachable before auth.
@@ -48,7 +48,7 @@ struct WelcomeView: View {
 
                 // 2 — Name + description
                 VStack(spacing: 10) {
-                    Text("PinWise")
+                    Text("Staxyz")
                         .font(.system(size: 35.6, weight: .bold))
                         .foregroundStyle(.white)
                     Text("Real science for peptides.\nThe source of truth for dose tracking.")

@@ -1,4 +1,8 @@
-# PinWise News — content iteration cycle
+# Staxyz News — content iteration cycle
+
+> **Renamed 2026-08-01 — formerly PinWise.** Code identifiers are renamed. The public feed repo
+> is **still `TavioTheScientist/PinWise-NewsFeed`** and the app fetches from it at runtime —
+> rename the repo before changing that URL, not after.
 
 This folder holds the repeatable process for **enhancing the News tab's articles and
 summaries**. The News feature is a fetched-JSON feed with a bundled offline fallback; today

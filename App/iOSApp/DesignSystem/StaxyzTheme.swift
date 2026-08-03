@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-// PinWise design system. Color strategy (founder-directed, 2026-07 "chrome" revision):
+// Staxyz design system. Color strategy (founder-directed, 2026-07 "chrome" revision):
 //  • PURE BLACK ground + a metallic silver→pale-pink chrome accent — the app-icon language.
 //    The former royal blue (0x2536E6) is RETIRED: a large saturated fill reads as a template,
 //    not as quiet luxury, and it never matched the icon it shipped under.

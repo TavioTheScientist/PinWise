@@ -575,6 +575,61 @@ do {
     // Structured side-effect bullets are never blank (they render as list rows).
     check(CompoundProfiles.all.allSatisfy { ($0.sideEffectsCommon + $0.sideEffectsSerious).allSatisfy { !$0.isEmpty } },
           "no empty side-effect bullets")
+    // EVERY profile carries STRUCTURED side effects, not just the prose fallback. The detail page
+    // renders "is this normal?" vs "red flag" as two labeled lists when these are present and a
+    // single undifferentiated block when they aren't — and for a dosing app that distinction is the
+    // point. Asserted so a new profile cannot quietly ship prose-only.
+    check(CompoundProfiles.all.allSatisfy { !$0.sideEffectsCommon.isEmpty || !$0.sideEffectsSerious.isEmpty },
+          "every profile has structured side effects, not only the prose fallback")
+    // Thin-evidence compounds are the ones most likely to be written vaguely, so hold the honest
+    // line explicitly: a profile that admits no independent human evidence must still say what the
+    // serious risk is (at minimum "long-term safety unknown"), never leave it blank.
+    check(CompoundProfiles.all.allSatisfy { p in
+              guard let e = p.evidenceSummary, e.contains("Tier D") else { return true }
+              return !p.sideEffectsSerious.isEmpty
+          },
+          "every Tier D profile still states a serious-risk line")
+    // FULL COVERAGE, reached 2026-08-02: every compound in the catalog has an authored profile.
+    // Asserted rather than just celebrated — the failure mode this guards is adding a compound to
+    // the catalog and shipping it with an empty detail page, which looks like a bug in the app
+    // rather than missing content. Adding a compound now REQUIRES writing its profile.
+    check(CompoundCatalog.all.allSatisfy { c in
+              c.category == .blend || CompoundProfiles.byID[c.id] != nil
+          },
+          "every non-blend catalog compound has an authored profile (\(CompoundProfiles.all.count)/\(CompoundCatalog.all.count))")
+
+    // MARK: Citations
+    //
+    // The shape is machine-checkable; the TRUTH of an identifier is not. These checks exist to stop
+    // the mechanical failures — a blank title, a year that cannot be right, a PMID whose URL points
+    // somewhere else — so review effort goes on whether the reference says what the profile claims.
+    let allCitations = CompoundProfiles.all.flatMap(\.citations)
+    check(allCitations.allSatisfy { !$0.identifier.isEmpty && !$0.title.isEmpty && !$0.source.isEmpty },
+          "every citation has an identifier, a title and a source")
+    // 1950 is roughly when PubMed's index starts; anything outside this window is a typo.
+    check(allCitations.allSatisfy { (1950...2030).contains($0.year) },
+          "every citation year is plausible (1950–2030)")
+    // A PMID citation's URL must actually contain that PMID. Guards the specific failure where a
+    // citation is copied and the identifier updated but the link is not — which silently sends a
+    // reader to a DIFFERENT paper than the one named.
+    check(allCitations.allSatisfy { c in
+              guard c.identifier.hasPrefix("PMID "), let u = c.url?.absoluteString else { return true }
+              return u.contains(c.identifier.replacingOccurrences(of: "PMID ", with: ""))
+          },
+          "every PMID citation's URL points at that same PMID")
+    check(allCitations.allSatisfy { c in
+              guard c.identifier.hasPrefix("NCT"), let u = c.url?.absoluteString else { return true }
+              return u.contains(c.identifier)
+          },
+          "every NCT citation's URL points at that same NCT id")
+    // Identifiers are the citation's `id`, so a duplicate within one profile would render twice.
+    check(CompoundProfiles.all.allSatisfy { p in
+              Set(p.citations.map(\.identifier)).count == p.citations.count
+          },
+          "no duplicate citations within a single profile")
+    // Every citation kind renders a badge; none may be blank.
+    check(Citation.Kind.allCases.allSatisfy { !$0.label.isEmpty },
+          "every citation kind has a badge label")
 }
 
 // MARK: - DoseDrawResult protocol
@@ -712,6 +767,59 @@ do {
     check(DoseFollowUp.fireDate(scheduledAt: scheduled,
                                 policy: DosePolicy(lateWindowHours: 1, attributionGraceDays: 0)) == nil,
           "1h window ⇒ no follow-up (never one that fires after the window shuts)")
+}
+
+// MARK: - Trial window + entitlement
+//
+// The paywall is a HARD gate, so the arithmetic that decides whether a paying user is locked out
+// gets the same treatment as the dose math. Two things are asserted: the boundary is generous
+// (a late-evening install is not charged a day), and a subscription always beats the clock.
+do {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+
+    func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 0, _ min: Int = 0) -> Date {
+        cal.date(from: DateComponents(year: y, month: m, day: d, hour: h, minute: min))!
+    }
+
+    // Installed at 11:30pm on Aug 1. Expiry anchors to the START of Aug 1, so the trial runs
+    // through Aug 21 and ends at midnight entering Aug 22 — 21 whole calendar days, not 20.
+    let lateInstall = date(2026, 8, 1, 23, 30)
+    check(TrialWindow.expiry(start: lateInstall, calendar: cal) == date(2026, 8, 22),
+          "trial anchors to start-of-day: an 11:30pm install still gets 21 whole days")
+    check(TrialWindow.isActive(start: lateInstall, now: date(2026, 8, 21, 23, 59), calendar: cal),
+          "trial is still active on its final day")
+    check(!TrialWindow.isActive(start: lateInstall, now: date(2026, 8, 22, 0, 0), calendar: cal),
+          "trial closes exactly at expiry, not after")
+
+    check(TrialWindow.daysRemaining(start: lateInstall, now: date(2026, 8, 1, 23, 45), calendar: cal) == 21,
+          "day 0 ⇒ 21 days remaining")
+    check(TrialWindow.daysRemaining(start: lateInstall, now: date(2026, 8, 21, 12), calendar: cal) == 1,
+          "final day ⇒ 1 day remaining, never 0 while access still holds")
+    check(TrialWindow.daysRemaining(start: lateInstall, now: date(2026, 9, 1), calendar: cal) == 0,
+          "past expiry ⇒ floored at 0, never negative")
+
+    // A subscription outranks the clock — a paying user must never see trial state or a paywall.
+    check(Entitlement.resolve(isSubscribed: true, trialStart: lateInstall,
+                              now: date(2027, 1, 1), calendar: cal) == .pro,
+          "subscribed ⇒ .pro even long after the trial elapsed")
+    check(Entitlement.resolve(isSubscribed: false, trialStart: lateInstall,
+                              now: date(2026, 9, 1), calendar: cal) == .expired,
+          "unsubscribed + elapsed trial ⇒ .expired (the hard gate)")
+    check(Entitlement.resolve(isSubscribed: false, trialStart: lateInstall,
+                              now: date(2026, 8, 10), calendar: cal) == .trial(daysRemaining: 12),
+          "mid-trial ⇒ .trial with the right day count")
+    // No recorded start must not lock anyone out of an app they have not opened yet.
+    check(Entitlement.resolve(isSubscribed: false, trialStart: nil, calendar: cal).hasAccess,
+          "no trial start recorded ⇒ access granted, not denied")
+
+    check(Entitlement.expired.hasAccess == false, "only .expired loses access")
+    check(Entitlement.pro.aiDailyLimit == 10 && Entitlement.trial(daysRemaining: 5).aiDailyLimit == 2,
+          "AI cap: 10/day Pro, 2/day trial")
+    check(Entitlement.expired.aiDailyLimit == 0,
+          "expired ⇒ no AI at all (it cannot reach the assistant)")
+    check(Entitlement.pro.serverTier == "pro" && Entitlement.trial(daysRemaining: 5).serverTier == "free",
+          "server tier mirrors the client entitlement")
 }
 
 // MARK: - Summary

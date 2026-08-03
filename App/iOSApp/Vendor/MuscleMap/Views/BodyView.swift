@@ -29,7 +29,7 @@ public struct BodyView: View {
     private let side: BodySide
     private var style: BodyViewStyle
     private var highlights: [Muscle: MuscleHighlight]
-    /// PinWise fork addition — see PINWISE_FORK.md.
+    /// Staxyz fork addition — see STAXYZ_FORK.md.
     private var regionHighlights: [MuscleRegionKey: MuscleHighlight] = [:]
     private var selectedMuscles: Set<Muscle> = []
     private var onMuscleSelected: ((Muscle, MuscleSide) -> Void)?
@@ -312,12 +312,12 @@ extension BodyView {
         return copy
     }
 
-    /// PinWise fork: region-precise heatmap. Unlike `heatmap(_:colorScale:)`, which keys highlights
+    /// Staxyz fork: region-precise heatmap. Unlike `heatmap(_:colorScale:)`, which keys highlights
     /// by muscle alone and DISCARDS `MuscleIntensity.side`, this honours side and vertical band — so
     /// one quadrant of a region can be shaded without shading its neighbours.
     ///
     /// `side` is in IMAGE coordinates (`.left` = smaller x, in both front and back views), so a FRONT
-    /// view's `.left` is the subject's RIGHT. See PINWISE_FORK.md.
+    /// view's `.left` is the subject's RIGHT. See STAXYZ_FORK.md.
     public func regionHeatmap(_ data: [RegionIntensity],
                               colorScale: HeatmapColorScale = .workout) -> BodyView {
         var copy = self

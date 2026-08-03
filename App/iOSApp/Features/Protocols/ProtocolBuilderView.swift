@@ -119,7 +119,7 @@ struct ProtocolBuilderView: View {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     Card {
                         FieldRow("Name this protocol") {
-                            TextField("e.g. Weekly Tirz or Recovery stack", text: $name).pinwiseField()
+                            TextField("e.g. Weekly Tirz or Recovery stack", text: $name).staxyzField()
                         }
                     }
 
@@ -152,7 +152,7 @@ struct ProtocolBuilderView: View {
                                     HStack {
                                         // For a blend the typed value sets the PRIMARY; name it so the
                                         // single field isn't read as "the dose of all compounds".
-                                        TextField("Dose of \(item.compound.name)", text: $item.doseText).keyboardType(.decimalPad).pinwiseField()
+                                        TextField("Dose of \(item.compound.name)", text: $item.doseText).keyboardType(.decimalPad).staxyzField()
                                         Picker("", selection: $item.doseUnit) {
                                             ForEach(MassUnit.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                                         }
