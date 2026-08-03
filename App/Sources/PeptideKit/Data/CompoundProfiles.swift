@@ -1109,6 +1109,464 @@ public enum CompoundProfiles {
                 "\"Ovagen is a fertility or hormone peptide.\" The name suggests it; the claims in the source literature are hepatic and gastrointestinal."
             ]
         ),
+
+        // MARK: — Batch 3b: cosmetic TOPICALS —
+        //
+        // These three are skincare ingredients, not injectables, and that is the single most
+        // important thing each profile has to say. They are in the catalog because people search
+        // for them alongside injectable peptides and deserve a straight answer, not because they
+        // belong in a syringe. Each carries a safetyFlag saying so, because a reader who has come
+        // from the injectable side of the library is exactly the reader at risk.
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.argireline.id,
+            goals: [.skinAndHair],
+            tagline: "Topical \"Botox-like\" wrinkle peptide — a serum ingredient, not an injectable.",
+            safetyFlag: "TOPICAL ONLY. Do not inject. Cosmetic serums are not sterile injectable products, and injecting one risks infection and a foreign-body reaction. Nothing about this peptide has been studied by injection.",
+            whatItIs: "Argireline is the trade name for acetyl hexapeptide-8 (older labels say hexapeptide-3), a six-amino-acid peptide used in anti-wrinkle creams and serums. It is marketed as a topical alternative to botulinum toxin.",
+            howItWorks: "The proposed mechanism is interference with SNAP-25, part of the machinery vesicles use to release neurotransmitter at the neuromuscular junction — the same protein botulinum toxin cleaves. The honest caveat is delivery: whether a hexapeptide applied to intact skin reaches motor nerve terminals in a meaningful amount is the part the mechanism story skips.",
+            whatToExpect: "Topical studies report modest reductions in measured wrinkle depth over weeks. Expect softening at the margins, not a comparison to an injectable neuromodulator.",
+            evidenceSummary: "Tier D as used here. There is real topical cosmetic data, but much of it is small and manufacturer-sponsored, and effect sizes are modest. There is NO evidence for injected use, because it has not been studied that way.",
+            dosingStudied: "Cosmetic formulations are typically in the range of a few percent by weight in a serum. This is a formulation figure, not a dose you administer.",
+            route: "Topical. Applied to skin, in a finished cosmetic product.",
+            timing: "Applied once or twice daily; cosmetic studies run over weeks to months.",
+            sideEffectsCommon: [
+                "Generally well tolerated topically",
+                "Occasional irritation or stinging, usually from the vehicle rather than the peptide",
+            ],
+            sideEffectsSerious: [
+                "Injecting a cosmetic serum risks infection, abscess and foreign-body reaction — the product is not sterile and not formulated for injection",
+            ],
+            storageHandling: "Store the finished cosmetic product as its label directs — typically cool and out of direct light. This is not a lyophilized vial and needs no reconstitution.",
+            misconceptions: [
+                "\"It works like Botox.\" It targets the same protein in theory, but a topical peptide and an injected neurotoxin are not comparable in effect size.",
+                "\"If topical works, injecting works better.\" Injecting is unstudied, and cosmetic serums are not sterile injectables. This is the reasoning that gets people infections."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.matrixyl.id,
+            goals: [.skinAndHair],
+            tagline: "Topical collagen-signaling peptide complex for skincare.",
+            safetyFlag: "TOPICAL ONLY. Do not inject. Cosmetic serums are not sterile injectable products.",
+            whatItIs: "Matrixyl 3000 is a cosmetic complex of two lipid-conjugated peptides — palmitoyl pentapeptide-4 and palmitoyl tetrapeptide-7 — used in anti-aging skincare. The palmitoyl tail is there to help the peptide cross the skin barrier, which is the real formulation problem these ingredients are solving.",
+            howItWorks: "The peptides are proposed to act as signal fragments resembling collagen breakdown products, prompting fibroblasts to produce more collagen and matrix, with the tetrapeptide additionally described as reducing interleukin-6 signaling.",
+            whatToExpect: "Topical studies report improvements in wrinkle depth and skin firmness over weeks to months. Effects are gradual and modest.",
+            evidenceSummary: "Tier D as used here. There is topical cosmetic data, largely manufacturer-sponsored, with modest effect sizes. No injected-use evidence exists.",
+            dosingStudied: "Typically a few percent by weight in a finished serum — a formulation figure, not an administered dose.",
+            route: "Topical, in a finished cosmetic product.",
+            timing: "Once or twice daily; cosmetic trials run 4–12 weeks.",
+            sideEffectsCommon: [
+                "Generally well tolerated topically",
+                "Occasional irritation, usually vehicle-related",
+            ],
+            sideEffectsSerious: [
+                "Injecting a cosmetic serum risks infection, abscess and foreign-body reaction",
+            ],
+            storageHandling: "Store the finished cosmetic product per its label. Not a lyophilized vial; no reconstitution.",
+            misconceptions: [
+                "\"Matrixyl is one peptide.\" It is a branded complex of at least two, and formulations differ between products carrying the name."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.snap8.id,
+            goals: [.skinAndHair],
+            tagline: "Topical Argireline analog — a longer peptide, same skincare role.",
+            safetyFlag: "TOPICAL ONLY. Do not inject. Cosmetic serums are not sterile injectable products.",
+            whatItIs: "SNAP-8 is acetyl octapeptide-3, an eight-amino-acid extension of the Argireline sequence, used in the same anti-wrinkle skincare role and marketed as more potent.",
+            howItWorks: "Same proposed SNAP-25 interference as Argireline, with the longer sequence claimed to bind more effectively. The same delivery question applies, and applies more strongly: a longer peptide does not cross intact skin more easily.",
+            whatToExpect: "Marketed as outperforming Argireline. Independent head-to-head data supporting that specific claim is thin.",
+            evidenceSummary: "Tier D as used here, and thinner than Argireline's — it is the newer analog with less published cosmetic data, independent or otherwise. No injected-use evidence.",
+            dosingStudied: "A few percent by weight in a finished serum — a formulation figure, not a dose.",
+            route: "Topical, in a finished cosmetic product.",
+            timing: "Once or twice daily.",
+            sideEffectsCommon: [
+                "Generally well tolerated topically",
+                "Occasional irritation, usually vehicle-related",
+            ],
+            sideEffectsSerious: [
+                "Injecting a cosmetic serum risks infection, abscess and foreign-body reaction",
+            ],
+            storageHandling: "Store the finished cosmetic product per its label. Not a lyophilized vial; no reconstitution.",
+            misconceptions: [
+                "\"SNAP-8 is 30% stronger than Argireline.\" That figure comes from marketing material, not from an independent comparison."
+            ]
+        ),
+
+        // MARK: — Batch 3b: the ones that were actually tested in humans —
+        //
+        // AOD-9604 and ACE-031 are the two most important profiles in this batch, and for the same
+        // reason: both WERE taken into human trials, and both trials are the story. One failed to
+        // beat placebo; the other was halted for safety. A library that lists them next to
+        // never-tested peptides without saying so would be actively misleading — "untested" and
+        // "tested and it didn't work" are completely different facts about a compound.
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.aod9604.id,
+            goals: [.fatLoss],
+            tagline: "GH fragment for fat loss that FAILED its human obesity trials.",
+            safetyFlag: "This was tested in people for exactly what it is sold for, and it did not work. Human obesity trials showed no meaningful weight loss versus placebo, and development was discontinued.",
+            whatItIs: "AOD-9604 is a synthetic fragment of human growth hormone — residues 176–191, the C-terminal end of the molecule. It was developed by Metabolic Pharmaceuticals specifically as an anti-obesity drug.",
+            howItWorks: "The selling point is what it LACKS: the fragment was designed to reproduce growth hormone's lipolytic (fat-mobilizing) effect without GH's growth-promoting, IGF-1-raising or insulin-resistance effects. Preclinically it reduced fat in obese rodents without those liabilities. The same selectivity that made it attractive is a plausible reason the fat-loss effect turned out to be too small to matter in people.",
+            whatToExpect: "Realistically, nothing measurable for fat loss on the evidence available. The compound reached Phase 2b for obesity and did not separate meaningfully from placebo on weight. That is a stronger negative statement than \"unproven\" — it was given a fair test.",
+            evidenceSummary: "Tier D — and specifically a FAILED clinical programme, not an untested one. Human obesity trials did not show meaningful weight loss versus placebo; development was discontinued. It survives commercially as a peptide-market product and, separately, in research on cartilage and joints, which is a different claim with its own (limited) evidence.",
+            dosingStudied: "Oral doses up to roughly 1 mg/day were used in the obesity trials. Those are the doses that failed — worth knowing before assuming the community's injectable amounts are somehow the version that works.",
+            dosingCommunity: "Injectable community ranges are commonly cited around 300 mcg daily. Anecdotal — and note the trials that failed used the oral form, so the injectable protocol has neither positive nor negative trial evidence.",
+            route: "Subcutaneous as sold; the failed obesity trials used an oral formulation.",
+            timing: "Half-life is short; community protocols dose daily, often fasted, on the theory that insulin blunts lipolysis.",
+            sideEffectsCommon: [
+                "Reported as well tolerated — this was consistent in the human trials",
+                "Occasional injection-site irritation",
+            ],
+            sideEffectsSerious: [
+                "No serious signal emerged in the human trials, which is the one genuinely reassuring thing here",
+                "Long-term safety beyond trial durations is unstudied",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It's GH's fat-loss benefits without the side effects.\" That was the design goal, and the human trials did not deliver the benefit half of it.",
+                "\"There's no evidence either way.\" There is evidence — it is negative. A failed Phase 2b is more informative than no trial at all."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.ace031.id,
+            goals: [.muscleAndGH],
+            tagline: "Myostatin trap whose human trials were HALTED for bleeding side effects.",
+            safetyFlag: "Human trials were STOPPED early for safety: nosebleeds, gum bleeding and dilated surface blood vessels. The cause is mechanistic, not a dosing accident — the receptor it blocks also handles signals that maintain blood-vessel integrity.",
+            whatItIs: "ACE-031 (ramatercept) is a soluble decoy receptor — the activin receptor type IIB fused to an antibody Fc fragment. Developed by Acceleron Pharma, it was trialled in Duchenne muscular dystrophy to increase muscle mass.",
+            howItWorks: "It works as a trap: circulating ActRIIB-Fc binds myostatin before myostatin can reach real receptors on muscle, removing the brake on muscle growth. The problem is selectivity. ActRIIB also binds BMP9 and BMP10, which regulate vascular integrity — so trapping ligands broadly interferes with blood-vessel maintenance. That is the accepted explanation for the bleeding and telangiectasia that stopped the programme, and it is why the side effects are not something a lower dose reliably avoids.",
+            whatToExpect: "Trials did show increases in lean mass — the mechanism works. They also produced the bleeding effects that ended development. Both halves are the result.",
+            evidenceSummary: "Tier D — a HALTED clinical programme. Phase 2 in Duchenne muscular dystrophy was discontinued for safety after epistaxis, gum bleeding and telangiectasia were observed. Never approved anywhere. WADA-prohibited.",
+            dosingStudied: "Phase 1 used single ascending subcutaneous doses; as an Fc-fusion its half-life is long — roughly 10–15 days (Attie et al., 2013), which is why exposure persists well after a dose and why a problem cannot be quickly withdrawn.",
+            dosingCommunity: "Community use exists and is not documented here as a range. A compound whose trials were stopped for vascular bleeding is not one where an anecdotal number belongs in a reference.",
+            route: "Subcutaneous.",
+            timing: "Long half-life (~10–15 days), so trial dosing was infrequent. The long tail is a safety consideration in itself: the effect does not stop when you do.",
+            sideEffectsCommon: [
+                "Nosebleeds (epistaxis)",
+                "Gum bleeding",
+                "Dilated surface blood vessels (telangiectasia)",
+                "Injection-site reactions",
+            ],
+            sideEffectsSerious: [
+                "The bleeding effects are what ENDED the human programme — they are the expected outcome of the mechanism, not a rare idiosyncrasy",
+                "Off-target BMP9/BMP10 trapping affects vascular integrity; consequences of prolonged exposure in healthy adults are unstudied",
+                "The ~10–15 day half-life means exposure cannot be quickly reversed if a problem appears",
+            ],
+            storageHandling: "Fc-fusion proteins are more fragile than short peptides — sensitive to freeze-thaw and agitation. " + standardStorage,
+            misconceptions: [
+                "\"It was abandoned for business reasons.\" It was discontinued after safety findings in trials.",
+                "\"A lower dose avoids the bleeding.\" The bleeding traces to the receptor's off-target ligands, so it is tied to the mechanism rather than simply to dose."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.ss31.id,
+            goals: [.longevity, .recovery],
+            tagline: "Mitochondria-targeted peptide (elamipretide) in real, unfinished human trials.",
+            whatItIs: "SS-31 — elamipretide, also MTP-131 or Bendavia — is a four-amino-acid peptide developed by Stealth BioTherapeutics that concentrates in the inner mitochondrial membrane. Of everything in this batch it has the most legitimate clinical programme.",
+            howItWorks: "It binds cardiolipin, a phospholipid found almost exclusively in the inner mitochondrial membrane. Cardiolipin organizes the electron-transport chain, and when it is damaged or mislocalized, respiration becomes inefficient and leaks reactive oxygen species. Elamipretide is proposed to stabilize those cardiolipin–protein interactions — meaning it targets mitochondrial STRUCTURE rather than mopping up free radicals, which is what distinguishes it from an antioxidant.",
+            whatToExpect: "In the populations studied — Barth syndrome, primary mitochondrial myopathy, dry AMD — results have been mixed, with some endpoints improved and pivotal ones missed. There is no evidence for the general \"cellular energy\" or anti-aging use it is marketed for.",
+            evidenceSummary: "Tier C. Genuine Phase 2/3 human trials exist across several mitochondrial diseases, with mixed results and no approval as of 2026. Note the gap this creates: trial evidence in rare mitochondrial disease says very little about a healthy adult using it for energy or longevity.",
+            dosingStudied: "Trials used subcutaneous dosing on the order of 40 mg daily in mitochondrial myopathy. Half-life is roughly 2.5 hours.",
+            dosingCommunity: "Community amounts are typically far below the trial doses. Reported, not recommended — and worth knowing that a fraction of a trial dose has no evidence behind it at all.",
+            route: "Subcutaneous in trials.",
+            timing: "Short half-life (~2.5 h); trials dosed once daily nonetheless.",
+            sideEffectsCommon: [
+                "Injection-site reactions — the most common finding in trials, and frequent",
+                "Headache",
+            ],
+            sideEffectsSerious: [
+                "Long-term safety in healthy adults is unstudied; trial safety data comes from patients with mitochondrial disease",
+                "Not approved anywhere as of 2026 — an unapproved drug in active development, not a supplement",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It's a mitochondrial antioxidant.\" It targets cardiolipin structure; that is a different mechanism from scavenging free radicals.",
+                "\"It's proven — it's in Phase 3.\" Being in trials is not the same as working. Several elamipretide endpoints have been missed, which is why it is still unapproved."
+            ]
+        ),
+
+        // MARK: — Batch 3b: Russian-developed neuropeptides —
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.semax.id,
+            goals: [.cognitive],
+            tagline: "ACTH(4-10) analog used intranasally; approved in Russia, not the US.",
+            whatItIs: "Semax is a synthetic analog of a fragment of ACTH — residues 4–10, with a stabilizing tail — developed in Russia, where it is registered for stroke recovery and cognitive indications. It is not FDA-approved and has essentially no Western clinical literature.",
+            howItWorks: "It is proposed to raise BDNF and modulate dopaminergic and serotonergic signaling, with neuroprotective effects described in ischemia models. The ACTH fragment used is specifically the portion WITHOUT the peptide's hormonal (cortisol-releasing) activity, which is the point of the design.",
+            whatToExpect: "Users report improved focus and mental stamina, usually within hours of an intranasal dose. Russian clinical literature reports benefit in stroke recovery. Neither has been replicated in trials Western regulators have accepted.",
+            evidenceSummary: "Tier C. Human use and registration in Russia, with clinical literature almost entirely in Russian and rarely independently replicated. Not FDA-approved, and the evidence gap is about replication and reporting standards, not merely regulatory paperwork.",
+            dosingStudied: "Russian clinical protocols use intranasal drops, commonly described in the 0.1%–1% solution range depending on indication.",
+            dosingCommunity: "Community use is typically intranasal in the several-hundred-microgram-per-day range. Reported, not recommended.",
+            route: "Intranasal is the studied and conventional route. Injectable use exists in the peptide market and is less documented.",
+            timing: "Short-acting; effects are described over hours, and protocols run short courses rather than continuously.",
+            sideEffectsCommon: [
+                "Nasal irritation with the intranasal route",
+                "Reported as generally well tolerated",
+                "Occasional headache or irritability",
+            ],
+            sideEffectsSerious: [
+                "Long-term safety is not established outside Russian post-marketing experience",
+                "Effects on mood and drive are plausible for a compound acting on dopaminergic signaling; not systematically characterized",
+            ],
+            storageHandling: "Sold both as a nasal solution and as a lyophilized powder. " + standardStorage,
+            misconceptions: [
+                "\"It's an ACTH peptide, so it raises cortisol.\" The 4–10 fragment is specifically the part lacking hormonal activity.",
+                "\"Approved in Russia means proven.\" It means a different regulator accepted a different evidence base — one with little independent replication."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.selank.id,
+            goals: [.cognitive],
+            tagline: "Anxiolytic tuftsin analog used intranasally; Russian-developed, not FDA-approved.",
+            whatItIs: "Selank (TP-7) is a synthetic heptapeptide based on tuftsin, an immune-active fragment of IgG, developed in Russia as an anxiolytic and registered there. Not FDA-approved.",
+            howItWorks: "It is described as modulating GABAergic and serotonergic signaling and affecting enkephalin metabolism, producing anxiolysis WITHOUT the sedation, tolerance, or withdrawal associated with benzodiazepines. Its tuftsin lineage also gives it immunomodulatory activity, which is a genuinely unusual combination.",
+            whatToExpect: "Users report reduced anxiety without sedation, often within an hour intranasally. Russian clinical literature reports anxiolytic effect comparable to benzodiazepines in generalized anxiety, without the dependence profile.",
+            evidenceSummary: "Tier C. Human use and registration in Russia; the clinical literature is largely Russian-language and rarely independently replicated. Not FDA-approved.",
+            dosingStudied: "Russian protocols use intranasal solutions, commonly described around 0.15%–0.3%, over short courses.",
+            dosingCommunity: "Community use is typically intranasal in the several-hundred-microgram-per-day range. Reported, not recommended.",
+            route: "Intranasal is the studied and conventional route.",
+            timing: "Short-acting; used as needed or in short courses.",
+            sideEffectsCommon: [
+                "Nasal irritation with the intranasal route",
+                "Reported as generally well tolerated, without sedation",
+            ],
+            sideEffectsSerious: [
+                "Long-term safety is not established outside Russian post-marketing experience",
+                "Anxiety that needs treatment deserves a clinical assessment — an unapproved peptide is not a substitute for one, and self-treating anxiety can delay identifying a treatable cause",
+            ],
+            storageHandling: "Sold as a nasal solution or lyophilized powder. " + standardStorage,
+            misconceptions: [
+                "\"It's a natural benzodiazepine.\" It is not a benzodiazepine and does not act at the same site; the comparison comes from claimed anxiolytic effect, not shared pharmacology."
+            ]
+        ),
+
+        // MARK: — Batch 3c: the last eight —
+        //
+        // Two of these carry corrections that matter more than their profiles: 5-Amino-1MQ is not a
+        // peptide and is not injected, and injectable "follistatin" is not the construct the
+        // research is about. LL-37's flag is the opposite of the usual one — the risk is that it
+        // works, in the inflammatory direction.
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.amino1mq.id,
+            goals: [.fatLoss],
+            tagline: "Oral small molecule for fat loss — NOT a peptide, and not injected.",
+            safetyFlag: "This is not a peptide. It is a small molecule, taken ORALLY as a capsule. It is grouped with peptides by vendors, and people reconstitute and inject it on that assumption — there is no basis for injecting it and no data on doing so.",
+            whatItIs: "5-Amino-1MQ (5-amino-1-methylquinolinium) is a small synthetic molecule — a quinolinium salt — that inhibits the enzyme NNMT. It sits in peptide catalogs for commercial reasons, not chemical ones.",
+            howItWorks: "NNMT (nicotinamide N-methyltransferase) consumes nicotinamide and is highly expressed in fat tissue. Inhibiting it is proposed to raise cellular NAD+ and shift adipocyte metabolism toward fat burning. In obese mice, NNMT inhibition reduced fat mass without changing food intake — which is the entire basis for the marketing.",
+            whatToExpect: "Honestly: unknown in humans. Every fat-loss claim traces to rodent work. There are no human trials, so effect size, time course, and whether it does anything at all in people are all open.",
+            evidenceSummary: "Tier D. Animal data only — no human trials of any phase. Not approved. The rodent results are real and interesting; the extrapolation to a person taking capsules is not evidence.",
+            dosingStudied: "No human dosing has been established, because no human trial has been run. Rodent doses do not translate directly and are not reproduced here for that reason.",
+            dosingCommunity: "Oral capsules are commonly sold at 50–150 mg/day. Reported, not recommended, and with no trial basis at any dose.",
+            route: "ORAL. It is a small molecule with oral bioavailability — that is the whole reason it is sold as a capsule rather than a vial.",
+            timing: "Once daily is the conventional pattern. No human pharmacokinetics are published.",
+            sideEffectsCommon: [
+                "Not characterized in humans — no clinical safety study exists",
+                "Anecdotal reports mention mild GI upset",
+            ],
+            sideEffectsSerious: [
+                "Human safety is entirely unstudied, including long-term NNMT inhibition",
+                "NNMT is expressed well beyond fat tissue (liver especially), so systemic inhibition has consequences nobody has measured in people",
+            ],
+            storageHandling: "Sold as oral capsules or bulk powder. Store cool, dry and sealed. Does NOT need reconstitution — if a vendor supplies it as a vial to be mixed and injected, that alone is a reason to question the vendor.",
+            misconceptions: [
+                "\"It's a fat-loss peptide.\" It is not a peptide at all. Nothing about peptide handling, reconstitution, or injection applies to it.",
+                "\"It raises NAD+ like NMN.\" It acts on an enzyme that consumes nicotinamide, which is a different mechanism from supplying a precursor — and the two are not interchangeable."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.follistatin344.id,
+            goals: [.muscleAndGH],
+            tagline: "Myostatin-binding protein chased for muscle growth; the research is gene therapy, not this vial.",
+            safetyFlag: "The impressive follistatin results come from GENE THERAPY — a virus delivering the FS-344 gene, producing the protein continuously for months. An injected protein is not that experiment, and results from one do not transfer to the other.",
+            whatItIs: "Follistatin is a naturally occurring protein that binds and neutralizes activins and myostatin. \"FS-344\" is specifically the name of the gene-therapy construct used in research — which is the root of the confusion, because it is also printed on vials of injectable protein.",
+            howItWorks: "Myostatin limits muscle growth; follistatin binds it, releasing that brake. It also binds activin A, which is part of why untargeted follistatin has effects beyond muscle. The distinction that matters: gene therapy produces the protein continuously inside tissue for months, whereas an injected protein is cleared within hours to days.",
+            whatToExpect: "Gene-therapy studies in animals — and a small number of human muscular-dystrophy subjects — showed real muscle increases. For an injected protein bought as a peptide, there is no human evidence, and pharmacokinetics argue against reproducing a sustained effect.",
+            evidenceSummary: "Tier D for the injectable form: preclinical and gene-therapy research only, with no human trials of injected follistatin protein. WADA-prohibited under S4.4 (myostatin function). Not approved.",
+            dosingCommunity: "Community protocols commonly describe 100 mcg daily over short runs. Reported, not recommended — and note that no dose of injected protein has been shown to reproduce the gene-therapy results.",
+            route: "Subcutaneous or intramuscular as sold.",
+            timing: "Circulating half-life of the protein is short (hours), which is precisely why the sustained-expression research does not map onto injecting it.",
+            sideEffectsCommon: [
+                "Not characterized in humans for the injected protein",
+                "Injection-site reactions",
+            ],
+            sideEffectsSerious: [
+                "Broad activin blockade has consequences outside muscle — activin signaling is involved in reproductive, inflammatory and tissue-repair processes; unstudied in this context",
+                "Unregulated muscle growth is not automatically desirable: tendon and connective tissue do not adapt at the same rate, and the mismatch is a plausible injury mechanism",
+                "Purity and identity for a protein this size are far harder to verify than for a short peptide",
+            ],
+            storageHandling: "Larger proteins are more fragile than short peptides — sensitive to freeze-thaw, agitation and heat. " + standardStorage,
+            misconceptions: [
+                "\"Follistatin doubled muscle mass in studies.\" Those were gene-therapy studies with continuous expression, not injections of protein.",
+                "\"FS-344 is the injectable version.\" FS-344 names the gene-therapy construct; seeing it on a vial label does not make the vial that experiment."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.mgf.id,
+            goals: [.muscleAndGH, .recovery],
+            tagline: "IGF-1 splice variant for muscle repair; gone from plasma in minutes.",
+            whatItIs: "MGF (mechano growth factor) is IGF-1Ec — a splice variant of IGF-1 produced by muscle in response to mechanical loading and damage. The peptide sold is usually the unique E-domain portion rather than the full variant.",
+            howItWorks: "After muscle damage, MGF expression rises locally and is associated with activating satellite cells — the stem-cell population that repairs and adds muscle fibers. The mechanism is genuinely interesting; the delivery problem is severe, because natural MGF acts locally and transiently while an injection is systemic and brief.",
+            whatToExpect: "No human trial supports the muscle-repair or growth claims. Users report local soreness and a pump; neither indicates satellite-cell activation.",
+            evidenceSummary: "Tier D. Preclinical only, WADA-prohibited (S2), not approved. Its very short plasma survival is the central practical objection — a factor that acts for minutes is hard to dose meaningfully.",
+            dosingCommunity: "Community protocols commonly use 200–400 mcg post-training, often injected near the trained muscle on a localized-action theory. Reported, not recommended; localized growth from systemic injection is not established.",
+            route: "Subcutaneous or intramuscular.",
+            timing: "Plasma half-life is on the order of minutes — the reason PEG-MGF exists at all. Protocols place it immediately post-training by convention.",
+            sideEffectsCommon: [
+                "Injection-site soreness",
+                "Reported local swelling or pump",
+            ],
+            sideEffectsSerious: [
+                "IGF-family signaling promotes cell growth generally; long-term consequences in healthy adults are unstudied",
+                "WADA-prohibited — a sanctionable finding for tested athletes",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"Injecting it near a muscle grows that muscle.\" Site-specific growth from injection is not established in humans.",
+                "\"It's the same as IGF-1.\" It is a splice variant with a distinct E-domain and a completely different duration of action."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.pegMgf.id,
+            goals: [.muscleAndGH, .recovery],
+            tagline: "PEGylated MGF — same evidence, longer duration.",
+            whatItIs: "PEG-MGF is MGF with a polyethylene-glycol chain attached. The PEG does not change what the peptide does; it slows clearance so the molecule survives long enough to circulate.",
+            howItWorks: "Identical proposed mechanism to MGF — satellite-cell activation after muscle damage. PEGylation extends the half-life from minutes to hours or longer, which is the one real advantage it has, and it addresses a delivery problem rather than adding an effect.",
+            whatToExpect: "No human trial supports the muscle claims. The longer duration makes systemic exposure more plausible than with plain MGF; whether that produces any benefit is unknown.",
+            evidenceSummary: "Tier D. Preclinical only, WADA-prohibited (S2), not approved. The evidence base is MGF's, which is to say almost none in humans.",
+            dosingCommunity: "Community protocols commonly use 200–400 mcg, dosed less frequently than plain MGF because of the longer duration. Reported, not recommended.",
+            route: "Subcutaneous or intramuscular.",
+            timing: "PEGylation extends action substantially; protocols typically dose every few days rather than per-session.",
+            sideEffectsCommon: [
+                "Injection-site soreness",
+                "Reported local swelling",
+            ],
+            sideEffectsSerious: [
+                "IGF-family signaling promotes cell growth generally; long-term consequences in healthy adults are unstudied",
+                "Repeated PEGylated-compound exposure raises questions about PEG accumulation and anti-PEG antibodies that are unstudied for these research products",
+                "WADA-prohibited — a sanctionable finding for tested athletes",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"PEG-MGF is stronger than MGF.\" It lasts longer. Longer is not the same as stronger, and neither has human efficacy data."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.ll37.id,
+            goals: [.immune, .recovery],
+            tagline: "Antimicrobial host-defense peptide — pro-inflammatory, not an immune tonic.",
+            safetyFlag: "This is not a gentle \"immune booster.\" LL-37 is actively pro-inflammatory, and elevated LL-37 is implicated in the pathology of rosacea, psoriasis and some autoimmune conditions. If you have an inflammatory skin or autoimmune condition, more of it is the wrong direction.",
+            whatItIs: "LL-37 is the active fragment of human cathelicidin, a natural antimicrobial peptide made by immune cells and epithelium as part of first-line host defense. It is a real and important part of human immunity — which is different from being a useful thing to inject.",
+            howItWorks: "It kills microbes by disrupting their membranes directly, and separately acts as a signaling molecule that recruits immune cells and drives inflammatory responses. Both halves are the mechanism, and the second half is why more is not simply better: LL-37 also promotes angiogenesis and, at high local levels, can break tolerance to self-nucleic acids — the accepted link to psoriasis and rosacea.",
+            whatToExpect: "No human trial supports injecting it for infection, healing or immune function. Community reports centre on gut and skin conditions and are difficult to interpret given how commonly those fluctuate on their own.",
+            evidenceSummary: "Tier D. Preclinical only; injectable use is unstudied and there is no approved human product. Unusually for this library, the concern is not just that it might not work — it is that the mechanism is inflammatory, so working as designed carries risk.",
+            dosingCommunity: "Community ranges are commonly cited around 100 mcg daily over short courses. Reported, not recommended; the inflammatory profile matters more here than the number.",
+            route: "Subcutaneous as sold.",
+            timing: "No characterized human half-life; short courses by convention.",
+            sideEffectsCommon: [
+                "Injection-site inflammation, redness and pain — expected from a pro-inflammatory peptide, not incidental",
+                "Flu-like feelings reported",
+            ],
+            sideEffectsSerious: [
+                "Elevated LL-37 is implicated in rosacea, psoriasis and autoimmune pathology — a plausible mechanism for making an inflammatory condition worse",
+                "It can break immune tolerance to self-nucleic acids at high local concentrations, which is the specific link to autoimmune skin disease",
+                "Long-term human safety is unstudied",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It's natural, so it's safe to supplement.\" It is natural AND tightly regulated by the body; the pathology associated with it is a pathology of EXCESS, not deficiency.",
+                "\"It boosts immunity.\" It drives inflammation. Those are not the same thing, and for anyone with an autoimmune or inflammatory condition the distinction is the whole point."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.dsip.id,
+            goals: [.sleep],
+            tagline: "Sleep peptide from the 1970s whose effects never reproduced reliably.",
+            whatItIs: "DSIP (delta sleep-inducing peptide) is a nine-amino-acid peptide isolated in 1974 from the venous blood of sleeping rabbits, and named for the delta-wave sleep it was thought to induce.",
+            howItWorks: "Never satisfactorily established. No specific receptor has been identified, which is unusual for a peptide studied this long, and proposed mechanisms remain indirect. The absence of a known receptor after fifty years is itself informative.",
+            whatToExpect: "Human studies from the 1970s and 80s produced inconsistent results — some reported improved sleep onset, others found nothing. It has also been investigated for withdrawal symptoms and chronic pain, with similarly mixed findings. Users report vivid dreams and, notably, sometimes the opposite of the intended effect.",
+            evidenceSummary: "Tier D. Old human studies with inconsistent results and no approved product anywhere. This is a compound that has been studied for decades WITHOUT converging — which is a different and weaker position than one that is simply new.",
+            dosingCommunity: "Community ranges are commonly cited around 100–200 mcg before bed. Reported, not recommended.",
+            route: "Subcutaneous.",
+            timing: "Short-acting; taken shortly before bed by convention.",
+            sideEffectsCommon: [
+                "Reported as generally well tolerated",
+                "Vivid dreams",
+                "Paradoxical stimulation or difficulty sleeping — reported often enough to be worth expecting",
+                "Headache",
+            ],
+            sideEffectsSerious: [
+                "Long-term human safety is unstudied",
+                "Persistent insomnia has causes worth diagnosing (sleep apnea especially); an unproven peptide can delay finding one",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It induces delta sleep.\" That was the 1974 hypothesis its name records; later studies did not reliably confirm it.",
+                "\"It's a natural sleep hormone.\" It was isolated from an animal, but it has no established role as a human sleep-regulating hormone."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.humanin.id,
+            goals: [.longevity],
+            tagline: "Mitochondrial-derived peptide with longevity correlations but no administration trials.",
+            whatItIs: "Humanin is a 24-amino-acid peptide encoded not in nuclear DNA but in mitochondrial DNA — within the MT-RNR2 gene. It was one of the first mitochondrial-derived peptides identified and is a genuinely interesting piece of biology.",
+            howItWorks: "It is described as cytoprotective, acting through a receptor complex to reduce apoptosis and improve insulin sensitivity, with effects reported in models of Alzheimer's, cardiac ischemia and diabetes.",
+            whatToExpect: "Nothing established in humans. The frequently cited human finding is CORRELATIONAL: higher circulating humanin is associated with longevity, and centenarians' offspring tend to have higher levels. That is an association in observational data, not evidence that raising it does anything.",
+            evidenceSummary: "Tier D. Preclinical only, with no trials of humanin administration in people. The human data that exists is observational — which is the specific thing to be careful about here, because a correlation with longevity is easy to present as though it were a demonstrated effect.",
+            dosingCommunity: "Community use is uncommon and ranges are poorly documented. No number is repeated here, because there is nothing to base one on.",
+            route: "Subcutaneous as sold.",
+            timing: "No characterized human half-life.",
+            sideEffectsCommon: [
+                "Not characterized in humans — no clinical safety data exists",
+                "Injection-site reactions",
+            ],
+            sideEffectsSerious: [
+                "Human safety is entirely unstudied",
+                "Broadly anti-apoptotic signaling deserves caution: preventing programmed cell death is not uniformly good, since apoptosis is one of the body's defenses against damaged cells",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"Centenarians have more of it, so taking it extends life.\" That reverses a correlation into a cause. Higher humanin may be a marker of healthier mitochondria rather than the reason for them."
+            ]
+        ),
+
+        CompoundProfile(
+            compoundID: CompoundCatalog.foxo4dri.id,
+            goals: [.longevity],
+            tagline: "Experimental senolytic — mouse data only, and designed to kill cells.",
+            safetyFlag: "This is designed to make cells die. That is the mechanism, not a side effect. It has been tested in mice and never in humans, so there is no dose known to be safe and no way to stop the effect once injected.",
+            whatItIs: "FOXO4-DRI is a synthetic peptide built as a D-amino-acid retro-inverso version of a FOXO4 fragment — the D-isomer construction is there to resist degradation. It is a senolytic: intended to selectively kill senescent (\"zombie\") cells that accumulate with age.",
+            howItWorks: "Senescent cells stay alive by sequestering p53 through an interaction with FOXO4. The peptide competitively disrupts that interaction, releasing p53 to trigger apoptosis. The selectivity claim rests on senescent cells depending on this mechanism more heavily than normal cells do — a difference of degree, which is a thinner safety margin than a difference in kind.",
+            whatToExpect: "Nothing established in humans. The landmark result is a 2017 mouse study reporting restored fitness, fur density and kidney function in aged animals. It has not been replicated into any human trial.",
+            evidenceSummary: "Tier D — mouse data only, from essentially one line of work. No human trials of any phase, no established human dose, and no human safety data. Among the most experimental compounds in this library, and priced accordingly.",
+            dosingCommunity: "Community protocols exist and no range is documented here. For a compound whose mechanism is targeted cell death, with no human data at all, repeating an anecdotal number would give it a credibility it has not earned.",
+            route: "Subcutaneous or intravenous in reported use; mouse studies used intraperitoneal or intravenous.",
+            timing: "Mouse work used intermittent short courses rather than continuous dosing — senolytics are generally framed as hit-and-run rather than daily.",
+            sideEffectsCommon: [
+                "Not characterized in humans — no clinical data of any kind",
+                "Injection-site reactions reported",
+            ],
+            sideEffectsSerious: [
+                "The mechanism is apoptosis induction; off-target killing of healthy cells is the central risk and has not been quantified in humans",
+                "No human dose is known to be safe, and there is no way to reverse the effect after administration",
+                "Purity and correct D-amino-acid synthesis are difficult to verify, and a mis-synthesized product has unknown activity",
+            ],
+            storageHandling: standardStorage,
+            misconceptions: [
+                "\"It reverses aging — it worked in mice.\" One mouse study is a hypothesis worth testing, not a result to act on.",
+                "\"Senolytics only kill bad cells.\" Selectivity is relative, not absolute, and in humans it has never been measured."
+            ]
+        ),
     ]
 
     /// Indexed by compound id for O(1) lookup.

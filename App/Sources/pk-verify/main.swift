@@ -589,6 +589,14 @@ do {
               return !p.sideEffectsSerious.isEmpty
           },
           "every Tier D profile still states a serious-risk line")
+    // FULL COVERAGE, reached 2026-08-02: every compound in the catalog has an authored profile.
+    // Asserted rather than just celebrated — the failure mode this guards is adding a compound to
+    // the catalog and shipping it with an empty detail page, which looks like a bug in the app
+    // rather than missing content. Adding a compound now REQUIRES writing its profile.
+    check(CompoundCatalog.all.allSatisfy { c in
+              c.category == .blend || CompoundProfiles.byID[c.id] != nil
+          },
+          "every non-blend catalog compound has an authored profile (\(CompoundProfiles.all.count)/\(CompoundCatalog.all.count))")
 }
 
 // MARK: - DoseDrawResult protocol
