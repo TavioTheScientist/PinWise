@@ -78,6 +78,10 @@ public struct CompoundProfile: Sendable {
     public var storageHandling: String?
     /// Community misconceptions an evidence-grounded reference should gently correct.
     public var misconceptions: [String]
+    /// Literature and registry references behind this profile. Empty means NOT YET AUTHORED — it
+    /// does not mean "no evidence exists"; `evidenceSummary` is the authoritative statement of how
+    /// much support there is. Every identifier must come from a retrieved record (see `Citation`).
+    public var citations: [Citation]
     /// When this profile's content was last authored/reviewed ("YYYY-MM").
     public var lastReviewed: String
 
@@ -100,6 +104,7 @@ public struct CompoundProfile: Sendable {
         stacking: String? = nil,
         storageHandling: String? = nil,
         misconceptions: [String] = [],
+        citations: [Citation] = [],
         lastReviewed: String = "2026-07"
     ) {
         self.compoundID = compoundID
@@ -120,6 +125,7 @@ public struct CompoundProfile: Sendable {
         self.stacking = stacking
         self.storageHandling = storageHandling
         self.misconceptions = misconceptions
+        self.citations = citations
         self.lastReviewed = lastReviewed
     }
 }
@@ -1206,27 +1212,35 @@ public enum CompoundProfiles {
             compoundID: CompoundCatalog.aod9604.id,
             goals: [.fatLoss],
             tagline: "GH fragment for fat loss that FAILED its human obesity trials.",
-            safetyFlag: "This was tested in people for exactly what it is sold for, and it did not work. Human obesity trials showed no meaningful weight loss versus placebo, and development was discontinued.",
+            safetyFlag: "It was developed as an anti-obesity drug and never approved. Note what is NOT available: no published human obesity trial is retrievable in PubMed, and there is NO ClinicalTrials.gov registration for it at all — so the human record is thinner than the marketing implies in either direction.",
             whatItIs: "AOD-9604 is a synthetic fragment of human growth hormone — residues 176–191, the C-terminal end of the molecule. It was developed by Metabolic Pharmaceuticals specifically as an anti-obesity drug.",
             howItWorks: "The selling point is what it LACKS: the fragment was designed to reproduce growth hormone's lipolytic (fat-mobilizing) effect without GH's growth-promoting, IGF-1-raising or insulin-resistance effects. Preclinically it reduced fat in obese rodents without those liabilities. The same selectivity that made it attractive is a plausible reason the fat-loss effect turned out to be too small to matter in people.",
-            whatToExpect: "Realistically, nothing measurable for fat loss on the evidence available. The compound reached Phase 2b for obesity and did not separate meaningfully from placebo on weight. That is a stronger negative statement than \"unproven\" — it was given a fair test.",
-            evidenceSummary: "Tier D — and specifically a FAILED clinical programme, not an untested one. Human obesity trials did not show meaningful weight loss versus placebo; development was discontinued. It survives commercially as a peptide-market product and, separately, in research on cartilage and joints, which is a different claim with its own (limited) evidence.",
-            dosingStudied: "Oral doses up to roughly 1 mg/day were used in the obesity trials. Those are the doses that failed — worth knowing before assuming the community's injectable amounts are somehow the version that works.",
-            dosingCommunity: "Injectable community ranges are commonly cited around 300 mcg daily. Anecdotal — and note the trials that failed used the oral form, so the injectable protocol has neither positive nor negative trial evidence.",
-            route: "Subcutaneous as sold; the failed obesity trials used an oral formulation.",
+            whatToExpect: "Realistically, nothing you should count on for fat loss. It was developed specifically as an obesity drug by Metabolic Pharmaceuticals and never reached approval — a programme that runs for years and produces no marketed product is a signal in itself. Be careful how far you take that inference though: the absence of a retrievable trial is not the same as a published negative result, and this profile does not claim one.",
+            evidenceSummary: "Tier D. Developed as an anti-obesity agent and never approved. The published record retrievable today is mostly ANTI-DOPING chemistry (detection methods, and identification of the peptide in confiscated vials) plus animal work on joints — not human weight-loss efficacy. It is WADA-prohibited. The cartilage/joint line of research is a genuinely separate claim with its own limited, animal-level evidence.",
+            dosingStudied: "No human dose is documented here, because no retrievable human trial establishes one. The animal joint work used intra-articular injection at 0.25 mg per knee in rabbits — an entirely different route, target and species from anything a person is doing with it.",
+            dosingCommunity: "Injectable community ranges are commonly cited around 300 mcg daily. Anecdotal, with no trial evidence either supporting or refuting it.",
+            route: "Subcutaneous as sold. The obesity programme pursued an oral formulation, which is a further reason not to read anything from that programme onto an injection.",
             timing: "Half-life is short; community protocols dose daily, often fasted, on the theory that insulin blunts lipolysis.",
             sideEffectsCommon: [
-                "Reported as well tolerated — this was consistent in the human trials",
+                "Generally reported as well tolerated",
                 "Occasional injection-site irritation",
             ],
             sideEffectsSerious: [
-                "No serious signal emerged in the human trials, which is the one genuinely reassuring thing here",
-                "Long-term safety beyond trial durations is unstudied",
+                "Long-term human safety is unstudied — and note there is no retrievable human trial to have established a safety profile in the first place",
+                "Products sold under this name have turned up in customs seizures, so identity and purity depend entirely on the supplier",
             ],
             storageHandling: standardStorage,
             misconceptions: [
-                "\"It's GH's fat-loss benefits without the side effects.\" That was the design goal, and the human trials did not deliver the benefit half of it.",
-                "\"There's no evidence either way.\" There is evidence — it is negative. A failed Phase 2b is more informative than no trial at all."
+                "\"It's GH's fat-loss benefits without the side effects.\" That was the design goal. It has never been shown to deliver the benefit half in people, and the selectivity that removes GH's liabilities is a plausible reason the effect is small.",
+                "\"It's clinically proven for fat loss.\" There is no retrievable human weight-loss trial and no ClinicalTrials.gov registration. What IS published is largely doping-control chemistry and animal joint work."
+            ],
+            citations: [
+                .pubmed("25208511", title: "Detection and in vitro metabolism of AOD9604.",
+                        source: "Drug Testing and Analysis", year: 2014,
+                        finding: "Characterizes AOD9604 as the hGH 177–191 C-terminal fragment, notes it is WADA-banned and had been identified in confiscated vials in the USA, and validates a urine detection method."),
+                .pubmed("26275694", title: "Effect of Intra-articular Injection of AOD9604 with or without Hyaluronic Acid in Rabbit Osteoarthritis Model.",
+                        source: "Annals of Clinical and Laboratory Science", year: 2015,
+                        finding: "RABBIT model: intra-articular AOD9604 improved cartilage scores, best combined with hyaluronic acid. Animal data, a different route, and a joint claim rather than a fat-loss one."),
             ]
         ),
 
@@ -1258,6 +1272,11 @@ public enum CompoundProfiles {
             misconceptions: [
                 "\"It was abandoned for business reasons.\" It was discontinued after safety findings in trials.",
                 "\"A lower dose avoids the bleeding.\" The bleeding traces to the receptor's off-target ligands, so it is tied to the mechanism rather than simply to dose."
+            ],
+            citations: [
+                .pubmed("27462804", title: "Myostatin inhibitor ACE-031 treatment of ambulatory boys with Duchenne muscular dystrophy: Results of a randomized, placebo-controlled clinical trial.",
+                        source: "Muscle & Nerve", year: 2017,
+                        finding: "The trial that ended the programme. Randomized, double-blind, placebo-controlled, ascending-dose; STOPPED after the second dosing regimen over potential safety concerns of epistaxis and telangiectasias. Trends toward maintained 6-minute walk distance, increased lean mass and bone mineral density and reduced fat mass — none statistically significant."),
             ]
         ),
 
@@ -1284,7 +1303,15 @@ public enum CompoundProfiles {
             storageHandling: standardStorage,
             misconceptions: [
                 "\"It's a mitochondrial antioxidant.\" It targets cardiolipin structure; that is a different mechanism from scavenging free radicals.",
-                "\"It's proven — it's in Phase 3.\" Being in trials is not the same as working. Several elamipretide endpoints have been missed, which is why it is still unapproved."
+                "\"It's proven — it's in Phase 3.\" Being in trials is not the same as working. Endpoints have been missed, which is why it is still unapproved."
+            ],
+            citations: [
+                .pubmed("29500292", title: "Randomized dose-escalation trial of elamipretide in adults with primary mitochondrial myopathy.",
+                        source: "Neurology", year: 2018,
+                        finding: "MMPOWER, phase I/II, 36 genetically confirmed participants. At the highest dose the 6-minute walk distance rose 64.5 m vs 20.4 m on placebo — p = 0.053, i.e. the headline comparison did NOT clear the conventional threshold, though the dose-response trend did (p = 0.014). No differences in other efficacy or safety endpoints."),
+                .trial("NCT02805790", title: "Phase 2 randomized, double-blind, placebo-controlled crossover trial of subcutaneous elamipretide in primary mitochondrial myopathy",
+                       year: 2016,
+                       finding: "The later subcutaneous crossover study; registered June 2016. Cited via the PMMSA psychometric analysis of its data (PMID 36562873)."),
             ]
         ),
 

@@ -293,6 +293,8 @@ struct CompoundDetailView: View {
     @State private var expanded: Set<String> = ["dosing"]
     @State private var showCalculator = false
     @State private var showLegend = false
+    /// Opens a citation's PubMed / ClinicalTrials.gov record in the browser.
+    @Environment(\.openURL) private var openURL
 
     private var profile: CompoundProfile? { isCustom ? nil : CompoundProfiles.profile(for: compound) }
     private var goals: [CompoundGoal] { isCustom ? [] : CompoundProfiles.goals(for: compound) }
@@ -435,6 +437,12 @@ struct CompoundDetailView: View {
         if let ev = p.evidenceSummary, !ev.isEmpty {
             disclosure("evidence", "Evidence & research", scent: "How much research supports it") { evidenceBody(ev) }
         }
+        // Sources sit directly under Evidence, because they are what backs that section's claim.
+        // Absent when unauthored rather than showing an empty shell — a "Sources" heading with
+        // nothing under it reads as a broken app, and worse, implies none exist.
+        if !p.citations.isEmpty {
+            disclosure("sources", "Sources", scent: "\(p.citations.count) reference\(p.citations.count == 1 ? "" : "s") you can open") { citationsBody(p) }
+        }
         if let r = p.route, !r.isEmpty {
             disclosure("route", "Route & injection site", scent: "How and where it is given") { proseText(r) }
         }
@@ -461,6 +469,58 @@ struct CompoundDetailView: View {
             } else {
                 disclosure("notes", "Regulatory & notes", scent: "Status, corrections, and caveats") { proseText(compound.notes) }
             }
+        }
+    }
+
+    /// A citation row: kind badge, title, source · year, the identifier, and what it actually found.
+    /// Tapping opens the record. The `finding` line is the point of the whole section — a bare
+    /// reference list lets a reader assume every citation SUPPORTS the compound, when several here
+    /// are negative or are animal-only.
+    private func citationsBody(_ p: CompoundProfile) -> some View {
+        VStack(alignment: .leading, spacing: Space.lg) {
+            ForEach(p.citations) { c in
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    HStack(spacing: Space.sm) {
+                        TagChip(text: c.kind.label)
+                        if !c.kind.isPeerReviewed {
+                            // Stated, not implied. A registry entry is a PLAN and a preprint is
+                            // unreviewed; neither should read like a published result.
+                            Text(c.kind == .trial ? "registry entry" : "not peer reviewed")
+                                .font(Typo.caption2)
+                                .foregroundStyle(BrandColor.textSecondary)
+                        }
+                        Spacer(minLength: 0)
+                        if c.url != nil {
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(BrandColor.textSecondary)
+                        }
+                    }
+                    Text(c.title)
+                        .font(Typo.body)
+                        .foregroundStyle(BrandColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("\(c.source) · \(String(c.year)) · \(c.identifier)")
+                        .font(Typo.caption2)
+                        .foregroundStyle(BrandColor.textSecondary)
+                    if let f = c.finding {
+                        Text(f)
+                            .font(Typo.caption)
+                            .foregroundStyle(BrandColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { if let u = c.url { openURL(u) } }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(c.url != nil ? .isLink : [])
+            }
+            Text("References are retrieved records, not summaries written from memory. Open one and read it — a citation is only useful if you can check it.")
+                .font(Typo.caption2)
+                .foregroundStyle(BrandColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

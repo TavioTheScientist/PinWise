@@ -597,6 +597,39 @@ do {
               c.category == .blend || CompoundProfiles.byID[c.id] != nil
           },
           "every non-blend catalog compound has an authored profile (\(CompoundProfiles.all.count)/\(CompoundCatalog.all.count))")
+
+    // MARK: Citations
+    //
+    // The shape is machine-checkable; the TRUTH of an identifier is not. These checks exist to stop
+    // the mechanical failures — a blank title, a year that cannot be right, a PMID whose URL points
+    // somewhere else — so review effort goes on whether the reference says what the profile claims.
+    let allCitations = CompoundProfiles.all.flatMap(\.citations)
+    check(allCitations.allSatisfy { !$0.identifier.isEmpty && !$0.title.isEmpty && !$0.source.isEmpty },
+          "every citation has an identifier, a title and a source")
+    // 1950 is roughly when PubMed's index starts; anything outside this window is a typo.
+    check(allCitations.allSatisfy { (1950...2030).contains($0.year) },
+          "every citation year is plausible (1950–2030)")
+    // A PMID citation's URL must actually contain that PMID. Guards the specific failure where a
+    // citation is copied and the identifier updated but the link is not — which silently sends a
+    // reader to a DIFFERENT paper than the one named.
+    check(allCitations.allSatisfy { c in
+              guard c.identifier.hasPrefix("PMID "), let u = c.url?.absoluteString else { return true }
+              return u.contains(c.identifier.replacingOccurrences(of: "PMID ", with: ""))
+          },
+          "every PMID citation's URL points at that same PMID")
+    check(allCitations.allSatisfy { c in
+              guard c.identifier.hasPrefix("NCT"), let u = c.url?.absoluteString else { return true }
+              return u.contains(c.identifier)
+          },
+          "every NCT citation's URL points at that same NCT id")
+    // Identifiers are the citation's `id`, so a duplicate within one profile would render twice.
+    check(CompoundProfiles.all.allSatisfy { p in
+              Set(p.citations.map(\.identifier)).count == p.citations.count
+          },
+          "no duplicate citations within a single profile")
+    // Every citation kind renders a badge; none may be blank.
+    check(Citation.Kind.allCases.allSatisfy { !$0.label.isEmpty },
+          "every citation kind has a badge label")
 }
 
 // MARK: - DoseDrawResult protocol
