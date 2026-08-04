@@ -38,6 +38,13 @@ count, so a section quietly going missing is visible rather than invisible. Two 
 - When you add a ported module, add its harness section too. The trailing comment in
   `tool/pk_verify.dart` lists what is still outstanding and what it should total.
 
+## Dependencies
+
+`intl` only, and it earns its place: `DoseDuePhrase` must format a weekday and a month/day the way
+the LOCALE wants, because Swift builds those from a locale-agnostic template. Without it the port is
+en-US-only and silently wrong elsewhere — "Aug 12" renders backwards in most of the world. `intl` is
+pure Dart, so the package still verifies on a bare VM in CI.
+
 ## Canonical invariant
 
 Everything internal is stored in **micrograms**. Peptide doses span mcg (research

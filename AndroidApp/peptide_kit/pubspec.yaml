@@ -9,6 +9,15 @@ version: 0.1.0
 environment:
   sdk: ^3.9.0
 
+dependencies:
+  # The ONLY runtime dependency, and it earns its place: `DoseDuePhrase` must format a weekday
+  # and a month/day the way the LOCALE wants, because Swift builds those from a locale-agnostic
+  # template via `setLocalizedDateFormatFromTemplate`. Dart's core libraries cannot do that, so
+  # without `intl` the port is en-US-only and silently wrong everywhere else ("Aug 12" renders
+  # backwards in most of the world). Pure Dart — no Flutter, so the package still verifies on a
+  # bare VM in CI.
+  intl: ^0.20.0
+
 dev_dependencies:
   test: ^1.25.0
   lints: ^5.0.0
