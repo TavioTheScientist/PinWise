@@ -43,6 +43,16 @@ final class SubscriptionManager {
     /// paywall needs in order to show a spinner rather than an empty state.
     private(set) var didLoadProducts = false
 
+    /// When the active subscription next renews, and which plan is active. Both nil unless
+    /// `isSubscribed`.
+    ///
+    /// Exposed because the Membership screen's MEMBER state has a different job from its trial
+    /// state: a member is not being sold anything, they want to know what they are on and when it
+    /// bills. Read from the same verified transaction that decides `isSubscribed`, so the screen can
+    /// never claim a renewal date for an entitlement it does not actually have.
+    private(set) var renewalDate: Date?
+    private(set) var activeProductID: String?
+
     private var updatesTask: Task<Void, Never>?
     private let store = UserDefaults.standard
 
@@ -169,6 +179,8 @@ final class SubscriptionManager {
     /// Recomputes `isSubscribed` from StoreKit's verified entitlements.
     func refreshEntitlement() async {
         var active = false
+        var renewal: Date?
+        var product: String?
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result else { continue }
             // Ignore anything that isn't one of ours, and anything already revoked or upgraded.
@@ -179,8 +191,17 @@ final class SubscriptionManager {
             // expiration date is what actually decides access.
             if let expiry = transaction.expirationDate, expiry <= Date() { continue }
             active = true
+            // Latest expiry wins, so an upgrade mid-period reports the date that actually applies.
+            if let expiry = transaction.expirationDate, expiry > (renewal ?? .distantPast) {
+                renewal = expiry
+                product = transaction.productID
+            }
         }
         isSubscribed = active
+        // Cleared together with the flag: a stale renewal date outliving the entitlement would let
+        // the Membership screen tell a lapsed user they are still billed.
+        renewalDate = active ? renewal : nil
+        activeProductID = active ? product : nil
     }
 
     // MARK: - Purchase / restore
