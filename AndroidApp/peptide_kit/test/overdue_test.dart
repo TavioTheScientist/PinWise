@@ -124,5 +124,55 @@ void main() {
         expect(lastOverdue(start: today, logs: []), isNull);
       },
     );
+
+    // MARK: recency (regression, 2026-08-04)
+
+    test('an OLD miss followed by taken doses is NOT overdue — the anxiety bug', () {
+      // Found by seeding four months of demo history: one missed weekly dose in June left every
+      // surface reading "Overdue since Mon Jun 15" through August, after eight weeks of perfect
+      // adherence. June's injection is not actionable in August, so the badge was pure anxiety.
+      final weekly = DoseSchedule.everyNDays(7);
+      final start = TestSupport.addingDays(today, -70);
+      final logs = [
+        for (var i = 0; i <= 10; i++)
+          if (i != 1) TestSupport.addingDays(today, -70 + i * 7),
+      ];
+      expect(
+        AdherenceCalculator.lastOverdue(
+          schedule: weekly,
+          start: start,
+          asOf: today,
+          logDates: logs,
+        ),
+        isNull,
+      );
+      // The miss is still real — it belongs in the adherence figure, just not as an alarm.
+      final r = AdherenceCalculator.evaluate(
+        schedule: weekly,
+        start: start,
+        end: today,
+        logDates: logs,
+        graceDays: 2,
+      );
+      expect(r.missedDates, isNotEmpty);
+      expect(r.adherence, lessThan(1.0));
+    });
+
+    test(
+      'if everything since the old miss is ALSO missed, it reports the RECENT slot',
+      () {
+        final weekly = DoseSchedule.everyNDays(7);
+        final start = TestSupport.addingDays(today, -70);
+        expect(
+          AdherenceCalculator.lastOverdue(
+            schedule: weekly,
+            start: start,
+            asOf: today,
+            logDates: const [],
+          ),
+          TestSupport.addingDays(today, -7),
+        );
+      },
+    );
   });
 }

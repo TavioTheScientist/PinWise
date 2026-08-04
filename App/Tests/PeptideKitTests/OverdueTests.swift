@@ -104,4 +104,39 @@ struct OverdueTests {
         // flagged "Overdue" on every protocol merely due today.
         #expect(lastOverdue(start: today, logs: []) == nil)
     }
+
+    // MARK: - Recency (regression, 2026-08-04)
+
+    @Test("an OLD miss followed by taken doses is NOT overdue — the anxiety bug")
+    func oldMissSupersededByAdherence() {
+        // Found by seeding four months of demo history: one missed weekly dose in June left every
+        // surface reading "Overdue since Mon Jun 15" through August, after eight weeks of perfect
+        // adherence. June's injection is not actionable in August — you do not take it late — so the
+        // badge was pure anxiety and contradicted the app's one-nudge-then-silence reminder policy.
+        let weekly = DoseSchedule.everyNDays(7)
+        let start = cal.date(byAdding: .day, value: -70, to: today)!   // 10 weekly slots
+        // Every slot logged EXCEPT the second one (day -63).
+        let logs = (0...10).compactMap { i -> Date? in
+            i == 1 ? nil : cal.date(byAdding: .day, value: -70 + i * 7, to: today)
+        }
+        #expect(AdherenceCalculator.lastOverdue(schedule: weekly, start: start, asOf: today,
+                                                logDates: logs, graceDays: 2, calendar: cal) == nil)
+        // The miss is still real — it must remain in the adherence figure, just not as an alarm.
+        let r = AdherenceCalculator.evaluate(schedule: weekly, start: start, end: today,
+                                             logDates: logs, graceDays: 2, calendar: cal)
+        #expect(r.missedDates.isEmpty == false)
+        #expect(r.adherence < 1.0)
+    }
+
+    @Test("if everything since the old miss is ALSO missed, it reports the RECENT slot")
+    func stillOverdueReportsNewestSlot() {
+        // The state must persist when the user really is off protocol — but name the newest
+        // actionable day, never the ancient one.
+        let weekly = DoseSchedule.everyNDays(7)
+        let start = cal.date(byAdding: .day, value: -70, to: today)!
+        let newestSettled = cal.date(byAdding: .day, value: -7, to: today)!
+        let result = AdherenceCalculator.lastOverdue(schedule: weekly, start: start, asOf: today,
+                                                     logDates: [], graceDays: 2, calendar: cal)
+        #expect(result == newestSettled)
+    }
 }
