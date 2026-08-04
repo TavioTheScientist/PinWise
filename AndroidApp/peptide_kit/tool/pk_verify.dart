@@ -404,6 +404,62 @@ void main() {
     'unlisted robust ⇒ 28-day default',
   );
 
+  // PROVENANCE (2026-08-04): a window must never reach a user without its basis. The honest state of
+  // the world today is that NOT ONE of these rests on peptide-specific reconstituted-stability data.
+  check(
+    BeyondUseGuidance.recommendation('Semaglutide').basis ==
+        BeyondUseBasis.uspGeneral,
+    'the 28-day default is the USP multi-dose window, not peptide stability data',
+  );
+  check(
+    BeyondUseGuidance.recommendation('Glutathione').basis ==
+        BeyondUseBasis.convention,
+    "glutathione's shorter window is community convention",
+  );
+  check(
+    BeyondUseGuidance.recommendation('CJC-1295').basis ==
+        BeyondUseBasis.convention,
+    'GH secretagogue windows are community convention',
+  );
+  check(
+    const [
+      'Semaglutide',
+      'Glutathione',
+      'GHK-Cu',
+      'IGF-1 LR3',
+      'Ipamorelin',
+      'BPC-157',
+    ].every((n) => BeyondUseGuidance.recommendation(n).citation == null),
+    'no beyond-use window carries a fabricated citation',
+  );
+  check(
+    !BeyondUseGuidance.recommendation('Semaglutide').basis.isMeasured &&
+        !BeyondUseGuidance.recommendation('Glutathione').basis.isMeasured,
+    'nothing currently claims to be measured',
+  );
+  check(
+    BeyondUseBasis.unknown < BeyondUseBasis.convention &&
+        BeyondUseBasis.convention < BeyondUseBasis.uspGeneral &&
+        BeyondUseBasis.uspGeneral < BeyondUseBasis.publishedStudy &&
+        BeyondUseBasis.publishedStudy < BeyondUseBasis.manufacturerLabel,
+    'basis sorts weakest → strongest',
+  );
+  check(
+    const [
+      'Semaglutide',
+      'Glutathione',
+      'GHK-Cu',
+      'IGF-1 LR3',
+      'CJC-1295',
+      'BPC-157',
+    ].every(
+      (n) =>
+          BeyondUseGuidance.recommendedDays(n) ==
+          BeyondUseGuidance.recommendation(n).days,
+    ),
+    'recommendedDays agrees with recommendation().days',
+  );
+
   // MARK: - Adherence
   section('Adherence calculator');
   {

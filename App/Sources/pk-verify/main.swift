@@ -172,6 +172,34 @@ do {
     check(BeyondUseGuidance.recommendedDays(forCompound: "IGF-1 LR3") == 21, "IGF-1 LR3 ⇒ 21-day default")
     check(BeyondUseGuidance.recommendedDays(forCompound: "Semaglutide") == 28, "GLP-1 ⇒ 28-day default")
     check(BeyondUseGuidance.recommendedDays(forCompound: "BPC-157") == 28, "unlisted robust ⇒ 28-day default")
+
+    // PROVENANCE (2026-08-04): a window must never reach a user without its basis. The honest state
+    // of the world today is that NOT ONE of these rests on peptide-specific reconstituted-stability
+    // data — they are the USP general multi-dose microbial window, or community practice. Asserting
+    // that here means a future change that quietly upgrades a claim has to break a check to do it.
+    check(BeyondUseGuidance.recommendation(forCompound: "Semaglutide").basis == .uspGeneral,
+          "the 28-day default is the USP multi-dose window, not peptide stability data")
+    check(BeyondUseGuidance.recommendation(forCompound: "Glutathione").basis == .convention,
+          "glutathione's shorter window is community convention")
+    check(BeyondUseGuidance.recommendation(forCompound: "CJC-1295").basis == .convention,
+          "GH secretagogue windows are community convention")
+    // No invented sources. A citation field filled to look rigorous would be the worst failure here.
+    check(["Semaglutide", "Glutathione", "GHK-Cu", "IGF-1 LR3", "Ipamorelin", "BPC-157"]
+            .allSatisfy { BeyondUseGuidance.recommendation(forCompound: $0).citation == nil },
+          "no beyond-use window carries a fabricated citation")
+    check(BeyondUseGuidance.recommendation(forCompound: "Semaglutide").basis.isMeasured == false
+            && BeyondUseGuidance.recommendation(forCompound: "Glutathione").basis.isMeasured == false,
+          "nothing currently claims to be measured")
+    // Confidence ordering is load-bearing: the UI ranks and styles by it.
+    check(BeyondUseBasis.unknown < .convention && BeyondUseBasis.convention < .uspGeneral
+            && BeyondUseBasis.uspGeneral < .publishedStudy
+            && BeyondUseBasis.publishedStudy < .manufacturerLabel,
+          "basis sorts weakest → strongest")
+    // The bare-Int accessor must keep agreeing with the graded one, or two surfaces will disagree.
+    check(["Semaglutide", "Glutathione", "GHK-Cu", "IGF-1 LR3", "CJC-1295", "BPC-157"]
+            .allSatisfy { BeyondUseGuidance.recommendedDays(forCompound: $0)
+                            == BeyondUseGuidance.recommendation(forCompound: $0).days },
+          "recommendedDays agrees with recommendation().days")
 }
 
 // MARK: - Adherence
