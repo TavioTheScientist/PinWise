@@ -1,0 +1,14 @@
+name: peptide_kit
+description: >-
+  Pure-Dart port of the Staxyz domain core (App/Sources/PeptideKit). Dose math,
+  models, safety rules and the compound catalog, with no Flutter or platform
+  dependency so it can be verified on any machine and reused by the Android UI.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^5.0.0
