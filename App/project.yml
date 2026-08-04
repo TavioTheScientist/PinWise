@@ -80,6 +80,26 @@ targets:
         # App target uses Swift 5 language mode to avoid strict-concurrency friction during
         # early iteration; PeptideKit stays on Swift 6. Bump to "6.0" once the UI settles.
         SWIFT_VERSION: "5.0"
+      configs:
+        # DEBUG ONLY. HealthKit WRITE access needs its own usage string, and requesting share
+        # authorization without one raises an ObjC exception that kills the app. Only the
+        # screenshot seeder (iOSApp/Debug/DebugSeeder.swift, entirely `#if DEBUG`) ever writes —
+        # HealthManager is read-only and stays that way.
+        #
+        # It lives here, as an INFOPLIST_KEY_ build setting on the Debug configuration, rather than
+        # in `info.properties` above: properties there are unconditional and would ship a
+        # write-permission declaration in the release build, putting a "Staxyz can write your health
+        # data" row in every real user's Health settings for a capability the app does not have.
+        # A Release build therefore has no such key — which is exactly why the seeder checks for it
+        # before asking.
+        #
+        # GENERATE_INFOPLIST_FILE must be ON for INFOPLIST_KEY_ settings to be honored at all — with
+        # an explicit INFOPLIST_FILE the build system uses that file as the BASE and merges the
+        # INFOPLIST_KEY_ values into it. Without this line the key is silently dropped (verified:
+        # the built plist simply had no NSHealthUpdateUsageDescription).
+        debug:
+          GENERATE_INFOPLIST_FILE: "YES"
+          INFOPLIST_KEY_NSHealthUpdateUsageDescription: "DEBUG builds only: the screenshot seeder writes sample weight, heart-rate, HRV, sleep and step data so the app can be photographed with realistic history."
 
   # Host-app unit tests for the parts of the app that can't live in PeptideKit. Today that is the
   # StoreKit 2 subscription flow, which needs a real store to talk to: `SKTestSession` loads
