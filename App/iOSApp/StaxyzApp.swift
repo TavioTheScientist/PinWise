@@ -181,6 +181,12 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.55), value: acceptedVersion)
         // One-time: seed the weight unit from the device region (user can override in Settings).
         .task {
+            // DEBUG-only demo-data seeder for screenshots (see Debug/DebugSeeder.swift). Detached
+            // into its own Task so a ~2.5k-sample HealthKit write can never delay the first frame,
+            // and a no-op on every launch that doesn't set STAXYZ_SEED.
+            #if DEBUG
+            Task { await DebugSeeder.seedIfRequested() }
+            #endif
             if !didInitWeightUnit {
                 weightInPounds = Locale.current.measurementSystem != .metric
                 didInitWeightUnit = true
