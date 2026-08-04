@@ -1,4 +1,5 @@
 import '../internal/calendar_math.dart';
+import '../internal/model_support.dart';
 import '../models/dose_protocol.dart';
 
 /// One adherence evaluation over a window. Swift nests this as
@@ -21,6 +22,53 @@ class AdherenceResult {
 
   /// 0.0-1.0. A day counts as adhered if any logged dose falls on it (same calendar day).
   final double adherence;
+
+  /// Dates encode as ISO-8601 strings, matching the rest of this port. **This does NOT
+  /// interoperate with Swift's default `JSONEncoder`**, which uses `.deferredToDate`
+  /// (seconds since the 2001 epoch) — the iOS side has to opt into `.iso8601`. Same caveat
+  /// as `Vial`; see its doc.
+  factory AdherenceResult.fromJson(Map<String, dynamic> json) {
+    List<DateTime> dates(String key) => (json[key] as List<dynamic>)
+        .map((d) => DateTime.parse(d as String))
+        .toList();
+    return AdherenceResult(
+      expectedDates: dates('expectedDates'),
+      takenDates: dates('takenDates'),
+      missedDates: dates('missedDates'),
+      expectedCount: json['expectedCount'] as int,
+      takenCount: json['takenCount'] as int,
+      adherence: (json['adherence'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'expectedDates': expectedDates.map((d) => d.toIso8601String()).toList(),
+    'takenDates': takenDates.map((d) => d.toIso8601String()).toList(),
+    'missedDates': missedDates.map((d) => d.toIso8601String()).toList(),
+    'expectedCount': expectedCount,
+    'takenCount': takenCount,
+    'adherence': adherence,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is AdherenceResult &&
+      listEquals(other.expectedDates, expectedDates) &&
+      listEquals(other.takenDates, takenDates) &&
+      listEquals(other.missedDates, missedDates) &&
+      other.expectedCount == expectedCount &&
+      other.takenCount == takenCount &&
+      other.adherence == adherence;
+
+  @override
+  int get hashCode => Object.hash(
+    Object.hashAll(expectedDates),
+    Object.hashAll(takenDates),
+    Object.hashAll(missedDates),
+    expectedCount,
+    takenCount,
+    adherence,
+  );
 }
 
 /// Computes adherence (scheduled vs. actually-logged doses) over a window.
