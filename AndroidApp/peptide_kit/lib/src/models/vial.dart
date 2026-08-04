@@ -1,3 +1,5 @@
+import 'package:decimal/decimal.dart';
+
 import '../internal/model_support.dart';
 import '../units.dart';
 
@@ -6,15 +8,19 @@ import '../units.dart';
 /// A vial starts lyophilized (`solventVolumeMilliliters == null`); once the user
 /// reconstitutes it, they record the water volume and the concentration becomes known.
 ///
-/// **Two translation notes, both flagged rather than hidden:**
-/// 1. Swift stores [cost] as `Decimal` ("kept as Decimal for money math"). Dart has no
-///    decimal type in the core libraries and this port may not add a dependency, so it is
-///    a `double`. Nothing in PeptideKit does money arithmetic beyond cost-per-dose
-///    division, but any Android code that sums or rounds currency must not assume exact
-///    decimal semantics.
-/// 2. Dates serialize here as ISO-8601 strings. Swift's `JSONEncoder` defaults to
-///    `.deferredToDate` (seconds since the 2001 reference date, as a `Double`), so the two
-///    interoperate only if the iOS side sets `.iso8601`.
+/// **Money is never a `double` here, and that is deliberate.** [cost] is a `Decimal`, matching
+/// Swift's `Vial.cost: Decimal?` and the rule `SDModels.swift` states outright — binary floating
+/// point cannot represent 0.10, so a cost a user typed would not compare equal to the cost read
+/// back, and a cost-per-dose built from doubles drifts. It serializes as a STRING for the same
+/// reason: routing it through a JSON number would re-introduce the `double` this type exists to
+/// avoid.
+///
+/// **On `toJson`/`fromJson`:** these are a Dart-side convenience with no counterpart in use on
+/// the Swift side — nothing there JSON-encodes this type. iOS persists via SwiftData `@Model`
+/// classes and its user-facing export is CSV, so there is no JSON wire format shared between the
+/// platforms to disagree with. Dates are therefore ISO-8601 because that is the sane choice for
+/// a Dart-side format, not because it matches a Swift encoder. If a shared JSON format is ever
+/// introduced, define it deliberately then — do not assume this one is it.
 class Vial {
   Vial({
     String? id,
@@ -38,7 +44,8 @@ class Vial {
     dateAcquired: _date(json['dateAcquired']),
     dateReconstituted: _date(json['dateReconstituted']),
     expirationDate: _date(json['expirationDate']),
-    cost: (json['cost'] as num?)?.toDouble(),
+    // Parsed from a STRING, never a JSON number — a number would go through `double`.
+    cost: json['cost'] == null ? null : Decimal.parse(json['cost'] as String),
   );
 
   static DateTime? _date(Object? raw) =>
@@ -60,8 +67,8 @@ class Vial {
   final DateTime? dateReconstituted;
   final DateTime? expirationDate;
 
-  /// Purchase cost in the user's currency. `Decimal?` in Swift — see the class note.
-  final double? cost;
+  /// Purchase cost in the user's currency. `Decimal`, matching Swift — see the class note.
+  final Decimal? cost;
 
   bool get isReconstituted => (solventVolumeMilliliters ?? 0) > 0;
 
@@ -81,7 +88,7 @@ class Vial {
     'dateAcquired': dateAcquired?.toIso8601String(),
     'dateReconstituted': dateReconstituted?.toIso8601String(),
     'expirationDate': expirationDate?.toIso8601String(),
-    'cost': cost,
+    'cost': cost?.toString(),
   };
 
   @override

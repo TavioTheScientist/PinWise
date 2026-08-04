@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:decimal/decimal.dart';
+
 import '../internal/calendar_math.dart';
 import '../models/dose_protocol.dart';
 import '../models/vial.dart';
@@ -31,8 +33,8 @@ enum InventoryLimitingFactor {
 /// One inventory projection for a vial. Swift nests this as `InventoryEstimator.Projection`;
 /// Dart has no nested types, so it is hoisted.
 ///
-/// Dates serialize as ISO-8601 strings; see the note on `Vial` for why that does not match
-/// Swift's default `JSONEncoder` date strategy.
+/// Dates serialize as ISO-8601 strings and money as decimal strings; see the note on [Vial] for
+/// why, and for why this JSON has no Swift counterpart to disagree with.
 class InventoryProjection {
   const InventoryProjection({
     required this.dosesRemaining,
@@ -60,7 +62,9 @@ class InventoryProjection {
         ),
         beyondUseDate: _date(json['beyondUseDate']),
         needsReorder: json['needsReorder'] as bool,
-        costPerDose: (json['costPerDose'] as num?)?.toDouble(),
+        costPerDose: json['costPerDose'] == null
+            ? null
+            : Decimal.parse(json['costPerDose'] as String),
       );
 
   static DateTime? _date(Object? raw) =>
@@ -95,12 +99,10 @@ class InventoryProjection {
 
   /// Cost per dose when the vial has a recorded cost, else `null`.
   ///
-  /// **Precision note, flagged rather than hidden:** Swift types this as `Decimal?` and divides
-  /// `Decimal` by `Decimal`. Dart's core libraries have no decimal type and this port may not
-  /// add a dependency, so it is a `double` — matching `Vial.cost`. The division is exact for the
-  /// common cases (a whole cost over a whole dose count), but any Android code that sums or
-  /// rounds currency must not assume exact decimal semantics.
-  final double? costPerDose;
+  /// A `Decimal`, matching Swift's `Decimal / Decimal` — see [Vial.cost] for why money never
+  /// travels as a `double` here. Serialized as a STRING so a round-trip cannot launder it back
+  /// into binary floating point.
+  final Decimal? costPerDose;
 
   Map<String, dynamic> toJson() => {
     'dosesRemaining': dosesRemaining,
@@ -112,7 +114,7 @@ class InventoryProjection {
     'limitingFactor': limitingFactor.rawValue,
     'beyondUseDate': beyondUseDate?.toIso8601String(),
     'needsReorder': needsReorder,
-    'costPerDose': costPerDose,
+    'costPerDose': costPerDose?.toString(),
   };
 
   @override
@@ -160,6 +162,11 @@ class InventoryProjection {
 /// guidance treat the ~28-day mark as a microbial-safety guideline, not a potency cliff), so it is
 /// surfaced for a soft "inspect before use" nudge and never reduces usable doses or disables a vial.
 abstract final class InventoryEstimator {
+  /// Decimal places kept when a cost-per-dose does not divide evenly. See the note at the
+  /// division site: Swift's `Decimal` keeps ~38 significant digits implicitly, Dart makes the
+  /// scale explicit, and 20 places is far beyond any currency display.
+  static const int _costScale = 20;
+
   /// - [vial]: the (reconstituted) vial.
   /// - [dose]: per-injection dose.
   /// - [dosesTaken]: how many doses already drawn from this vial.
@@ -251,12 +258,23 @@ abstract final class InventoryEstimator {
       }
     }
 
-    double? costPerDose;
+    Decimal? costPerDose;
     final cost = vial.cost;
     if (cost != null) {
       final exactDoses = totalMcg / perDose;
       if (exactDoses > 0) {
-        costPerDose = cost / exactDoses;
+        // Swift: `cost / Decimal(exactDoses)`. `exactDoses` is genuinely a Double on both sides
+        // (a mass ratio, not money), so it is converted via its shortest round-tripping string —
+        // the most faithful rendering available, and the same value Swift's `Decimal(Double)` sees.
+        //
+        // Dart's `Decimal / Decimal` returns a `Rational`, because an exact quotient may not be
+        // representable (200/3). A scale must therefore be chosen where Swift's `Decimal` would
+        // silently keep ~38 significant digits. 20 decimal places is far beyond any currency
+        // display (2dp) while leaving equality stable for the terminating cases that matter —
+        // 200/4 is exactly 50, which is what the verifier asserts.
+        costPerDose = (cost / Decimal.parse(exactDoses.toString())).toDecimal(
+          scaleOnInfinitePrecision: _costScale,
+        );
       }
     }
 
