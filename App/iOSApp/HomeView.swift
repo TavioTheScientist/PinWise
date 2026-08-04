@@ -42,12 +42,14 @@ struct HomeView: View {
     /// Adherence is judged over the last N SCHEDULED DOSES (not a fixed run of calendar days),
     /// so a weekly and a daily protocol are measured on the same footing and one miss is a
     /// small, predictable dip (~1/N) that recovers as new on-time doses push it out of the
-    /// window. A dose logged up to `graceDays` late still counts (people don't dose to the
-    /// minute). Both constants are the single tuning point.
+    /// window. A dose logged late still counts, per the cadence's own
+    /// `DosePolicy.attributionGraceDays` (people don't dose to the minute). The single tuning point —
+    /// and now a PUBLISHED one: the hero states this denominator under the ring, so the two can never
+    /// disagree about what the percentage covers.
     private static let adherenceWindow = 22
-    /// Reads the ONE app-wide grace window, so the ring, the streak and the protocol rows'
-    /// overdue state can never disagree about whether a given dose was taken.
-    private static let graceDays = AdherenceCalculator.defaultGraceDays
+    /// The hero ring's diameter, shared with the window label beneath it so the caption is bounded by
+    /// the ring rather than free to widen the column.
+    private static let ringSize: CGFloat = 112
 
     /// Every past-due scheduled dose across all active protocols, tagged taken/missed with the
     /// grace rule, sorted chronologically. The one basis both the streak and the adherence %
@@ -193,39 +195,58 @@ struct HomeView: View {
 
     // MARK: Hero
 
-    /// Home's one hero. Left: the adherence ring. Right: an instrument panel of the two facts that
-    /// need a number — what's next, and the streak — separated by a hairline so the column reads as
-    /// one panel instead of two floating blobs. Beneath both: the last seven days of scheduled doses.
+    /// Home's one hero, and the only place the app grades the user.
     ///
-    /// **Why the week strip is here.** The card's right column used to hold two short values ("Today",
-    /// "6 doses") and a third line of "Personal best 6" inside ~185pt of width, so most of the card's
-    /// area was empty and the one thing a member actually wants at a glance — did I hit my doses this
-    /// week — was nowhere on the screen, only implied by a percentage. The strip answers it directly,
-    /// costs one row, and is derived from the SAME `doseEvents` as the ring and the streak, so the
-    /// three can never disagree. It hides itself entirely on a week that asked nothing of the user
-    /// (a brand-new or long-interval protocol), so it can never render as seven empty cells.
+    /// Left: the adherence ring, with the DENOMINATOR it was measured over stated underneath. Right:
+    /// an instrument panel of the two facts that need a number — what's next, and the streak —
+    /// separated by a hairline so the column reads as one panel instead of two floating blobs.
+    /// Beneath both: how far the streak is from its next milestone, then the one line that says how
+    /// the streak is graded.
+    ///
+    /// **Why the window is on the ring.** It read as a bare `88%` over an invisible sample. A
+    /// percentage with a hidden denominator is a number the user has to trust rather than read, and
+    /// the entire worth of this card is that its figures are checkable — 88% of *what* is the first
+    /// question anyone asks of it.
+    ///
+    /// **What used to be below.** A 7-day (or last-N-slot) dose strip, removed on the founder's call.
+    /// It restated dose-by-dose what the ring already states as a percentage, and it spent the card's
+    /// whole lower half on history that cannot be acted on. The space now goes to the two things that
+    /// stop a streak reading as decoration: visible progress toward a milestone, and the grading rule
+    /// behind the count.
     private var heroActive: some View {
-        // ONE pass over `doseEvents` feeds the ring, the streak, and the strip. Each of the three used
-        // to re-derive it — `streakStat` alone read `streak` five times, i.e. five walks of
-        // `AdherenceCalculator.expectedDates` per render — so the card now shows strictly more while
-        // walking the schedule strictly less.
+        // ONE pass over `doseEvents` feeds the ring, the streak, and the milestone bar. Each used to
+        // re-derive it — `streakStat` alone read `streak` five times, i.e. five walks of
+        // `AdherenceCalculator.expectedDates` per render.
         let events = doseEvents
         let run = StreakCalculator.compute(events: events)
-        // The same `nextDoseDate` drives both the "Next pin" figure and the strip's open cell, which
-        // is what guarantees a "Today" here always pairs with a still-open mark below.
-        let nextDate = nextDoseDate
-        // Sparse cadences get the slot scale — see `StripScale`. One scheduled day in the trailing
-        // week is not enough to instrument as a week.
-        let days = doseWeek(from: events, nextDose: nextDate)
-        let scale: StripScale = days.filter(\.expected).count >= 2 ? .days : .slots
-        let week = scale == .days ? days : doseSlots(from: events, nextDose: nextDate)
+        let fraction = Self.adherence(of: events)
+        // The number of scheduled doses the ring ACTUALLY judged, which is not the constant: a member
+        // eight doses into a protocol would otherwise be told the figure covers 22 of them. A
+        // denominator is only worth surfacing if it is the true one.
+        let judged = min(events.count, Self.adherenceWindow)
 
         return Card(style: .hero, padding: Space.xl) {
             VStack(alignment: .leading, spacing: Space.lg) {
                 HStack(spacing: Space.lg) {
-                    AdherenceRing(fraction: Self.adherence(of: events), size: 112)
+                    VStack(spacing: Space.sm) {
+                        AdherenceRing(fraction: fraction, size: Self.ringSize)
+                        // Capped to the ring's own width so a long label (or a large Dynamic Type
+                        // size) wraps rather than widening this column and squeezing the stats.
+                        MicroLabel(judged > 0 ? "Last \(judged) doses" : "No doses due yet")
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: Self.ringSize)
+                    }
+                    // ONE element, so VoiceOver reads the percentage together with the window it was
+                    // measured over, instead of announcing a ring and a stray caption as two
+                    // unrelated facts. Same reason the window is visible at all.
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Adherence")
+                    .accessibilityValue(judged > 0
+                        ? "\(Int((fraction * 100).rounded())) percent of your last \(judged) scheduled doses taken"
+                        : "No scheduled doses have come due yet")
+
                     VStack(alignment: .leading, spacing: Space.md) {
-                        heroStat("Next pin", nextDoseText(nextDate))
+                        heroStat("Next pin", nextDoseText(nextDoseDate))
                         Divider().overlay(BrandColor.stroke)
                         streakStat(run)
                     }
@@ -233,9 +254,18 @@ struct HomeView: View {
                     // the hairline spans the panel and the trailing micro-labels have an edge to sit on.
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                if week.contains(where: \.expected) {
+                // Self-hiding, the same way the strip that used to live here was: with nothing
+                // scheduled (an as-needed-only stack), the streak can never move, and a progress bar
+                // that is structurally frozen at zero is worse than no progress bar.
+                if !events.isEmpty {
                     Divider().overlay(BrandColor.stroke)
-                    weekStrip(week, scale: scale)
+                    milestoneProgress(run)
+                    // The grading rule, stated once and quietly. A streak whose rule is invisible is
+                    // a number taken on faith, which is what makes streak mechanics read as arbitrary.
+                    if let gracePhrase {
+                        Text(gracePhrase)
+                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    }
                 }
             }
         }
@@ -259,8 +289,17 @@ struct HomeView: View {
         }
     }
 
-    /// The reward stat: current on-time streak with a lit flame, and the personal best reported on
+    /// The reward stat: the current dose streak with a lit flame, and the personal best reported on
     /// the label's own line rather than beneath it.
+    ///
+    /// **It is labelled "Dose streak", not "On-time streak", and that is a CORRECTNESS fix rather
+    /// than copy.** `AdherenceCalculator.evaluate`'s second pass credits a dose logged up to
+    /// `DosePolicy.attributionGraceDays` late, and `StreakCalculator` reads exactly those
+    /// `takenDates` — so this number has always included late-but-credited doses. "On-time" claimed a
+    /// same-day precision the rule deliberately does not require: `DosePolicy` documents why the
+    /// grace is right (semaglutide guidance permits catching up, and punishing correct behavior is
+    /// the documented failure mode of naive streak mechanics). The rule is clinically reasoned, so
+    /// the LABEL was the thing that was wrong. `gracePhrase` states the window in full below.
     ///
     /// "Personal best 6" used to sit on a third line under a 6-dose streak — the same number twice,
     /// spending a whole line to tell a user at their best that their best is what they already see.
@@ -271,7 +310,7 @@ struct HomeView: View {
     private func streakStat(_ streak: StreakCalculator.Result) -> some View {
         let atBest = streak.current > 0 && streak.current == streak.longest
         return VStack(alignment: .leading, spacing: 2) {
-            MicroLabel("On-time streak")
+            MicroLabel("Dose streak")
             HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
                 Image(systemName: "flame.fill")
                     .font(.caption)
@@ -291,7 +330,7 @@ struct HomeView: View {
                         .foregroundStyle(BrandColor.textSecondary)
                 )
                 // The best rides the VALUE line, not the label line above it. Sharing the label's
-                // line put "ON-TIME STREAK" and "YOUR BEST" in ~185pt of tracked 11pt caps, which
+                // line put "DOSE STREAK" and "YOUR BEST" in ~185pt of tracked 11pt caps, which
                 // wrapped the label to two lines; and the comparison belongs beside the number it
                 // compares anyway, where a baseline-aligned micro-label reads as one instrument row.
                 Spacer(minLength: Space.sm)
@@ -303,198 +342,99 @@ struct HomeView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("On-time streak")
+        .accessibilityLabel("Dose streak")
         .accessibilityValue("\(streak.current) \(streak.current == 1 ? "dose" : "doses") in a row."
                             + (atBest ? " That matches your personal best."
                                       : streak.longest > 0 ? " Personal best \(streak.longest)." : ""))
     }
 
-    // MARK: The 7-day dose strip
+    // MARK: Milestone progress
 
-    /// One cell of the hero's 7-day strip: what a single day asked of the user, and what they did.
+    /// How far the streak is from its next milestone — the element that turns the number into
+    /// something being *built toward* rather than a decorative count. `StreakCalculator.milestones`
+    /// owns the thresholds; nothing here restates them.
     ///
-    /// Aggregated PER DAY rather than per dose because a day with two protocols is still one day in
-    /// the user's life — and the completeness rule matches the streak's own ("no protocol missed":
-    /// every dose that came due must have been taken), so a cell can never read complete on a day
-    /// the streak counted as a break.
-    private struct DoseDay: Identifiable {
-        /// Position in the strip, oldest first.
-        let id: Int
-        /// The day this cell stands for. Carried explicitly because in SLOT mode position no longer
-        /// implies a date, and the accessibility value has to name it.
-        let date: Date
-        /// Absolute weekday number (1 = Sun … 7 = Sat) — the stored convention, unchanged.
-        let weekday: Int
-        let scheduled: Int
-        let taken: Int
-        /// Today's dose is due and not yet logged.
-        let pending: Bool
-        var isToday: Bool { Calendar.current.isDateInToday(date) }
-        /// Did this day ask anything of the user at all? A `false` day is a rest day, not a miss.
-        var expected: Bool { scheduled > 0 || pending }
-        var complete: Bool { scheduled > 0 && taken == scheduled }
-    }
+    /// **The bar measures the CURRENT RUNG, not zero → next.** At 3 doses, 3/7 of the first rung is
+    /// visible progress; 3/90 measured against the last milestone would be a sliver indistinguishable
+    /// from nothing, which is the opposite of "this is going somewhere".
+    ///
+    /// This is the one place on the card that spends the brand metal, and it is the right one: it is
+    /// the only element here that represents something EARNED rather than something measured (the
+    /// ring's hue is semantic, the stats are neutral). At most one such moment per screen.
+    @ViewBuilder
+    private func milestoneProgress(_ streak: StreakCalculator.Result) -> some View {
+        // The rung the user is standing on (0 before the first milestone) and the one above it.
+        let earned = StreakCalculator.earnedMilestone(for: streak.current)
+        let next = StreakCalculator.milestones.first { $0 > streak.current }
+        let remaining = (next ?? streak.current) - streak.current
 
-    /// How the strip is scaled. One instrument, two scales — never two different widgets.
-    ///
-    /// A trailing-seven-days window is the right lens for a daily or every-other-day protocol and the
-    /// WRONG one for a weekly: on the seeded weekly user it rendered a single dot and six dashes, and
-    /// six dashes read as absence rather than rest — "you did almost nothing this week" on a dose
-    /// tracker. Gating the strip off instead would hand a weekly user back the mostly-empty hero this
-    /// whole change set out to fix, and weekly is the common GLP-1 case. So the WINDOW adapts while
-    /// the marks stay identical.
-    private enum StripScale {
-        /// Calendar days, weekday initials over the marks.
-        case days
-        /// The last N scheduled slots. No per-cell letters: for a weekly protocol every cell is a
-        /// Monday, so initials would read `M M M M M M` and imply a variation that does not exist.
-        case slots
-    }
-
-    /// The trailing seven days, oldest first, ending on today.
-    ///
-    /// A ROLLING window rather than the current Mon–Sun calendar week, for the same reason the
-    /// adherence ring uses one: a calendar week spends up to six cells on days that haven't happened
-    /// yet, which is chrome, not information. Ending on today also puts the only actionable cell
-    /// under the reader's eye at the right edge.
-    ///
-    /// `nextDose` supplies the one thing `doseEvents` deliberately withholds: today's unlogged dose,
-    /// which is pending rather than missed and so is absent from the event stream. `nextDoseDate`
-    /// already resolves to today exactly when some protocol's dose is due and unlogged (a protocol
-    /// logged today reports its NEXT day instead), so it answers this without a second schedule walk.
-    private func doseWeek(from events: [StreakCalculator.DoseEvent], nextDose: Date?) -> [DoseDay] {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        var counts: [Date: (scheduled: Int, taken: Int)] = [:]
-        for e in events {
-            let day = cal.startOfDay(for: e.date)
-            var c = counts[day] ?? (0, 0)
-            c.scheduled += 1
-            if e.taken { c.taken += 1 }
-            counts[day] = c
-        }
-        // Deliberately-skipped slots never entered `events` (the skip policy makes them neutral), so
-        // they surface here as rest days — consistent with a streak that neither breaks nor extends
-        // on a skip, rather than as a miss the user didn't make.
-        let dueToday = nextDose.map { cal.isDateInToday($0) } ?? false
-        return (0...6).compactMap { offset in
-            guard let date = cal.date(byAdding: .day, value: offset - 6, to: today) else { return nil }
-            let c = counts[cal.startOfDay(for: date)] ?? (0, 0)
-            return DoseDay(id: offset, date: date, weekday: cal.component(.weekday, from: date),
-                           scheduled: c.scheduled, taken: c.taken,
-                           pending: offset == 6 && dueToday)
-        }
-    }
-
-    /// The last `limit` scheduled SLOTS, oldest first — the sparse-cadence scale.
-    ///
-    /// One cell per dose that came due, so a weekly protocol fills the row with six weeks of real
-    /// history instead of one dot and six rest days. There are no rest cells by construction: every
-    /// cell here is a slot that asked something.
-    ///
-    /// Today's pending dose is appended the same way `doseWeek` handles it, and for the same reason —
-    /// it is deliberately absent from `doseEvents` because it is neither taken nor missed yet.
-    private func doseSlots(from events: [StreakCalculator.DoseEvent],
-                           nextDose: Date?, limit: Int = 7) -> [DoseDay] {
-        let cal = Calendar.current
-        let dueToday = nextDose.map { cal.isDateInToday($0) } ?? false
-        let pendingCount = dueToday ? 1 : 0
-        // Chronological, then the most recent `limit` — leaving room for today's open cell so the
-        // row's length never changes between a due day and a logged one.
-        let recent = events.sorted { $0.date < $1.date }.suffix(max(0, limit - pendingCount))
-
-        var cells: [DoseDay] = recent.enumerated().map { i, e in
-            DoseDay(id: i, date: cal.startOfDay(for: e.date),
-                    weekday: cal.component(.weekday, from: e.date),
-                    scheduled: 1, taken: e.taken ? 1 : 0, pending: false)
-        }
-        if dueToday {
-            let today = cal.startOfDay(for: Date())
-            cells.append(DoseDay(id: cells.count, date: today,
-                                 weekday: cal.component(.weekday, from: today),
-                                 scheduled: 0, taken: 0, pending: true))
-        }
-        return cells
-    }
-
-    private func weekStrip(_ week: [DoseDay], scale: StripScale) -> some View {
-        let scheduled = week.reduce(0) { $0 + $1.scheduled }
-        let taken = week.reduce(0) { $0 + $1.taken }
-        let heading = scale == .days
-            ? "Last 7 days"
-            : "Last \(week.count) \(week.count == 1 ? "dose" : "doses")"
-        return VStack(alignment: .leading, spacing: Space.sm) {
-            HStack(spacing: Space.sm) {
-                MicroLabel(heading)
+        VStack(alignment: .leading, spacing: Space.sm) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+                MicroLabel(next.map { "Next milestone · \($0) doses" } ?? "Every milestone earned")
                 Spacer(minLength: Space.xs)
-                if scheduled > 0 { MicroLabel("\(taken)/\(scheduled) taken") }
-            }
-            HStack(spacing: 0) {
-                ForEach(week) { day in
-                    VStack(spacing: 5) {
-                        if scale == .days {
-                            // A single letter is legible ONLY because the strip is a complete, fixed
-                            // run of seven cells where position supplies the identity — hence
-                            // `initialWeekdayLabel` rather than the position-independent
-                            // `shortWeekdayLabel` (whose "Th"/"Su" would break the column rhythm).
-                            Text(SavedProtocol.initialWeekdayLabel(day.weekday))
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(day.isToday
-                                                 ? BrandColor.textPrimary : BrandColor.textSecondary)
-                        }
-                        mark(for: day)
-                    }
-                    .frame(maxWidth: .infinity)
+                if next != nil {
+                    MicroLabel("\(remaining) to go", color: BrandColor.accentText)
+                } else {
+                    MicroLabel("\(streak.current) in a row", color: BrandColor.success)
                 }
             }
+            milestoneBar(fraction: next.map {
+                Double(streak.current - earned) / Double($0 - earned)
+            } ?? 1)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(heading)
-        .accessibilityValue(weekSummary(week, taken: taken, scheduled: scheduled, scale: scale))
+        .accessibilityLabel(next == nil ? "Milestones" : "Next milestone")
+        .accessibilityValue(next.map {
+            "\(remaining) more \(remaining == 1 ? "dose" : "doses") to reach \($0) in a row."
+        } ?? "Every milestone earned, at \(streak.current) doses in a row.")
     }
 
-    /// The mark vocabulary, and the precedence is deliberate: **pending beats complete.** On a day
-    /// with two protocols where one is logged and one isn't, the day is not finished, and the cell
-    /// that says "there is still something to do today" is the more useful of the two truths.
-    /// Shape carries the meaning as well as hue (filled / hollow / dash), so the strip doesn't rely
-    /// on color alone — and the one same-shape pair, pending vs missed, can only ever be told apart
-    /// by hue on the LAST cell, which is the only cell that can be pending.
-    private func mark(for day: DoseDay) -> some View {
-        Group {
-            if day.pending {
-                Circle().strokeBorder(BrandColor.warning, lineWidth: 2).frame(width: 10, height: 10)
-            } else if day.complete {
-                Circle().fill(BrandColor.success).frame(width: 10, height: 10)
-            } else if day.scheduled > 0 {
-                Circle().strokeBorder(BrandColor.danger, lineWidth: 2).frame(width: 10, height: 10)
-            } else {
-                // A rest day: nothing was asked, so nothing is judged. A dash rather than a dimmer
-                // circle, so "no dose" never reads as a faint version of "missed".
-                Capsule().fill(BrandColor.textSecondary.opacity(0.35)).frame(width: 10, height: 2)
+    /// The milestone track: a hairline-thin capsule in the chrome gradient.
+    ///
+    /// `GeometryReader` because a fractional width has no expression in a plain stack, inside a fixed
+    /// 6pt height — the height belongs to the BAR, not to any text, so nothing here can clip at large
+    /// Dynamic Type sizes. Renders at its value with no sweep, matching `AdherenceRing`'s own rule, so
+    /// there is no motion for Reduce Motion to suppress.
+    private func milestoneBar(fraction: Double) -> some View {
+        let f = max(0, min(1, fraction))
+        return GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(BrandColor.stroke)
+                Capsule().fill(BrandGradient.chrome)
+                    // A floor of one bar-height, so a just-broken streak still shows the track's
+                    // starting mark instead of an empty gutter that reads as "nothing to build on".
+                    .frame(width: max(6, geo.size.width * f))
             }
         }
-        // Every mark occupies the same 10pt box so the 2pt dash centers on the dots' axis instead of
-        // hanging from the row's top edge, which is where a VStack would otherwise put it.
-        .frame(height: 10)
+        .frame(height: 6)
     }
 
-    private func weekSummary(_ week: [DoseDay], taken: Int, scheduled: Int,
-                            scale: StripScale) -> String {
-        var parts: [String] = []
-        if scheduled > 0 {
-            parts.append("\(taken) of \(scheduled) scheduled \(scheduled == 1 ? "dose" : "doses") taken.")
+    /// How the streak is graded, in the app's own policy terms — derived from `DosePolicy`, the same
+    /// per-cadence window `doseEvents` credits doses with, so this sentence cannot drift from the rule
+    /// it describes. No day count is written here.
+    ///
+    /// Reports the WIDEST window across the active protocols, because the streak merges every
+    /// protocol's events into one chain. When the protocols genuinely disagree it says so rather than
+    /// quietly extending a weekly protocol's 2-day catch-up to a daily one, which has none.
+    ///
+    /// **As-needed protocols are excluded, not counted as a zero-day window.** They have no scheduled
+    /// slot to be late for, so they contribute nothing to `doseEvents` and must not drag the sentence
+    /// into its plural form — which is exactly what happened on a stack of one weekly protocol plus
+    /// one as-needed: the card hedged about "each protocol's own window" when only one protocol was
+    /// ever being graded.
+    ///
+    /// nil when nothing is on a schedule at all, i.e. when there is no grading to explain.
+    private var gracePhrase: String? {
+        let scheduled = activeProtocols.map(\.dosePolicy).filter { $0 != .asNeeded }
+        let windows = Set(scheduled.map(\.attributionGraceDays))
+        guard let widest = windows.max() else { return nil }
+        guard widest > 0 else {
+            return "Counts a dose only on the day it was scheduled — this cadence has no catch-up window."
         }
-        if week.last?.pending == true { parts.append("Today's dose is still due.") }
-        // Rest days exist only on the day scale; the slot scale has no unscheduled cells by
-        // construction, so reporting "0 rest days" there would be noise.
-        if scale == .days {
-            let rest = week.filter { !$0.expected }.count
-            if rest > 0 { parts.append("\(rest) rest \(rest == 1 ? "day" : "days").") }
-        } else if let missed = week.filter({ $0.scheduled > 0 && !$0.complete }).last {
-            // Position no longer implies a date here, so name the one a reader would want.
-            parts.append("Most recent missed dose \(missed.date.formatted(.dateTime.month(.abbreviated).day())).")
-        }
-        return parts.joined(separator: " ")
+        let unit = widest == 1 ? "day" : "days"
+        return windows.count > 1
+            ? "Counts a dose logged up to \(widest) \(unit) late, following each protocol's own catch-up window."
+            : "Counts a dose logged up to \(widest) \(unit) late — your protocol's catch-up window."
     }
 
     private func milestoneBadge(_ m: Int) -> some View {

@@ -36,7 +36,18 @@ struct InventoryList: View {
                             .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
-            } else {
+            }
+
+            // Sits ABOVE the vial list, beside "Add vial", because it is a SECTION destination — not
+            // a per-vial item. Below the list its distance from the top grew by one card per vial,
+            // unbounded, so on a ten-vial stack the app's one provenance entry point was far below
+            // the fold; above it, the cost is a constant one-row offset. Kept as a full row rather
+            // than moved into a toolbar: lot/COA tracking is this product's differentiator, so it
+            // must be discoverable, and a toolbar glyph buys pixels at the price of the thing that
+            // matters here.
+            lotsAndCOARow
+
+            if !vials.isEmpty {
                 ForEach(vials, id: \.id) { vial in
                     let projection = vial.projection(schedule: schedule(for: vial))
                     VStack(spacing: Space.sm) {
@@ -68,35 +79,37 @@ struct InventoryList: View {
                     }
                 }
             }
-
-            // Provenance lives one level down rather than as a third segment: three segments crowd
-            // the picker and complicate the data-backed landing logic, and this is a screen you visit
-            // deliberately, not on every glance at your stack.
-            NavigationLink {
-                LotsView()
-            } label: {
-                Card {
-                    HStack(spacing: Space.md) {
-                        Image(systemName: "shippingbox")
-                            .font(.title3).foregroundStyle(BrandColor.textSecondary)
-                            .frame(width: 32)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Lots & COA documents")
-                                .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                            Text(lots.isEmpty ? "Track what was actually in the vial"
-                                              : "\(lots.count) lot\(lots.count == 1 ? "" : "s") recorded")
-                                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
-                        }
-                        Spacer(minLength: 0)
-                        Image(systemName: "chevron.right")
-                            .font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
-                    }
-                }
-            }
-            .buttonStyle(PressableStyle())
         }
         .sheet(isPresented: $showBuilder) { VialBuilderView() }
         .sheet(item: $editTarget) { VialBuilderView(editing: $0.vial) }
+    }
+
+    /// Provenance lives one level down rather than as a third segment: three segments crowd the
+    /// picker and complicate the data-backed landing logic, and this is a screen you visit
+    /// deliberately, not on every glance at your stack.
+    private var lotsAndCOARow: some View {
+        NavigationLink {
+            LotsView()
+        } label: {
+            Card {
+                HStack(spacing: Space.md) {
+                    Image(systemName: "shippingbox")
+                        .font(.title3).foregroundStyle(BrandColor.textSecondary)
+                        .frame(width: 32)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Lots & COA documents")
+                            .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                        Text(lots.isEmpty ? "Track what was actually in the vial"
+                                          : "\(lots.count) lot\(lots.count == 1 ? "" : "s") recorded")
+                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                }
+            }
+        }
+        .buttonStyle(PressableStyle())
     }
 }
 
