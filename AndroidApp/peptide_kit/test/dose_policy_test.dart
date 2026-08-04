@@ -1,8 +1,7 @@
 // Port of App/Tests/PeptideKitTests/DosePolicyTests.swift.
 //
-// Three of that file's four suites are here. The fourth — "Skips and the streak" — exercises
-// `AdherenceCalculator` + `StreakCalculator`, which live in Swift's Calculators/ directory and
-// are outside this models port; it must land with them, unchanged.
+// Three of that file's four suites are here. The fourth — "Skips and the streak" — is in
+// test/skip_streak_test.dart, next to the calculators it exercises.
 //
 // Every assertion below is the Swift assertion: same inputs, same expected values.
 import 'package:peptide_kit/peptide_kit.dart';

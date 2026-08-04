@@ -43,9 +43,20 @@ DateTime addDays(DateTime d, int days) => d.isUtc
         d.microsecond,
       );
 
-/// Whole calendar days from [from] to [to], measured between start-of-day boundaries so
-/// the result does not depend on time-of-day. Mirrors
-/// `Calendar.dateComponents([.day], from:to:).day`.
+/// Whole calendar days from [from] to [to], measured between START-OF-DAY boundaries so the
+/// result does not depend on time-of-day.
+///
+/// **This is only SOMETIMES the right translation of
+/// `Calendar.dateComponents([.day], from:to:).day` — check the Swift call site.** Foundation
+/// counts whole elapsed days between the RAW INSTANTS, truncating toward zero. So:
+///   - Where the Swift normalises first (`from: startOfDay(now), to: end`, as `TrialWindow`
+///     does), this function is exact.
+///   - Where the Swift passes raw instants, it is NOT. A 15:00 reference and a midnight expiry
+///     two days out is 1 whole day to Foundation and 2 to this function — which in
+///     `InventoryEstimator` is a whole extra dose. That file therefore derives its own
+///     truncating variant rather than calling this.
+///
+/// Getting this backwards is silent: both answers look plausible and differ by one.
 int calendarDaysBetween(DateTime from, DateTime to) {
   final a = startOfDay(from);
   final b = startOfDay(to);
