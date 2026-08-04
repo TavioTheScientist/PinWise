@@ -395,13 +395,10 @@ extension SavedProtocol {
         }
     }
 
-    /// Single-letter weekday initial (1 = Sun … 7 = Sat) — **position-DEPENDENT**, and that is the
-    /// whole difference from `shortWeekdayLabel` above. It is only legible inside a fixed, complete
-    /// Mon…Sun strip (Home's 7-day dose row), where the slot's position supplies the identity that
-    /// "T" and "S" can't carry on their own. Never use it for an arbitrary subset of days.
-    static func initialWeekdayLabel(_ d: Int) -> String {
-        String(mediumWeekdayLabel(d).prefix(1))
-    }
+    // `initialWeekdayLabel` (single-letter, position-DEPENDENT) lived here for exactly one consumer:
+    // Home's 7-day dose strip, which has been removed. It is deleted rather than kept, because its
+    // whole contract was "legible only inside a fixed, complete Mon…Sun run" — with no such run left
+    // in the app, an available single-letter helper is a trap, not a utility.
 
     /// At or below this many selected weekdays, `cadenceText` spells the days out ("Mon, Wed, Fri");
     /// above it, they collapse to the compact letter strip ("M T W Th F S").
