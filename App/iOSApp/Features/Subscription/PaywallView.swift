@@ -133,7 +133,7 @@ struct PaywallView: View {
             benefit("chart.line.uptrend.xyaxis", "Every tool",
                     "Dose calculators, titration ladders, injection map, labs and metrics.")
             benefit("sparkles", "Natt, the assistant",
-                    "10 messages a day on Pro — cited, and never a dosing recommendation.")
+                    "10 messages a day for members — cited, and never a dosing recommendation.")
             benefit("lock.fill", "Your data stays yours",
                     "On-device records, Face ID lock, and a full export whenever you want.")
         }

@@ -115,7 +115,7 @@ final class AssistantEngine {
             let text: String
             switch error {
             case CloudAIError.limitReached:
-                text = "You've reached today's message limit. Upgrade to Pro for more, or check back tomorrow."
+                text = "You've reached today's message limit. A membership raises it, or check back tomorrow."
             case CloudAIError.notConfigured:
                 text = "The assistant isn't available yet. Please check back soon."
             case CloudAIError.notSignedIn:
@@ -327,7 +327,7 @@ struct AssistantView: View {
                     Text("Natt is Staxyz's AI assistant. A few things to know first.")
                         .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     VStack(alignment: .leading, spacing: Space.md) {
-                        gatePoint("Daily limits", "Free trial: 2 messages a day. Pro (monthly or yearly): 10 a day.")
+                        gatePoint("Daily limits", "Trial: 2 messages a day. Members (monthly or yearly): 10 a day.")
                         gatePoint("Runs in the cloud", "Your questions and a snapshot of your data — stack, doses, symptoms, labs — go securely to our AI provider to generate each answer. Details in the Privacy Policy.")
                         gatePoint("Uses your Apple Health", "Continuing turns on sharing your Apple Health metrics — weight, heart rate, HRV, sleep, steps — so Natt can tailor answers. Turn it off anytime in Settings › Security & Privacy.")
                         gatePoint("Can be wrong", "AI answers may be inaccurate or out of date. Check them against the sources Natt cites.")

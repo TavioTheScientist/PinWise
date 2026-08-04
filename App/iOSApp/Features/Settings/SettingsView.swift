@@ -305,69 +305,43 @@ private struct AboutSettingsView: View {
     }
 }
 
-/// Membership / subscription management — live StoreKit state.
+/// Membership — deliberately TWO screens behind one entry point, because a trialist and a member
+/// have opposite needs and merging them served neither.
+///
+/// While trialling, the job is to make the value legible and the decision easy: how long is left,
+/// what a membership keeps, what the plans cost. Once subscribed, nobody needs selling — the job
+/// becomes quiet reference: what you're on, when it bills, how to change it. `Entitlement` is the
+/// single switch, so the screen can never disagree with the gate in `StaxyzApp`.
+///
+/// Deliberately NOT a second purchase surface. Buying happens in `PaywallView`, which carries the
+/// auto-renew disclosure adjacent to the buy button — App Review requires that adjacency, and
+/// duplicating the flow here would mean duplicating the disclosure and the StoreKit error handling.
 ///
 /// Prices come from `SubscriptionManager.displayPrice`, never hardcoded: they differ by storefront,
 /// and a hardcoded "$7.99" is both wrong abroad and an App Review rejection. When no products have
-/// loaded (offline, or purchases restricted) the rows fall back to "—" rather than a stale figure.
+/// loaded (offline, or purchases restricted) figures fall back to "—" rather than a stale number.
+///
+/// On the word "Pro": it is gone from everything a user reads. With no free tier there is no lesser
+/// tier for "Pro" to be better than — you are trialling or you are a member. The PRODUCT IDs still
+/// contain `pro` (`com.staxyz.app.pro.monthly`) and `Entitlement.serverTier` still returns `"pro"`:
+/// those are an App Store Connect identifier and a Supabase `profiles.tier` contract respectively,
+/// neither is user-visible, and renaming either is a silent-failure risk for zero user benefit.
 struct MembershipView: View {
     @State private var subs = SubscriptionManager.shared
     @State private var showPaywall = false
 
     var body: some View {
         MenuSheet(title: "Membership") {
-            Card {
-                VStack(alignment: .leading, spacing: Space.sm) {
-                    SectionHeader(title: "Your plan")
-                    HStack {
-                        Text("Status").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                        Spacer()
-                        Text(statusWord)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(statusColor)
-                    }
-                    Text(statusDetail)
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            Card {
-                VStack(alignment: .leading, spacing: Space.md) {
-                    SectionHeader(title: "Plans")
-                    planRow("Monthly",
-                            subs.displayPrice(for: SubscriptionManager.ProductID.monthly)
-                                .map { "\($0) / month" } ?? "—")
-                    planRow("Yearly",
-                            subs.yearlyMonthlyEquivalent.map { "\($0) / month" } ?? "—")
-                    Text(yearlyCopy)
-                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            // A subscriber manages or cancels in the App Store — Apple owns that flow, and
-            // re-implementing it in-app is both impossible and a review violation.
-            if subs.isSubscribed {
-                Card {
-                    VStack(alignment: .leading, spacing: Space.sm) {
-                        SectionHeader(title: "Manage")
-                        Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
-                            HStack {
-                                Text("Change or cancel plan")
-                                    .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(BrandColor.textSecondary)
-                            }
-                        }
-                        Text("Subscriptions are managed by Apple in your App Store account.")
-                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                    }
-                }
-            } else {
-                PrimaryButton(title: "See plans", systemImage: "sparkles") { showPaywall = true }
+            switch subs.entitlement {
+            case .pro:
+                memberSections
+            case .trial(let days):
+                trialSections(daysLeft: days)
+            case .expired:
+                // Unreachable in practice — an expired user is held by the non-dismissible gate in
+                // `StaxyzApp` and cannot reach Settings. Handled anyway so this stays total: a
+                // crash or blank sheet here would be a worse failure than a redundant branch.
+                trialSections(daysLeft: 0)
             }
 
             Button { Task { await subs.restore() } } label: {
@@ -380,8 +354,8 @@ struct MembershipView: View {
             .disabled(subs.isWorking)
         }
         .task { await subs.load() }
-        // Dismissible here — the user still has access and chose to look at plans. The expiry
-        // gate in StaxyzApp presents the same view with `dismissible: false`.
+        // Dismissible here — the user still has access and chose to look at plans. The expiry gate
+        // in `StaxyzApp` presents the same view with `dismissible: false`.
         .sheet(isPresented: $showPaywall) { PaywallView(dismissible: true) }
         .alert("Heads up", isPresented: Binding(
             get: { subs.notice != nil },
@@ -391,49 +365,209 @@ struct MembershipView: View {
         } message: { Text(subs.notice ?? "") }
     }
 
-    private var statusWord: String {
-        switch subs.entitlement {
-        case .pro: return "Subscribed"
-        case .trial: return "Free trial"
-        case .expired: return "Expired"
+    // MARK: - Trial
+
+    @ViewBuilder private var trialHeroCopy: some View { EmptyView() }
+
+    @ViewBuilder private func trialSections(daysLeft: Int) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: Space.md) {
+                // The hero is the WINDOW, not a number in a circle. A trial is a run of days, and
+                // this app's whole vocabulary is days and slots — so the days themselves are the
+                // instrument. You can count what is left, which a percentage never lets you do.
+                // The adherence ring is deliberately NOT reused: its hue ladder encodes a
+                // behavioural verdict (behind / on pace / ahead), and borrowing that shape for a
+                // billing countdown would say something about the user that isn't true.
+                TrialWindowStrip(daysLeft: daysLeft)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(daysLeft == 0
+                         ? "Your free trial has ended."
+                         : "\(daysLeft) \(daysLeft == 1 ? "day" : "days") left in your free trial")
+                        .font(.system(size: 21, weight: .bold))
+                        .foregroundStyle(BrandColor.textPrimary)
+                    Text(daysLeft == 0
+                         ? "Subscribe to keep everything below."
+                         : "Nothing changes until it ends, and nothing is charged before then.")
+                        .font(Typo.caption)
+                        .foregroundStyle(BrandColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+
+        Card {
+            VStack(alignment: .leading, spacing: Space.md) {
+                SectionHeader(title: "What a membership keeps")
+                // Concrete and true, in the user's terms — no feature-marketing verbs. The first
+                // item is what they'd actually lose, which is the honest argument and needs no
+                // urgency theatre.
+                keepRow("square.stack.3d.up.fill", "Your stack and every dose you've logged",
+                        "Protocols, vials, lots and COA records stay exactly as they are.")
+                keepRow("chart.line.uptrend.xyaxis", "Every tool",
+                        "Dose calculators, titration ladders, injection map, labs and metrics.")
+                keepRow("sparkles", "Natt at 10 messages a day",
+                        "Up from 2 during the trial — cited, and never a dosing recommendation.")
+                keepRow("square.and.arrow.up", "A full export, whenever you want it",
+                        "Your records are yours; membership doesn't hold them hostage.")
+            }
+        }
+
+        Card {
+            VStack(alignment: .leading, spacing: Space.md) {
+                SectionHeader(title: "Plans")
+                planRow("Yearly", yearlyHeadline, detail: yearlyDetail, isBestValue: true)
+                planRow("Monthly", monthlyHeadline, detail: "Billed every month.", isBestValue: false)
+            }
+        }
+
+        PrimaryButton(title: daysLeft == 0 ? "Subscribe" : "See plans") { showPaywall = true }
+    }
+
+    private func keepRow(_ icon: String, _ title: String, _ detail: String) -> some View {
+        HStack(alignment: .top, spacing: Space.md) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(BrandColor.accentText)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
-    private var statusColor: Color {
-        switch subs.entitlement {
-        case .pro: return BrandColor.success
-        case .trial: return BrandColor.accentText
-        case .expired: return BrandColor.danger
+    // MARK: - Member
+
+    @ViewBuilder private var memberSections: some View {
+        Card {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                HStack(spacing: Space.sm) {
+                    Text("Member").font(.system(size: 21, weight: .bold))
+                        .foregroundStyle(BrandColor.textPrimary)
+                    // The one brand-metal element on this screen, and it earns it: it is the whole
+                    // status in a glance. `TagChip` is neutral by default for exactly this reason.
+                    TagChip(text: activePlanName, style: .brand)
+                    Spacer(minLength: 0)
+                }
+                Text(renewalLine)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+
+        Card {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                SectionHeader(title: "Manage")
+                // Apple owns change/cancel. Re-implementing it in-app is impossible and a review
+                // violation, so this is an honest hand-off rather than a fake in-app control.
+                Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
+                    HStack {
+                        Text("Change or cancel plan")
+                            .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(BrandColor.textSecondary)
+                    }
+                }
+                Text("Subscriptions are managed by Apple in your App Store account.")
+                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+            }
+        }
+
+        Card {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                SectionHeader(title: "Included")
+                Text("Your full stack and history, every tool, Natt at 10 messages a day, and a "
+                     + "full export whenever you want it.")
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
-    private var statusDetail: String {
-        switch subs.entitlement {
-        case .pro:
-            return "Thanks for supporting Staxyz. Natt is unlocked at 10 messages a day."
-        case .trial(let days):
-            let plural = days == 1 ? "day" : "days"
-            return "\(days) \(plural) left. During the trial Natt is limited to 2 messages a day; "
-                + "a subscription raises it to 10."
-        case .expired:
-            return "Your trial has ended. Subscribe to keep your stack, logs, and Natt."
+    // MARK: - Copy
+
+    private var activePlanName: String {
+        switch subs.activeProductID {
+        case SubscriptionManager.ProductID.yearly: return "Yearly"
+        case SubscriptionManager.ProductID.monthly: return "Monthly"
+        default: return "Active"
         }
     }
 
-    private var yearlyCopy: String {
+    private var renewalLine: String {
+        guard let date = subs.renewalDate else {
+            // Membership is real (the gate let them in) but StoreKit hasn't handed back a date yet.
+            // Say so plainly rather than invent one.
+            return "Thanks for supporting Staxyz. Renewal details load from the App Store."
+        }
+        return "Renews \(date.formatted(.dateTime.day().month(.abbreviated).year()))."
+    }
+
+    private var monthlyHeadline: String {
+        subs.displayPrice(for: SubscriptionManager.ProductID.monthly).map { "\($0) / month" } ?? "—"
+    }
+
+    private var yearlyHeadline: String {
+        subs.yearlyMonthlyEquivalent.map { "\($0) / month" } ?? "—"
+    }
+
+    private var yearlyDetail: String {
         guard let yearly = subs.displayPrice(for: SubscriptionManager.ProductID.yearly) else {
-            return "Yearly bills once and works out cheaper per month. A subscription keeps the "
-                + "app and Natt unlocked after your free trial."
+            return "Billed once a year."
         }
-        return "Yearly bills once at \(yearly). Your \(TrialWindow.trialDays)-day free trial comes "
-            + "first; after it, a subscription keeps the app and Natt unlocked."
+        return "Billed once a year at \(yearly)."
     }
 
-    private func planRow(_ name: String, _ price: String) -> some View {
-        HStack {
-            Text(name).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-            Spacer()
-            Text(price).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+    private func planRow(_ name: String, _ headline: String,
+                         detail: String, isBestValue: Bool) -> some View {
+        HStack(alignment: .top, spacing: Space.sm) {
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: Space.sm) {
+                    Text(name).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                    if isBestValue { TagChip(text: "Best value") }
+                }
+                Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+            }
+            Spacer(minLength: Space.sm)
+            Text(headline)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(BrandColor.textPrimary)
+                .monospacedDigit()
         }
+    }
+}
+
+/// The trial as a row of days — elapsed dimmed, remaining lit.
+///
+/// Local to Membership rather than in `StaxyzComponents` because its semantics are: it means one
+/// specific billing window and nothing else. A shared component invites reuse for any progress,
+/// which is how a design system accumulates near-duplicates.
+private struct TrialWindowStrip: View {
+    let daysLeft: Int
+
+    private var total: Int { TrialWindow.trialDays }
+    private var remaining: Int { max(0, min(total, daysLeft)) }
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0 ..< total, id: \.self) { i in
+                // Remaining days sit at the END of the strip, so the lit run always finishes at the
+                // right edge and reads as "time left" rather than "progress made".
+                let isRemaining = i >= (total - remaining)
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    .fill(isRemaining ? BrandColor.accent : BrandColor.strokeStrong.opacity(0.55))
+                    .frame(height: isRemaining ? 22 : 14)
+            }
+        }
+        .frame(height: 22, alignment: .bottom)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Free trial")
+        .accessibilityValue(remaining == 0
+                            ? "Ended"
+                            : "\(remaining) of \(total) days remaining")
     }
 }
