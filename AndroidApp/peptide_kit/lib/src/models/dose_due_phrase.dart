@@ -1,3 +1,6 @@
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
+
 import '../internal/calendar_math.dart';
 
 /// The single canonical way the app says "when is the next dose due."
@@ -15,13 +18,13 @@ import '../internal/calendar_math.dart';
 /// switches to an explicit month + day. That is why the weekday boundary is load-bearing and
 /// not a cosmetic preference. Callers should never re-derive this phrasing locally.
 ///
-/// **Translation caveat — flagged, not hidden.** The Swift builds its weekday and month/day
-/// strings with a `DateFormatter` from a locale-agnostic *template*, so the LOCALE decides the
-/// abbreviations and the field order ("Aug 12" in en-US, "12 août" in fr-FR). Dart's core
-/// libraries have no date localization and this port may not add `package:intl`, so the
-/// abbreviations below are **hardcoded en-US** and the order is fixed to "MMM d". For an en-US
-/// user the output is identical to the Swift; for any other locale it is not. Localizing this
-/// is Android UI work (an `intl`-backed formatter injected here), not a rule change.
+/// **Localized, like the Swift.** Swift builds its weekday and month/day strings with a
+/// `DateFormatter` from a locale-agnostic *template* (`setLocalizedDateFormatFromTemplate`), so
+/// the LOCALE decides both the abbreviations and the field ORDER — "Aug 12" in en-US, but
+/// "12 août" in fr-FR. A hardcoded `"MMM d"` renders backwards in most of the world, which is
+/// why this uses `package:intl`'s skeleton formatters (`DateFormat.E` / `DateFormat.MMMd`)
+/// rather than month-name tables. `intl` is the package's only runtime dependency and exists
+/// for exactly this.
 ///
 /// The Swift also injects a `Calendar` (hence a time zone) for all start-of-day math. Dart has
 /// no equivalent, so UTC-ness travels with the `DateTime` itself — pass `date` and `asOf` in
@@ -67,15 +70,24 @@ abstract final class DoseDuePhrase {
   ///
   /// Comparison is by start-of-day, so a dose at 11:59 PM tonight is "Today" and one at
   /// 12:01 AM tomorrow is "Tomorrow" — never a fractional-day judgement.
-  static String phrase(DateTime? date, {DateTime? asOf}) {
+  /// [locale] mirrors the Swift's injected `Locale`. Defaults to `Intl.getCurrentLocale()`, the
+  /// nearest equivalent of `Locale.autoupdatingCurrent`; the Android UI should pass the device
+  /// locale explicitly so the string matches the rest of its chrome.
+  ///
+  /// Note that only the two DATE forms localize. "Today", "Tomorrow", "As needed" and "Overdue"
+  /// are English literals in the Swift too — they are UI copy that belongs in the Android
+  /// string resources, not values this domain layer should invent translations for.
+  static String phrase(DateTime? date, {DateTime? asOf, String? locale}) {
     final now = asOf ?? DateTime.now();
     final days = daysAway(date, asOf: now);
     if (date == null || days == null) return asNeededText;
     if (days < 0) return overdueText;
     if (days == 0) return 'Today';
     if (days == 1) return 'Tomorrow';
-    if (days <= weekdayHorizonDays) return _weekdayAbbreviation(date);
-    return _monthDay(date);
+    if (days <= weekdayHorizonDays) {
+      return _formatted(date, locale, (l) => DateFormat.E(l));
+    }
+    return _formatted(date, locale, (l) => DateFormat.MMMd(l));
   }
 
   /// Whole calendar days from `asOf`'s start-of-day to `date`'s start-of-day.
@@ -92,26 +104,40 @@ abstract final class DoseDuePhrase {
     return calendarDaysBetween(asOf ?? DateTime.now(), date);
   }
 
-  /// Swift's `"EEE"` template. `DateTime.weekday` is 1 = Monday … 7 = Sunday.
-  static String _weekdayAbbreviation(DateTime date) =>
-      const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday - 1];
+  /// `intl` ships symbols for `en_US` only until the full locale tables are registered, and
+  /// `DateFormat` throws on an unregistered locale. Registering is idempotent but not free, so
+  /// it happens once, lazily, on first use — this is a domain library and must not require the
+  /// caller to run an init step it can do itself.
+  static bool _localeDataReady = false;
 
-  /// Swift's `"MMMd"` template, in the en-US field order.
-  static String _monthDay(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}';
+  /// Builds the formatter per call, as the Swift does. `DateFormat` is cheap here and a cached
+  /// instance would have to be re-created whenever the locale changed anyway.
+  ///
+  /// Falls back to `en_US` only if `DateFormat` genuinely cannot resolve the locale. A phrase in
+  /// the wrong language is cosmetic; an exception out of a label-frequency call would take down
+  /// whatever screen asked for it.
+  ///
+  /// **Do NOT pre-screen with `DateFormat.localeExists`.** It reports `false` for `'fr_FR'` even
+  /// though `DateFormat.E('fr_FR')` works perfectly — `intl` resolves `fr_FR` down to `fr`
+  /// internally. Guarding on `localeExists` silently forces every regional locale to the `en_US`
+  /// fallback, which is exactly the bug this method was written to fix and it looks like success.
+  static String _formatted(
+    DateTime date,
+    String? locale,
+    DateFormat Function(String) build,
+  ) {
+    if (!_localeDataReady) {
+      initializeDateFormatting();
+      _localeDataReady = true;
+    }
+    final requested = locale ?? Intl.getCurrentLocale();
+    try {
+      return build(requested).format(date);
+    } on ArgumentError {
+      // `intl` signals an unresolvable locale with ArgumentError — an Error, NOT an Exception,
+      // so `on Exception` does not catch it and the throw escapes. Caught narrowly rather than
+      // by widening to `Error`, which would also swallow real programming mistakes here.
+      return build('en_US').format(date);
+    }
   }
 }
