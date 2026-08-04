@@ -150,6 +150,16 @@ abstract final class AdherenceCalculator {
   /// intended meaning. A day only becomes overdue once `day + graceDays` is strictly in the
   /// past.
   ///
+  /// **Only the MOST RECENT past-grace slot can be overdue.** An older miss that has since been
+  /// followed by a taken dose is history, not an action — it belongs in the adherence percentage,
+  /// not in a red "Overdue" badge.
+  ///
+  /// This was a real bug, found 2026-08-04 by seeding four months of demo history: the old code
+  /// returned the most recent MISS with no regard for what came after, so one gap in June read
+  /// "Overdue since Mon Jun 15" through August after eight weeks of perfect adherence. A weekly
+  /// GLP-1 dose from June is not actionable in August, so the badge was pure anxiety and
+  /// contradicted the app's own one-nudge-then-silence reminder policy.
+  ///
   /// Returns null when nothing is overdue, which is the common case.
   static DateTime? lastOverdue({
     required DoseSchedule schedule,
@@ -167,10 +177,16 @@ abstract final class AdherenceCalculator {
     );
     // A day is overdue iff day + graceDays < today, i.e. day < today - graceDays.
     final cutoff = addDays(startOfDay(asOf), -graceDays);
-    for (final day in result.missedDates.reversed) {
-      if (day.isBefore(cutoff)) return day;
+    // The NEWEST slot past its grace window. Anything older has been superseded — see the doc.
+    DateTime? newestSettled;
+    for (final day in result.expectedDates) {
+      if (day.isBefore(cutoff)) newestSettled = day;
     }
-    return null;
+    if (newestSettled == null) return null;
+    final settled = newestSettled;
+    return result.missedDates.any((d) => d.isAtSameMomentAs(settled))
+        ? settled
+        : null;
   }
 
   /// The concrete calendar days a schedule calls for a dose, within `[start, end]`.

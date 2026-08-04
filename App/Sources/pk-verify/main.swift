@@ -216,6 +216,23 @@ do {
                                                end: day(2026, 1, 3), logDates: [day(2026, 1, 2), day(2026, 1, 3)],
                                                graceDays: 2, calendar: cal)
     check(protect.missedDates == [day(2026, 1, 1)], "exact matches protect on-time doses from grace theft")
+
+    // RECENCY (regression 2026-08-04): an OLD miss followed by taken doses is NOT overdue. The old
+    // implementation returned the most recent MISS regardless of what came after, so one gap in June
+    // read "Overdue" through August after eight weeks of perfect adherence — a permanent alarm on a
+    // dose tracker, and a contradiction of the one-nudge-then-silence reminder policy.
+    let weekly7 = DoseSchedule.everyNDays(7)
+    let tenWeeksAgo = cal.date(byAdding: .day, value: -70, to: day(2026, 7, 29))!
+    let allButSecond = (0...10).compactMap { i -> Date? in
+        i == 1 ? nil : cal.date(byAdding: .day, value: -70 + i * 7, to: day(2026, 7, 29))
+    }
+    check(AdherenceCalculator.lastOverdue(schedule: weekly7, start: tenWeeksAgo, asOf: day(2026, 7, 29),
+                                          logDates: allButSecond, graceDays: 2, calendar: cal) == nil,
+          "an old miss superseded by taken doses is not overdue")
+    check(AdherenceCalculator.lastOverdue(schedule: weekly7, start: tenWeeksAgo, asOf: day(2026, 7, 29),
+                                          logDates: [], graceDays: 2, calendar: cal)
+            == cal.date(byAdding: .day, value: -7, to: day(2026, 7, 29))!,
+          "when still off protocol, overdue names the NEWEST settled slot")
 }
 
 // MARK: - Streak

@@ -87,6 +87,23 @@ public enum AdherenceCalculator {
     /// every protocol that simply has a dose due today — the opposite of the intended meaning.
     /// A day only becomes overdue once `day + graceDays` is strictly in the past.
     ///
+    /// **Only the MOST RECENT past-grace slot can be overdue.** An older miss that has since been
+    /// followed by a taken dose is history, not an action — it belongs in the adherence percentage,
+    /// not in a red "Overdue" badge.
+    ///
+    /// This was a real bug, found 2026-08-04 by seeding four months of demo history: the old
+    /// implementation returned `missedDates.last { $0 < cutoff }`, i.e. the most recent MISS with no
+    /// regard for what came after it. One skipped dose in June therefore left every surface reading
+    /// "Overdue since Mon Jun 15" through August, after eight weeks of perfect adherence. For a
+    /// weekly GLP-1 that dose is not actionable — you do not take June's injection in August — so the
+    /// badge was pure anxiety, and it directly contradicted the app's own reminder policy of one
+    /// nudge then silence. A permanent alarm on a dose tracker is worse than no alarm.
+    ///
+    /// The rule now: find the latest expected day whose grace window has fully elapsed, and report it
+    /// ONLY if that day is itself missed. If it was taken, the user is back on protocol and nothing is
+    /// overdue, however many older gaps exist. If everything since is also missed, the latest slot is
+    /// missed too, so the state persists — and reports the RECENT day rather than the ancient one.
+    ///
     /// Returns nil when nothing is overdue, which is the common case.
     public static func lastOverdue(
         schedule: DoseSchedule,
@@ -101,7 +118,9 @@ public enum AdherenceCalculator {
         // A day is overdue iff day + graceDays < today, i.e. day < today - graceDays.
         guard let cutoff = calendar.date(byAdding: .day, value: -graceDays,
                                          to: calendar.startOfDay(for: now)) else { return nil }
-        return result.missedDates.last { $0 < cutoff }
+        // The newest slot that is past its grace window. Anything older has been superseded.
+        guard let newestSettled = result.expectedDates.last(where: { $0 < cutoff }) else { return nil }
+        return result.missedDates.contains(newestSettled) ? newestSettled : nil
     }
 
     /// The concrete calendar days a schedule calls for a dose, within [start, end].

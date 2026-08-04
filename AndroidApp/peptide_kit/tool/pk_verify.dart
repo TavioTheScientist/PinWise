@@ -37,6 +37,10 @@ void section(String name) => print('\n▸ $name');
 
 DateTime day(int y, int m, int d) => DateTime.utc(y, m, d);
 
+/// Calendar-day arithmetic on the UTC instants `day()` produces, for the recency checks.
+DateTime addDaysUtc(DateTime d, int days) =>
+    DateTime.utc(d.year, d.month, d.day + days);
+
 /// List equality for the date-list assertions. `internal/model_support.dart` is deliberately not
 /// exported from the package, so the harness carries its own.
 bool datesEqual(List<DateTime> a, List<DateTime> b) {
@@ -491,6 +495,39 @@ void main() {
     check(
       datesEqual(protect.missedDates, [day(2026, 1, 1)]),
       'exact matches protect on-time doses from grace theft',
+    );
+
+    // RECENCY (regression 2026-08-04): an OLD miss followed by taken doses is NOT overdue. The old
+    // implementation returned the most recent MISS regardless of what came after, so one gap in June
+    // read "Overdue" through August after eight weeks of perfect adherence.
+    final weekly7 = DoseSchedule.everyNDays(7);
+    final asOf = day(2026, 7, 29);
+    final tenWeeksAgo = addDaysUtc(asOf, -70);
+    final allButSecond = [
+      for (var i = 0; i <= 10; i++)
+        if (i != 1) addDaysUtc(asOf, -70 + i * 7),
+    ];
+    check(
+      AdherenceCalculator.lastOverdue(
+            schedule: weekly7,
+            start: tenWeeksAgo,
+            asOf: asOf,
+            logDates: allButSecond,
+            graceDays: 2,
+          ) ==
+          null,
+      'an old miss superseded by taken doses is not overdue',
+    );
+    final stillOff = AdherenceCalculator.lastOverdue(
+      schedule: weekly7,
+      start: tenWeeksAgo,
+      asOf: asOf,
+      logDates: const [],
+      graceDays: 2,
+    );
+    check(
+      stillOff?.isAtSameMomentAs(addDaysUtc(asOf, -7)) ?? false,
+      'when still off protocol, overdue names the NEWEST settled slot',
     );
   }
 
