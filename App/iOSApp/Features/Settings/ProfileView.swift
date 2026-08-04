@@ -105,6 +105,13 @@ struct ProfileAvatar: View {
 /// Shared profile-field definitions so onboarding setup and Your profile stay in lockstep.
 /// Sex is stored under the existing "bodyGender" key — it silently drives the body map.
 enum ProfileFields {
+    /// The height a wheel PRESELECTS when nothing is stored yet.
+    ///
+    /// One constant, because there used to be two: the imperial wheel defaulted to 5 ft 10 in
+    /// (177.8 cm) and the metric wheel to 170 cm, so the same unset field preselected two different
+    /// heights depending on the unit toggle. Both wheels now derive from this.
+    static let defaultHeightCm: Double = 170
+
     /// 18+ app: birthdays span 100 years ago through 18 years ago.
     static var birthdayRange: ClosedRange<Date> {
         let cal = Calendar.current
@@ -194,9 +201,17 @@ struct HeightField: View {
 
     // Wheels select whole numbers; bridge to the existing String bindings so ProfileFields'
     // parse/format helpers keep working. Empty text shows a sensible default (5 ft 10 in / 170 cm).
-    private var feetSel: Binding<Int> { Binding(get: { Int(feetText) ?? 5 }, set: { feetText = String($0) }) }
-    private var inchSel: Binding<Int> { Binding(get: { Int(Double(inchesText) ?? 10) }, set: { inchesText = String($0) }) }
-    private var cmSel: Binding<Int> { Binding(get: { Int(Double(cmText) ?? 170) }, set: { cmText = String($0) }) }
+    private var feetSel: Binding<Int> {
+        Binding(get: { Int(feetText) ?? Int(ProfileFields.heightFields(fromCm: ProfileFields.defaultHeightCm).feet) ?? 5 },
+                set: { feetText = String($0) })
+    }
+    private var inchSel: Binding<Int> {
+        Binding(get: { Int(Double(inchesText) ?? Double(ProfileFields.heightFields(fromCm: ProfileFields.defaultHeightCm).inches) ?? 7) },
+                set: { inchesText = String($0) })
+    }
+    private var cmSel: Binding<Int> {
+        Binding(get: { Int(Double(cmText) ?? ProfileFields.defaultHeightCm) }, set: { cmText = String($0) })
+    }
 }
 
 /// Your profile — the account home. A hero header (photo, name, membership badge) over cards
@@ -238,6 +253,13 @@ struct ProfileView: View {
             commitHeight()
         }
         // Keep the typed height meaning the same measurement when the unit flips elsewhere.
+        // All three About-you fields now commit on interaction, not on close. Height was the odd
+        // one out — its wheels write to intermediate String bindings — so mirror them through to
+        // storage on every change. Three adjacent rows with three different commit semantics is
+        // what made the section feel inconsistent to use.
+        .onChange(of: heightFeetText) { commitHeight() }
+        .onChange(of: heightInchesText) { commitHeight() }
+        .onChange(of: heightText) { commitHeight() }
         .onChange(of: weightInPounds) { old, new in
             guard old != new,
                   let cm = ProfileFields.parseHeightCm(feetText: heightFeetText, inchesText: heightInchesText,
@@ -401,11 +423,42 @@ struct ProfileView: View {
     /// Opens `field` and closes whatever else was open (tapping the open row closes it).
     private func toggleField(_ field: AboutYouField) {
         let wasEditingHeight = openField == .height
-        openField = openField == field ? nil : field
-        // Height is the one field whose control writes to intermediate String bindings instead of
-        // straight to its stored default, so flush it the moment its row closes. `onDisappear` is
-        // still the backstop for dismissing the sheet with the row left open.
+        let isOpening = openField != field
+        openField = isOpening ? field : nil
+        // COMMIT THE PRESELECTED VALUE THE MOMENT THE ROW OPENS.
+        //
+        // This fixes a phantom: a wheel whose binding GETTER falls back to a default renders that
+        // default as if it were the user's value, but SwiftUI only fires the SETTER when the
+        // selection CHANGES. So a user who opened Height, saw "5 ft 10 in", agreed with it and
+        // closed the row — or who scrolled and landed back on it — committed nothing, and the
+        // collapsed row read "Not set". The wheel was showing a number the store did not hold.
+        //
+        // Seeding on open makes the displayed value the STORED value, so every wheel position the
+        // user can see is real and any scroll from there simply updates it. It is also why this is
+        // not the "don't fabricate a measurement" case it looks like: presenting an uncommitted
+        // default is the fabrication — this removes it.
+        if isOpening { seedIfUnset(field) }
+        // Belt and braces for dismissing the sheet with the row still open; the per-keystroke
+        // commit below makes it redundant in the normal path.
         if wasEditingHeight, openField != .height { commitHeight() }
+    }
+
+    /// Writes the value a freshly-opened wheel is already displaying, so it stops being a phantom.
+    private func seedIfUnset(_ field: AboutYouField) {
+        switch field {
+        case .sex:
+            break   // chips commit on tap and `bodyGenderRaw` always holds a real value
+        case .birthday:
+            if birthdayTS <= 0 { birthdayTS = ProfileFields.defaultBirthday.timeIntervalSince1970 }
+        case .height:
+            if heightCm <= 0 { heightCm = ProfileFields.defaultHeightCm }
+            // Mirror the stored value into the wheel's String bindings, so the control and the
+            // collapsed row read from the same number rather than each inventing a fallback.
+            let f = ProfileFields.heightFields(fromCm: heightCm)
+            heightFeetText = f.feet
+            heightInchesText = f.inches
+            heightText = f.cm
+        }
     }
 
     private func commitHeight() {
