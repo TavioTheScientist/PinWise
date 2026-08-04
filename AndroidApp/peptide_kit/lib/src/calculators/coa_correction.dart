@@ -35,15 +35,15 @@ abstract final class COACorrection {
     double? assayPercent,
     double? contentPercent,
     double? purityPercent,
-  }) =>
-      Mass(
-        micrograms: label.micrograms *
-            factor(
-              assayPercent: assayPercent,
-              contentPercent: contentPercent,
-              purityPercent: purityPercent,
-            ),
-      );
+  }) => Mass(
+    micrograms:
+        label.micrograms *
+        factor(
+          assayPercent: assayPercent,
+          contentPercent: contentPercent,
+          purityPercent: purityPercent,
+        ),
+  );
 }
 
 /// The unit an endotoxin result is reported in. The two are NOT interconvertible without
@@ -74,9 +74,9 @@ class Endotoxin {
   const Endotoxin({required this.value, required this.unit});
 
   factory Endotoxin.fromJson(Map<String, dynamic> json) => Endotoxin(
-        value: (json['value'] as num).toDouble(),
-        unit: EndotoxinUnit.fromLabel(json['unit'] as String),
-      );
+    value: (json['value'] as num).toDouble(),
+    unit: EndotoxinUnit.fromLabel(json['unit'] as String),
+  );
 
   final double value;
   final EndotoxinUnit unit;
@@ -120,13 +120,13 @@ class COAReport {
   });
 
   factory COAReport.fromJson(Map<String, dynamic> json) => COAReport(
-        assayPercent: (json['assayPercent'] as num?)?.toDouble(),
-        contentPercent: (json['contentPercent'] as num?)?.toDouble(),
-        purityPercent: (json['purityPercent'] as num?)?.toDouble(),
-        endotoxin: json['endotoxin'] == null
-            ? null
-            : Endotoxin.fromJson(json['endotoxin'] as Map<String, dynamic>),
-      );
+    assayPercent: (json['assayPercent'] as num?)?.toDouble(),
+    contentPercent: (json['contentPercent'] as num?)?.toDouble(),
+    purityPercent: (json['purityPercent'] as num?)?.toDouble(),
+    endotoxin: json['endotoxin'] == null
+        ? null
+        : Endotoxin.fromJson(json['endotoxin'] as Map<String, dynamic>),
+  );
 
   final double? assayPercent;
   final double? contentPercent;
@@ -138,24 +138,23 @@ class COAReport {
   /// Net active fraction (0-1) implied by this report. 1.0 when it states no potency
   /// percentages.
   double get netFactor => COACorrection.factor(
-        assayPercent: assayPercent,
-        contentPercent: contentPercent,
-        purityPercent: purityPercent,
-      );
+    assayPercent: assayPercent,
+    contentPercent: contentPercent,
+    purityPercent: purityPercent,
+  );
 
   /// True when at least one potency percentage was reported, i.e. [netFactor] is
   /// meaningful.
   bool get hasPotencyData =>
       netFactor != 1.0 ||
-      [assayPercent, contentPercent, purityPercent]
-          .any((p) => (p ?? 0) > 0);
+      [assayPercent, contentPercent, purityPercent].any((p) => (p ?? 0) > 0);
 
   Map<String, dynamic> toJson() => {
-        'assayPercent': assayPercent,
-        'contentPercent': contentPercent,
-        'purityPercent': purityPercent,
-        'endotoxin': endotoxin?.toJson(),
-      };
+    'assayPercent': assayPercent,
+    'contentPercent': contentPercent,
+    'purityPercent': purityPercent,
+    'endotoxin': endotoxin?.toJson(),
+  };
 
   @override
   bool operator ==(Object other) =>

@@ -13,12 +13,18 @@ void main() {
     test('the three percentages multiply', () {
       // assay 99.5% x content 88% x purity 99.8% ~= 0.8738 — a 10 mg label is ~= 8.74 mg active.
       final f = COACorrection.factor(
-          assayPercent: 99.5, contentPercent: 88, purityPercent: 99.8);
+        assayPercent: 99.5,
+        contentPercent: 88,
+        purityPercent: 99.8,
+      );
       expect(f, closeTo(0.87383, 0.0001));
       expect(
-        COACorrection.correctedMass(Mass.mg(10),
-                assayPercent: 99.5, contentPercent: 88, purityPercent: 99.8)
-            .milligrams,
+        COACorrection.correctedMass(
+          Mass.mg(10),
+          assayPercent: 99.5,
+          contentPercent: 88,
+          purityPercent: 99.8,
+        ).milligrams,
         closeTo(8.7383, 0.001),
       );
     });
@@ -34,7 +40,10 @@ void main() {
       // literally would compute a zero-strength vial and an infinite draw volume.
       expect(
         COACorrection.factor(
-            assayPercent: 0, contentPercent: 88, purityPercent: 0),
+          assayPercent: 0,
+          contentPercent: 88,
+          purityPercent: 0,
+        ),
         0.88,
       );
       expect(COACorrection.factor(assayPercent: -5), 1.0);
@@ -45,7 +54,10 @@ void main() {
       // endotoxin must produce the same potency correction — endotoxin is a microbial
       // pyrogen load, not potency.
       const potency = COAReport(
-          assayPercent: 99.5, contentPercent: 88, purityPercent: 99.8);
+        assayPercent: 99.5,
+        contentPercent: 88,
+        purityPercent: 99.8,
+      );
       const withEndotoxin = COAReport(
         assayPercent: 99.5,
         contentPercent: 88,
@@ -56,20 +68,30 @@ void main() {
 
       // And a report with ONLY endotoxin corrects nothing at all.
       const safetyOnly = COAReport(
-          endotoxin: Endotoxin(value: 12, unit: EndotoxinUnit.perVial));
+        endotoxin: Endotoxin(value: 12, unit: EndotoxinUnit.perVial),
+      );
       expect(safetyOnly.netFactor, 1.0);
       expect(safetyOnly.hasPotencyData, isFalse);
     });
 
-    test('netFactor delegates to COACorrection rather than reimplementing it', () {
-      const report =
-          COAReport(assayPercent: 97, contentPercent: 85, purityPercent: 99);
-      expect(
-        report.netFactor,
-        COACorrection.factor(
-            assayPercent: 97, contentPercent: 85, purityPercent: 99),
-      );
-    });
+    test(
+      'netFactor delegates to COACorrection rather than reimplementing it',
+      () {
+        const report = COAReport(
+          assayPercent: 97,
+          contentPercent: 85,
+          purityPercent: 99,
+        );
+        expect(
+          report.netFactor,
+          COACorrection.factor(
+            assayPercent: 97,
+            contentPercent: 85,
+            purityPercent: 99,
+          ),
+        );
+      },
+    );
 
     test('endotoxin renders verbatim, with its unit', () {
       expect(
@@ -84,9 +106,11 @@ void main() {
       expect(EndotoxinUnit.perMilligram == EndotoxinUnit.perVial, isFalse);
       expect(
         Endotoxin.fromJson(
-                const Endotoxin(value: 0.25, unit: EndotoxinUnit.perMilligram)
-                    .toJson())
-            .unit,
+          const Endotoxin(
+            value: 0.25,
+            unit: EndotoxinUnit.perMilligram,
+          ).toJson(),
+        ).unit,
         EndotoxinUnit.perMilligram,
       );
     });

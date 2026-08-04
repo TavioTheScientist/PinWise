@@ -61,8 +61,9 @@ class Mass implements Comparable<Mass> {
     final rounded = (v * 100).roundToDouble() / 100;
     // Dart's `double.toString()` is the shortest round-tripping form, which is what
     // Swift's "%g" gives here for dose-sized numbers.
-    final number =
-        rounded == rounded.roundToDouble() ? '${rounded.toInt()}' : '$rounded';
+    final number = rounded == rounded.roundToDouble()
+        ? '${rounded.toInt()}'
+        : '$rounded';
     return '$number ${unit.label}';
   }
 
@@ -101,22 +102,25 @@ class Concentration {
   /// A non-positive volume yields 0 rather than infinity — matching the Swift, and
   /// deliberately: callers guard on volume themselves and a 0 here is inert, whereas
   /// an infinity would silently poison downstream arithmetic.
-  factory Concentration.fromMass(Mass mass, double milliliters) => Concentration(
-        microgramsPerMilliliter:
-            milliliters > 0 ? mass.micrograms / milliliters : 0,
+  factory Concentration.fromMass(Mass mass, double milliliters) =>
+      Concentration(
+        microgramsPerMilliliter: milliliters > 0
+            ? mass.micrograms / milliliters
+            : 0,
       );
 
   factory Concentration.fromJson(Map<String, dynamic> json) => Concentration(
-        microgramsPerMilliliter:
-            (json['microgramsPerMilliliter'] as num).toDouble(),
-      );
+    microgramsPerMilliliter: (json['microgramsPerMilliliter'] as num)
+        .toDouble(),
+  );
 
   final double microgramsPerMilliliter;
 
   double get milligramsPerMilliliter => microgramsPerMilliliter / 1000;
 
-  Map<String, dynamic> toJson() =>
-      {'microgramsPerMilliliter': microgramsPerMilliliter};
+  Map<String, dynamic> toJson() => {
+    'microgramsPerMilliliter': microgramsPerMilliliter,
+  };
 
   @override
   bool operator ==(Object other) =>

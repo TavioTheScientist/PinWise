@@ -16,15 +16,32 @@
 library;
 
 /// Midnight at the start of [d]'s calendar day.
-DateTime startOfDay(DateTime d) =>
-    d.isUtc ? DateTime.utc(d.year, d.month, d.day) : DateTime(d.year, d.month, d.day);
+DateTime startOfDay(DateTime d) => d.isUtc
+    ? DateTime.utc(d.year, d.month, d.day)
+    : DateTime(d.year, d.month, d.day);
 
 /// [d] advanced by [days] calendar days, preserving time-of-day across DST.
 DateTime addDays(DateTime d, int days) => d.isUtc
-    ? DateTime.utc(d.year, d.month, d.day + days, d.hour, d.minute, d.second,
-        d.millisecond, d.microsecond)
-    : DateTime(d.year, d.month, d.day + days, d.hour, d.minute, d.second,
-        d.millisecond, d.microsecond);
+    ? DateTime.utc(
+        d.year,
+        d.month,
+        d.day + days,
+        d.hour,
+        d.minute,
+        d.second,
+        d.millisecond,
+        d.microsecond,
+      )
+    : DateTime(
+        d.year,
+        d.month,
+        d.day + days,
+        d.hour,
+        d.minute,
+        d.second,
+        d.millisecond,
+        d.microsecond,
+      );
 
 /// Whole calendar days from [from] to [to], measured between start-of-day boundaries so
 /// the result does not depend on time-of-day. Mirrors
@@ -49,3 +66,13 @@ String formatSignificant(double value, int significantDigits) {
   }
   return s;
 }
+
+/// Foundation's weekday number for [d]: **1 = Sunday … 7 = Saturday**.
+///
+/// **Dart and Foundation disagree here and it is silent.** `DateTime.weekday` is
+/// 1 = Monday … 7 = Sunday; `Calendar.component(.weekday, from:)` is 1 = Sunday … 7 =
+/// Saturday. `DoseSchedule.weekdays` stores the FOUNDATION numbers because that list is
+/// persisted and shared with the iOS build, so any comparison against it has to convert
+/// first. Comparing a raw `DateTime.weekday` would schedule every weekly dose one day
+/// early — a bug that looks like a timezone problem and isn't.
+int foundationWeekday(DateTime d) => (d.weekday % 7) + 1;

@@ -17,16 +17,18 @@ void main() {
       );
       expect(
         Pharmacokinetics.level(
-            t: t0.add(const Duration(hours: 24)),
-            doses: doses,
-            halfLifeHours: 24),
+          t: t0.add(const Duration(hours: 24)),
+          doses: doses,
+          halfLifeHours: 24,
+        ),
         closeTo(500, tol),
       );
       expect(
         Pharmacokinetics.level(
-            t: t0.add(const Duration(hours: 48)),
-            doses: doses,
-            halfLifeHours: 24),
+          t: t0.add(const Duration(hours: 48)),
+          doses: doses,
+          halfLifeHours: 24,
+        ),
         closeTo(250, tol),
       );
     });
@@ -39,15 +41,18 @@ void main() {
       // At +24h: the first has decayed to 500, the second is fresh at 1000.
       expect(
         Pharmacokinetics.level(
-            t: t0.add(const Duration(hours: 24)),
-            doses: doses,
-            halfLifeHours: 24),
+          t: t0.add(const Duration(hours: 24)),
+          doses: doses,
+          halfLifeHours: 24,
+        ),
         closeTo(1500, tol),
       );
     });
 
     test('a dose in the future contributes nothing', () {
-      final doses = [PkDoseEvent(time: t0.add(const Duration(days: 7)), amount: 1000)];
+      final doses = [
+        PkDoseEvent(time: t0.add(const Duration(days: 7)), amount: 1000),
+      ];
       expect(Pharmacokinetics.level(t: t0, doses: doses, halfLifeHours: 24), 0);
     });
 
@@ -57,10 +62,11 @@ void main() {
       expect(Pharmacokinetics.level(t: t0, doses: doses, halfLifeHours: -5), 0);
       expect(
         Pharmacokinetics.levels(
-            doses: doses,
-            halfLifeHours: 0,
-            from: t0,
-            to: t0.add(const Duration(days: 1))),
+          doses: doses,
+          halfLifeHours: 0,
+          from: t0,
+          to: t0.add(const Duration(days: 1)),
+        ),
         isEmpty,
       );
     });
@@ -86,10 +92,11 @@ void main() {
     test('an inverted range yields no samples', () {
       expect(
         Pharmacokinetics.levels(
-            doses: const [],
-            halfLifeHours: 24,
-            from: t0.add(const Duration(days: 1)),
-            to: t0),
+          doses: const [],
+          halfLifeHours: 24,
+          from: t0.add(const Duration(days: 1)),
+          to: t0,
+        ),
         isEmpty,
       );
     });

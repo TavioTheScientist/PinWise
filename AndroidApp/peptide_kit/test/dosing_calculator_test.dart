@@ -78,20 +78,26 @@ void main() {
     // Both calculators must agree where they overlap: powder+water at 2500 ug/mL
     // and a pre-mixed 2.5 mg/mL vial are the same solution.
     test('agrees with ReconstitutionCalculator on the same solution', () {
-      final recon = ReconstitutionCalculator.calculate(ReconstitutionInput(
-        vialMass: Mass.mg(5),
-        solventVolumeMilliliters: 2,
-        desiredDose: Mass.mcg(250),
-      ));
+      final recon = ReconstitutionCalculator.calculate(
+        ReconstitutionInput(
+          vialMass: Mass.mg(5),
+          solventVolumeMilliliters: 2,
+          desiredDose: Mass.mcg(250),
+        ),
+      );
       final prepared = DosingCalculator.draw(
         dose: Mass.mcg(250),
         concentration: Concentration.mgPerMl(2.5),
         totalVolumeMilliliters: 2,
       );
-      expect(prepared.concentrationMcgPerMl,
-          closeTo(recon.concentrationMcgPerMl, tol));
-      expect(prepared.drawVolumeMilliliters,
-          closeTo(recon.drawVolumeMilliliters, tol));
+      expect(
+        prepared.concentrationMcgPerMl,
+        closeTo(recon.concentrationMcgPerMl, tol),
+      );
+      expect(
+        prepared.drawVolumeMilliliters,
+        closeTo(recon.drawVolumeMilliliters, tol),
+      );
       expect(prepared.syringeUnits, closeTo(recon.syringeUnits, tol));
       expect(prepared.dosesPerVial, recon.dosesPerVial);
     });

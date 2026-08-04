@@ -21,13 +21,15 @@ abstract final class TitrationPlanner {
     for (var index = 0; index < steps.length; index++) {
       final step = steps[index];
       final end = addDays(cursor, step.durationDays);
-      phases.add(TitrationPhase(
-        id: index,
-        dose: step.dose,
-        startDate: cursor,
-        endDate: end,
-        durationDays: step.durationDays,
-      ));
+      phases.add(
+        TitrationPhase(
+          id: index,
+          dose: step.dose,
+          startDate: cursor,
+          endDate: end,
+          durationDays: step.durationDays,
+        ),
+      );
       cursor = end;
     }
     return phases;
@@ -50,22 +52,24 @@ class TitrationStep {
   /// A duration below one day is clamped to one — a zero-length phase would make the
   /// plan's dates ambiguous.
   TitrationStep({required this.dose, required int durationDays})
-      : durationDays = durationDays < 1 ? 1 : durationDays;
+    : durationDays = durationDays < 1 ? 1 : durationDays;
 
   /// Convenience for the common "N weeks at this dose" pattern.
   factory TitrationStep.weeks(int w, {required Mass dose}) =>
       TitrationStep(dose: dose, durationDays: (w < 1 ? 1 : w) * 7);
 
   factory TitrationStep.fromJson(Map<String, dynamic> json) => TitrationStep(
-        dose: Mass.fromJson(json['dose'] as Map<String, dynamic>),
-        durationDays: json['durationDays'] as int,
-      );
+    dose: Mass.fromJson(json['dose'] as Map<String, dynamic>),
+    durationDays: json['durationDays'] as int,
+  );
 
   final Mass dose;
   final int durationDays;
 
-  Map<String, dynamic> toJson() =>
-      {'dose': dose.toJson(), 'durationDays': durationDays};
+  Map<String, dynamic> toJson() => {
+    'dose': dose.toJson(),
+    'durationDays': durationDays,
+  };
 
   @override
   bool operator ==(Object other) =>
@@ -106,6 +110,5 @@ class TitrationPhase {
       other.durationDays == durationDays;
 
   @override
-  int get hashCode =>
-      Object.hash(id, dose, startDate, endDate, durationDays);
+  int get hashCode => Object.hash(id, dose, startDate, endDate, durationDays);
 }

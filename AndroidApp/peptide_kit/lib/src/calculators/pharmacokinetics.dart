@@ -24,7 +24,8 @@ abstract final class Pharmacokinetics {
     for (final dose in doses) {
       if (dose.time.isAfter(t)) continue;
       final elapsed =
-          t.difference(dose.time).inMicroseconds / Duration.microsecondsPerSecond;
+          t.difference(dose.time).inMicroseconds /
+          Duration.microsecondsPerSecond;
       acc += dose.amount * math.pow(0.5, elapsed / halfLifeSeconds);
     }
     return acc;
@@ -47,10 +48,12 @@ abstract final class Pharmacokinetics {
     final out = <PkSample>[];
     var t = from;
     while (!t.isAfter(to)) {
-      out.add(PkSample(
-        time: t,
-        level: level(t: t, doses: doses, halfLifeHours: halfLifeHours),
-      ));
+      out.add(
+        PkSample(
+          time: t,
+          level: level(t: t, doses: doses, halfLifeHours: halfLifeHours),
+        ),
+      );
       t = t.add(step);
     }
     return out;

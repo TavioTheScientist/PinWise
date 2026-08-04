@@ -18,18 +18,24 @@ void main() {
       ];
       expect(TitrationPlanner.totalDays(steps), 84);
 
-      final phases =
-          TitrationPlanner.plan(steps: steps, startDate: day(2026, 1, 1));
+      final phases = TitrationPlanner.plan(
+        steps: steps,
+        startDate: day(2026, 1, 1),
+      );
       expect(phases.length, 3);
       expect(phases[0].startDate, day(2026, 1, 1));
       expect(phases[0].endDate, day(2026, 1, 29)); // +28 days
       expect(phases[1].startDate, day(2026, 1, 29));
 
       // Mid-phase-0 resolves to 0.25 mg; the exclusive end boundary belongs to phase 1.
-      expect(TitrationPlanner.phaseOn(day(2026, 1, 15), phases)?.dose,
-          Mass.mg(0.25));
-      expect(TitrationPlanner.phaseOn(day(2026, 1, 29), phases)?.dose,
-          Mass.mg(0.5));
+      expect(
+        TitrationPlanner.phaseOn(day(2026, 1, 15), phases)?.dose,
+        Mass.mg(0.25),
+      );
+      expect(
+        TitrationPlanner.phaseOn(day(2026, 1, 29), phases)?.dose,
+        Mass.mg(0.5),
+      );
     });
 
     test('a zero or negative duration is clamped to one day', () {
