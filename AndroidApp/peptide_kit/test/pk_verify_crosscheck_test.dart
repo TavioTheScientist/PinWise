@@ -13,6 +13,7 @@
 // Scratch cross-check: replays the pk-verify (main.swift) assertions that cover the files in
 // this port, so the Dart agrees with the Swift verifier and not just with the two ported
 // swift-testing suites. NOT a deliverable — deleted after running.
+import 'package:decimal/decimal.dart';
 import 'package:peptide_kit/peptide_kit.dart';
 import 'package:test/test.dart';
 
@@ -390,7 +391,7 @@ void main() {
         mass: Mass.mg(10),
         solventVolumeMilliliters: 2,
         dateReconstituted: day(2026, 1, 1),
-        cost: 42.5,
+        cost: Decimal.parse('42.5'),
       );
       expect(Vial.fromJson(v.toJson()), v);
     });

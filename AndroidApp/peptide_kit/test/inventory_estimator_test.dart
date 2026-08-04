@@ -6,6 +6,7 @@
 //
 // Every assertion below is the Swift assertion: same inputs, same expected values, same
 // tolerances.
+import 'package:decimal/decimal.dart';
 import 'package:peptide_kit/peptide_kit.dart';
 import 'package:test/test.dart';
 
@@ -20,7 +21,7 @@ void main() {
         compoundID: 'c',
         mass: Mass.mg(10),
         solventVolumeMilliliters: 1,
-        cost: 200, // Swift: `Decimal(200)`
+        cost: Decimal.fromInt(200), // Swift: `Decimal(200)`
       );
       final ref = TestSupport.day(2026, 7, 4);
       final p = InventoryEstimator.project(
@@ -38,11 +39,10 @@ void main() {
         p.daysOfSupply ?? -1,
         closeTo(21, 1e-6),
       ); // 3 doses / (1/7 per day)
-      // Swift asserts `p.costPerDose == Decimal(50)` — an EXACT decimal comparison. This port
-      // carries `costPerDose` as a `double` (see the note on `InventoryProjection.costPerDose`),
-      // and 200 / 4 exact doses is representable exactly in binary floating point, so the
-      // assertion is kept exact rather than relaxed to a tolerance.
-      expect(p.costPerDose, 50.0); // 200 / 4 exact doses
+      // Swift asserts `p.costPerDose == Decimal(50)` — an EXACT decimal comparison, and this
+      // port now has a real `Decimal` to compare against, so the assertion is the Swift's
+      // verbatim rather than a float approximation of it.
+      expect(p.costPerDose, Decimal.fromInt(50)); // 200 / 4 exact doses
       expect(p.projectedRunOutDate, TestSupport.day(2026, 7, 25));
     });
 

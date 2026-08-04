@@ -14,8 +14,8 @@
 //
 //   * There are NO `Date` fields. `generatedAt` and `publishedAt` are `String` on both sides
 //     ("kept as String to stay portable/Codable without date strategies"), so no
-//     `JSONDecoder.dateDecodingStrategy` participates and the `.deferredToDate`
-//     ISO-8601-vs-2001-epoch interop gap that affects the rest of this port cannot arise
+//     `JSONDecoder.dateDecodingStrategy` participates at all — there is no date strategy to
+//     disagree about, on either side
 //     here. The only place a date is materialised is `NewsFeed.parseDate`, which reads the
 //     leading `yyyy-MM-dd` by hand.
 //   * URLs are `String`, not `URL`/`Uri` — `NewsSource.url` and `NewsItem.imageURL` are both

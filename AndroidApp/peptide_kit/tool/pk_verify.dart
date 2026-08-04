@@ -15,6 +15,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:decimal/decimal.dart';
 import 'package:peptide_kit/peptide_kit.dart';
 
 int _checks = 0;
@@ -232,7 +233,7 @@ void main() {
       compoundID: 'c',
       mass: Mass.mg(10),
       solventVolumeMilliliters: 1,
-      cost: 200,
+      cost: Decimal.fromInt(200),
     );
     final p = InventoryEstimator.project(
       vial: vial,
@@ -245,9 +246,10 @@ void main() {
     check(approx(p.dosesRemaining, 3), '10mg − 1×2.5mg ⇒ 3 doses remaining');
     check(p.needsReorder, '3 remaining ≤ threshold 3 ⇒ reorder');
     check(approx(p.daysOfSupply ?? -1, 21, 1e-6), 'weekly ⇒ 21 days of supply');
-    // Swift compares `Decimal(50)` exactly; `Vial.cost`/`costPerDose` are `double` in this port
-    // (see the note on InventoryProjection), and 200/4 is exact in binary, so the equality holds.
-    check(p.costPerDose == 50, '\$200 / 4 doses ⇒ \$50/dose');
+    // Swift compares `Decimal(50)` exactly, and so does this — `costPerDose` is a real `Decimal`.
+    // Note `== 50` would be a Decimal-vs-int comparison, i.e. always false; the analyzer flags it
+    // as `unrelated_type_equality_checks`, which is how it was caught here.
+    check(p.costPerDose == Decimal.fromInt(50), '\$200 / 4 doses ⇒ \$50/dose');
     check(
       p.projectedRunOutDate?.isAtSameMomentAs(day(2026, 7, 25)) ?? false,
       'run-out projected 2026-07-25',

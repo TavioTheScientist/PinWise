@@ -23,10 +23,10 @@ class AdherenceResult {
   /// 0.0-1.0. A day counts as adhered if any logged dose falls on it (same calendar day).
   final double adherence;
 
-  /// Dates encode as ISO-8601 strings, matching the rest of this port. **This does NOT
-  /// interoperate with Swift's default `JSONEncoder`**, which uses `.deferredToDate`
-  /// (seconds since the 2001 epoch) — the iOS side has to opt into `.iso8601`. Same caveat
-  /// as `Vial`; see its doc.
+  /// Dates encode as ISO-8601 strings. This JSON has no Swift counterpart in use — nothing on
+  /// the iOS side JSON-encodes these types (it persists via SwiftData and exports CSV) — so
+  /// ISO-8601 is chosen because it is the sane Dart-side format, not to match a Swift encoder.
+  /// See the note on `Vial` if a shared JSON format is ever introduced.
   factory AdherenceResult.fromJson(Map<String, dynamic> json) {
     List<DateTime> dates(String key) => (json[key] as List<dynamic>)
         .map((d) => DateTime.parse(d as String))

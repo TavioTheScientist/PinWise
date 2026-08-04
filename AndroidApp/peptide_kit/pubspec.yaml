@@ -18,6 +18,12 @@ dependencies:
   # bare VM in CI.
   intl: ^0.20.0
 
+  # Money is never a double. The Swift core is explicit about this — `Vial.cost` and
+  # `InventoryProjection.costPerDose` are `Decimal`, and `SDModels.swift` states the rule outright
+  # ("money is never a `Double`"). Binary floating point cannot represent 0.10, so a cost-per-dose
+  # built from doubles drifts and compares unequal to the value a user typed. Pure Dart.
+  decimal: ^3.0.0
+
 dev_dependencies:
   test: ^1.25.0
   lints: ^5.0.0
