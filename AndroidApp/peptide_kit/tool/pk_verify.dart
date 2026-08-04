@@ -1033,6 +1033,46 @@ void main() {
       'optional imageURL decodes when present',
     );
 
+    // REGRESSION — an unknown source `kind` must not take down the feed.
+    //
+    // `NewsSource.Kind` used Swift's synthesized Codable, which threw `dataCorrupted` on any value
+    // outside the five known ones. Because `kind` sits inside an item's `sources` array, that error
+    // propagated to the top and aborted the WHOLE document: one unrecognised word blanked the
+    // entire News tab, against a feed fetched at runtime that no app release could fix. Fixed in
+    // the Swift first, mirrored here.
+    const unknownKindJSON =
+        r'{"id":"u1","headline":"H","summary":"S","category":"General","compounds":[],"sources":[{"name":"n","url":"https://example.com","kind":"podcast"}],"publishedAt":"2026-07-08T00:00:00Z","popularity":0,"isMajorUpdate":false,"disclaimer":"d"}';
+    final unknownKind = NewsItem.fromJson(
+      jsonDecode(unknownKindJSON) as Map<String, dynamic>,
+    );
+    check(
+      unknownKind.sources.first.kind == NewsSourceKind.news,
+      'an unknown source kind falls back to .news instead of throwing',
+    );
+    check(
+      unknownKind.headline == 'H' &&
+          unknownKind.sources.first.url == 'https://example.com',
+      'the rest of the item survives an unknown kind (one field degrades, not the document)',
+    );
+    // Not over-tolerant: every known token must still map to its own case.
+    check(
+      NewsSourceKind.values.every(
+        (k) => NewsSourceKind.fromRawValue(k.rawValue) == k,
+      ),
+      'every known kind token still decodes to its own case',
+    );
+    // The actual failure mode, at document scope: a bad kind in ONE item must not lose the others.
+    const mixedFeedJSON =
+        r'{"version":1,"generatedAt":"2026-07-08T00:00:00Z","items":[{"id":"a","headline":"A","summary":"S","category":"General","compounds":[],"sources":[{"name":"n","url":"https://example.com/a","kind":"journal"}],"publishedAt":"2026-07-08T00:00:00Z","popularity":1,"isMajorUpdate":false,"disclaimer":"d"},{"id":"b","headline":"B","summary":"S","category":"General","compounds":[],"sources":[{"name":"n","url":"https://example.com/b","kind":"newsletter"}],"publishedAt":"2026-07-07T00:00:00Z","popularity":2,"isMajorUpdate":false,"disclaimer":"d"}]}';
+    final mixedFeed = NewsFeed.fromJson(
+      jsonDecode(mixedFeedJSON) as Map<String, dynamic>,
+    );
+    check(
+      mixedFeed.items.length == 2 &&
+          mixedFeed.items.map((i) => i.id).join(',') == 'a,b',
+      'an unknown kind in one item does NOT abort the whole feed',
+    );
+
     // teaser / listText — additive optional; teaser-less items fall back to summary via listText.
     const withTeaser = NewsItem(
       id: 't1',

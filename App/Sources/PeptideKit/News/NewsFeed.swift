@@ -29,8 +29,27 @@ public enum NewsCategory: String, Codable, CaseIterable, Sendable {
 
 /// A citation backing a news item — the transparency guarantee.
 public struct NewsSource: Codable, Hashable, Sendable, Identifiable {
-    public enum Kind: String, Codable, Sendable {
+    public enum Kind: String, Codable, CaseIterable, Sendable {
         case trial, journal, preprint, regulatory, news
+
+        /// Tolerant decode, for the same reason as ``NewsCategory/init(from:)`` — and this one is
+        /// the more dangerous of the two to get wrong.
+        ///
+        /// The synthesized `Codable` this replaces threw `DecodingError.dataCorrupted` on any
+        /// unrecognized value, and because `Kind` is nested inside an item's `sources` array, that
+        /// error propagates all the way out: **one unknown `kind` in one source aborted the entire
+        /// feed document**, blanking the whole News tab rather than degrading a single citation.
+        /// The feed is a live file fetched at runtime from a public repo, so that was a one-word
+        /// outage no app release could fix — and unlike `NewsCategory`, nothing here was tolerant.
+        ///
+        /// Unknown values fall back to ``news``: it is the least specific kind, so mislabeling a
+        /// citation as generic news understates its provenance rather than overstating it. That
+        /// direction matters — claiming an unknown source is a `trial` or `regulatory` filing would
+        /// invent authority the document never asserted.
+        public init(from decoder: any Decoder) throws {
+            let raw = try decoder.singleValueContainer().decode(String.self)
+            self = Kind(rawValue: raw) ?? .news
+        }
     }
     public var name: String
     public var url: String

@@ -14,6 +14,23 @@ import 'package:test/test.dart';
 /// pk-verify ranking checks use so the order is deterministic.
 final DateTime rankAsOf = DateTime.utc(2026, 7, 11);
 
+/// Minimal item JSON for the decode-tolerance tests: everything required, one source whose
+/// `kind` the caller chooses so an unknown token can be exercised at document scope.
+Map<String, dynamic> _minimalItem(String id, String kind) => {
+  'id': id,
+  'headline': id.toUpperCase(),
+  'summary': 'S',
+  'category': 'General',
+  'compounds': <String>[],
+  'sources': [
+    {'name': 'n', 'url': 'https://example.com/$id', 'kind': kind},
+  ],
+  'publishedAt': '2026-07-08T00:00:00Z',
+  'popularity': 0,
+  'isMajorUpdate': false,
+  'disclaimer': 'd',
+};
+
 /// The minimal item the pk-verify `listText` checks build in Swift.
 NewsItem plainItem({
   required String id,
@@ -303,21 +320,49 @@ void main() {
       );
     });
 
-    test('an unknown source kind THROWS, exactly as the Swift does', () {
-      // Not an oversight: `NewsSource.Kind` keeps Swift's SYNTHESIZED Codable, which throws
-      // `DecodingError.dataCorrupted` on an unknown raw value and takes the whole document
-      // with it. Reproduced rather than improved — the fix belongs in the Swift first.
-      expect(() => NewsSourceKind.fromRawValue('podcast'), throwsStateError);
-      for (final kind in NewsSourceKind.values) {
-        expect(NewsSourceKind.fromRawValue(kind.rawValue), kind);
-      }
-      expect(NewsSourceKind.values.map((k) => k.rawValue).toList(), [
-        'trial',
-        'journal',
-        'preprint',
-        'regulatory',
-        'news',
-      ]);
+    test(
+      'an unknown source kind falls back to news, exactly as the Swift now does',
+      () {
+        // This test previously asserted a THROW, and that was correct at the time: the Swift left
+        // `NewsSource.Kind` with the synthesized Codable, which threw `dataCorrupted` on an unknown
+        // value and — because `kind` is nested in an item's `sources` — aborted the whole document.
+        // The port reproduced that faithfully and flagged it; the Swift has since been given a
+        // tolerant `init(from:)`, so this follows it. The fix went to the source of truth first.
+        expect(NewsSourceKind.fromRawValue('podcast'), NewsSourceKind.news);
+        expect(() => NewsSourceKind.fromRawValue('podcast'), returnsNormally);
+        // Not over-tolerant: every known token still maps to its own case.
+        for (final kind in NewsSourceKind.values) {
+          expect(NewsSourceKind.fromRawValue(kind.rawValue), kind);
+        }
+        expect(NewsSourceKind.values.map((k) => k.rawValue).toList(), [
+          'trial',
+          'journal',
+          'preprint',
+          'regulatory',
+          'news',
+        ]);
+      },
+    );
+
+    test('REGRESSION: an unknown kind in one item does not abort the whole feed', () {
+      // The actual failure mode, at document scope — the reason the Swift needed fixing. One
+      // unrecognised word must degrade a single citation, not blank the News tab.
+      final json = {
+        'version': 1,
+        'generatedAt': '2026-07-08T00:00:00Z',
+        'items': [
+          _minimalItem('a', 'journal'),
+          _minimalItem('b', 'newsletter'), // unknown kind
+        ],
+      };
+      final feed = NewsFeed.fromJson(json);
+      expect(feed.items.length, 2);
+      expect(feed.items.map((i) => i.id).toList(), ['a', 'b']);
+      expect(feed.items[0].sources.first.kind, NewsSourceKind.journal);
+      expect(feed.items[1].sources.first.kind, NewsSourceKind.news);
+      // The rest of the affected item is intact — one field degraded, nothing else.
+      expect(feed.items[1].headline, 'B');
+      expect(feed.items[1].sources.first.url, 'https://example.com/b');
     });
   });
 
