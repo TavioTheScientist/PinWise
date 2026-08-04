@@ -23,17 +23,17 @@ enum Diluent {
   }
 
   String get label => switch (this) {
-        Diluent.bacteriostaticWater => 'Bacteriostatic water',
-        Diluent.sterileWater => 'Sterile water',
-        Diluent.other => 'Other diluent',
-      };
+    Diluent.bacteriostaticWater => 'Bacteriostatic water',
+    Diluent.sterileWater => 'Sterile water',
+    Diluent.other => 'Other diluent',
+  };
 
   /// Lower-case form for mid-sentence use, so the timeline reads as prose rather than a form dump.
   String get phrase => switch (this) {
-        Diluent.bacteriostaticWater => 'bacteriostatic water',
-        Diluent.sterileWater => 'sterile water',
-        Diluent.other => 'another diluent',
-      };
+    Diluent.bacteriostaticWater => 'bacteriostatic water',
+    Diluent.sterileWater => 'sterile water',
+    Diluent.other => 'another diluent',
+  };
 
   /// True when the diluent contains a preservative. A property of the water, nothing more.
   bool get isPreserved => this == Diluent.bacteriostaticWater;
@@ -56,24 +56,24 @@ enum VialStorage {
   }
 
   String get label => switch (this) {
-        VialStorage.refrigerated => 'Refrigerated',
-        VialStorage.roomTemperature => 'Room temperature',
-        VialStorage.frozen => 'Frozen',
-      };
+    VialStorage.refrigerated => 'Refrigerated',
+    VialStorage.roomTemperature => 'Room temperature',
+    VialStorage.frozen => 'Frozen',
+  };
 
   String get phrase => switch (this) {
-        VialStorage.refrigerated => 'refrigerated',
-        VialStorage.roomTemperature => 'at room temperature',
-        VialStorage.frozen => 'frozen',
-      };
+    VialStorage.refrigerated => 'refrigerated',
+    VialStorage.roomTemperature => 'at room temperature',
+    VialStorage.frozen => 'frozen',
+  };
 
   /// Wording for an excursion, where the state is something the vial was EXPOSED TO rather than
   /// stored in. "Left out at room temperature" reads correctly; "left out refrigerated" does not.
   String get excursionPhrase => switch (this) {
-        VialStorage.refrigerated => 'refrigerated',
-        VialStorage.roomTemperature => 'room-temperature',
-        VialStorage.frozen => 'frozen',
-      };
+    VialStorage.refrigerated => 'refrigerated',
+    VialStorage.roomTemperature => 'room-temperature',
+    VialStorage.frozen => 'frozen',
+  };
 }
 
 /// A recorded departure from the vial's normal storage — "left out 6 hours", "travelled two days
@@ -94,28 +94,30 @@ class StorageExcursion {
     required double hours,
     this.exposedTo = VialStorage.roomTemperature,
     String? note,
-  })  : hours = hours < 0 ? 0 : hours,
-        note = (note == null || note.isEmpty) ? null : note;
+  }) : hours = hours < 0 ? 0 : hours,
+       note = (note == null || note.isEmpty) ? null : note;
 
   /// "6-hour", "1-hour", "1.5-hour" — trailing zeros trimmed, because "1.0-hour" reads as machine
   /// output. Goes through [formatSignificant] so this matches Swift's `%g`.
   String get durationPhrase => '${_trimmed(hours)}-hour';
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'date': date.toIso8601String(),
-        'hours': hours,
-        'exposedTo': exposedTo.name,
-        if (note != null) 'note': note,
-      };
+    'id': id,
+    'date': date.toIso8601String(),
+    'hours': hours,
+    'exposedTo': exposedTo.name,
+    if (note != null) 'note': note,
+  };
 
   static StorageExcursion fromJson(Map<String, dynamic> j) => StorageExcursion(
-        id: j['id'] as String,
-        date: DateTime.parse(j['date'] as String),
-        hours: (j['hours'] as num).toDouble(),
-        exposedTo: VialStorage.fromRaw(j['exposedTo'] as String?) ?? VialStorage.roomTemperature,
-        note: j['note'] as String?,
-      );
+    id: j['id'] as String,
+    date: DateTime.parse(j['date'] as String),
+    hours: (j['hours'] as num).toDouble(),
+    exposedTo:
+        VialStorage.fromRaw(j['exposedTo'] as String?) ??
+        VialStorage.roomTemperature,
+    note: j['note'] as String?,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -165,14 +167,16 @@ class ReconstitutionRecord {
       excursions.fold<double>(0, (sum, e) => sum + e.hours);
 
   Map<String, dynamic> toJson() => {
-        if (reconstitutedOn != null) 'reconstitutedOn': reconstitutedOn!.toIso8601String(),
-        if (diluent != null) 'diluent': diluent!.name,
-        if (storage != null) 'storage': storage!.name,
-        if (isLightProtected != null) 'isLightProtected': isLightProtected,
-        'excursions': excursions.map((e) => e.toJson()).toList(),
-      };
+    if (reconstitutedOn != null)
+      'reconstitutedOn': reconstitutedOn!.toIso8601String(),
+    if (diluent != null) 'diluent': diluent!.name,
+    if (storage != null) 'storage': storage!.name,
+    if (isLightProtected != null) 'isLightProtected': isLightProtected,
+    'excursions': excursions.map((e) => e.toJson()).toList(),
+  };
 
-  static ReconstitutionRecord fromJson(Map<String, dynamic> j) => ReconstitutionRecord(
+  static ReconstitutionRecord fromJson(Map<String, dynamic> j) =>
+      ReconstitutionRecord(
         reconstitutedOn: j['reconstitutedOn'] == null
             ? null
             : DateTime.parse(j['reconstitutedOn'] as String),
@@ -198,8 +202,13 @@ class ReconstitutionRecord {
   }
 
   @override
-  int get hashCode => Object.hash(reconstitutedOn, diluent, storage, isLightProtected,
-      Object.hashAll(excursions));
+  int get hashCode => Object.hash(
+    reconstitutedOn,
+    diluent,
+    storage,
+    isLightProtected,
+    Object.hashAll(excursions),
+  );
 }
 
 /// Turns a [ReconstitutionRecord] into plain factual sentences.
@@ -236,7 +245,8 @@ class ReconstitutionTimeline {
       final days = calendarDaysBetween(mixed, now);
       final String age;
       if (days < 0) {
-        age = 'Reconstituted'; // dated in the future; state the fact, not the delta
+        age =
+            'Reconstituted'; // dated in the future; state the fact, not the delta
       } else if (days == 0) {
         age = 'Reconstituted today';
       } else if (days == 1) {
@@ -274,10 +284,14 @@ class ReconstitutionTimeline {
     if (excursions.isEmpty) return const [];
     if (excursions.length == 1) {
       final only = excursions.first;
-      return ['One ${only.durationPhrase} ${only.exposedTo.excursionPhrase} excursion'];
+      return [
+        'One ${only.durationPhrase} ${only.exposedTo.excursionPhrase} excursion',
+      ];
     }
     final total = excursions.fold<double>(0, (sum, e) => sum + e.hours);
-    return ['${excursions.length} recorded excursions, ${_trimmed(total)} hours total'];
+    return [
+      '${excursions.length} recorded excursions, ${_trimmed(total)} hours total',
+    ];
   }
 }
 
