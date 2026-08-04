@@ -140,7 +140,9 @@ enum DataExportBuilder {
         out += "\n# Protocols\n"
         out += row(["name", "compounds", "cadence", "active", "start_date", "notes"])
         for p in protocols {
-            out += row([p.name, p.compoundNames.joined(separator: " + "), p.cadenceText,
+            // `cadenceExportText`, not the adaptive `cadenceText`: an export column needs one
+            // grammar forever (see SavedProtocol.cadenceExportText).
+            out += row([p.name, p.compoundNames.joined(separator: " + "), p.cadenceExportText,
                         p.isActive ? "yes" : "no", iso.string(from: p.startDate), p.notes])
         }
 

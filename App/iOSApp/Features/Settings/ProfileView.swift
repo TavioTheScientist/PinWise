@@ -131,6 +131,23 @@ enum ProfileFields {
         return cm
     }
 
+    /// The height as a person would say it, for the collapsed `DisclosureRow` value — nil when
+    /// nothing has been entered yet, so the row can word its own "unset" state.
+    ///
+    /// Deliberately derived from the live TEXT bindings the wheels drive, not from the stored
+    /// `profileHeightCm`: that default is only written on commit, so reading it here would leave the
+    /// row reporting the previous height while the wheel beside it already showed the new one.
+    static func heightDisplay(feetText: String, inchesText: String, cmText: String, imperial: Bool) -> String? {
+        guard let cm = parseHeightCm(feetText: feetText, inchesText: inchesText, cmText: cmText, imperial: imperial) else {
+            return nil
+        }
+        guard imperial else {
+            return (cm == cm.rounded() ? String(Int(cm)) : String(format: "%.1f", cm)) + " cm"
+        }
+        let f = heightFields(fromCm: cm)
+        return "\(f.feet) ft \(f.inches) in"
+    }
+
     /// Centimeters → prefilled field strings for both unit systems.
     static func heightFields(fromCm cm: Double) -> (feet: String, inches: String, cm: String) {
         guard cm > 0 else { return ("", "", "") }
@@ -144,6 +161,8 @@ enum ProfileFields {
 }
 
 /// Height entry matching the unit system: "5 ft 10 in" fields when imperial, cm when metric.
+/// Disclosed by a `DisclosureRow`, never standing on its own — a bare wheel gives no hint that it
+/// scrolls (see `ProfileView.personalizationCard`).
 struct HeightField: View {
     @Binding var feetText: String
     @Binding var inchesText: String
@@ -197,6 +216,12 @@ struct ProfileView: View {
     @State private var photoError: String?
     /// Draft of the name while editing; committed to AuthManager on submit/close.
     @State private var name = AuthManager.shared.displayName ?? ""
+    /// Which "About you" row currently has its editor disclosed (nil = all collapsed).
+    @State private var openField: AboutYouField?
+
+    /// The disclosable rows of the "About you" card — an enum rather than three Bools so "one open
+    /// at a time" is structural instead of something three `onChange`s have to keep agreeing on.
+    private enum AboutYouField { case sex, birthday, height }
 
     var body: some View {
         MenuSheet(title: "Your profile") {
@@ -210,10 +235,7 @@ struct ProfileView: View {
         }
         .onDisappear {
             auth.updateDisplayName(name)
-            if let cm = ProfileFields.parseHeightCm(feetText: heightFeetText, inchesText: heightInchesText,
-                                                    cmText: heightText, imperial: weightInPounds) {
-                heightCm = cm
-            }
+            commitHeight()
         }
         // Keep the typed height meaning the same measurement when the unit flips elsewhere.
         .onChange(of: weightInPounds) { old, new in
@@ -314,28 +336,82 @@ struct ProfileView: View {
         )
     }
 
+    /// The card's three settings read as a LIST OF VALUES and disclose their editor on tap, rather
+    /// than standing three bare scroll wheels 120pt tall in a column. A naked wheel is the wrong
+    /// control twice over: it gives no affordance that it scrolls (its unselected rows are dimmed to
+    /// near-invisibility on a dark ground, so it reads as static text), and it spends ~360pt of a
+    /// sheet on values the user sets once and then only wants to *read*.
+    ///
+    /// Disclosed INLINE rather than via a sheet for two reasons: `ProfileView` is already presented
+    /// inside a `MenuSheet`, so a per-field sheet would be a second modal layer over the first; and
+    /// the app already answers "reveal a control on demand" inline everywhere else
+    /// (`CollapsibleNoteField`, `DisclosureSection`, the News filter panel).
+    ///
+    /// Only ONE row is open at a time. With three, the card can otherwise grow past a screen and the
+    /// row you are editing scrolls out from under your thumb; with one, the card stays roughly its
+    /// collapsed height and the open control is always the thing on screen.
     private var personalizationCard: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
                 SectionHeader(title: "About you")
-                FieldRow("Sex assigned at birth", hint: "Sets which body the injection map draws.") {
-                    Picker("", selection: $bodyGenderRaw) {
-                        Text("Male").tag("male")
-                        Text("Female").tag("female")
+
+                // A binary choice is the one case where the disclosed control is NOT a wheel: two
+                // chips state both options at once and take one tap, where a 2-row wheel makes the
+                // user discover by scrolling that there was nothing else to find.
+                DisclosureRow(title: "Sex assigned at birth",
+                              value: bodyGenderRaw == "female" ? "Female" : "Male",
+                              hint: "Sets which body the injection map draws.",
+                              isExpanded: openField == .sex) { toggleField(.sex) } content: {
+                    HStack(spacing: Space.sm) {
+                        SelectableChip(title: "Male", isSelected: bodyGenderRaw == "male",
+                                       fillWidth: true) { bodyGenderRaw = "male" }
+                        SelectableChip(title: "Female", isSelected: bodyGenderRaw == "female",
+                                       fillWidth: true) { bodyGenderRaw = "female" }
                     }
-                    .pickerStyle(.wheel).frame(height: 120)
+                    // One feedback per chip GROUP, at the container — per-chip would double-fire.
+                    .sensoryFeedback(.selection, trigger: bodyGenderRaw)
                 }
-                FieldRow("Birthday", hint: ProfileFields.age(fromTimestamp: birthdayTS).map { "Age \($0)" }) {
+
+                DisclosureRow(title: "Birthday",
+                              value: birthdayTS > 0
+                                  ? Date(timeIntervalSince1970: birthdayTS)
+                                      .formatted(.dateTime.month(.abbreviated).day().year())
+                                  : "Not set",
+                              hint: ProfileFields.age(fromTimestamp: birthdayTS).map { "Age \($0)" },
+                              isExpanded: openField == .birthday) { toggleField(.birthday) } content: {
                     DatePicker("", selection: birthdayBinding, in: ProfileFields.birthdayRange,
                                displayedComponents: [.date])
                         .labelsHidden()
                         .datePickerStyle(.wheel)
                 }
-                FieldRow("Height") {
+
+                DisclosureRow(title: "Height",
+                              value: ProfileFields.heightDisplay(feetText: heightFeetText,
+                                                                 inchesText: heightInchesText,
+                                                                 cmText: heightText,
+                                                                 imperial: weightInPounds) ?? "Not set",
+                              isExpanded: openField == .height) { toggleField(.height) } content: {
                     HeightField(feetText: $heightFeetText, inchesText: $heightInchesText,
                                 cmText: $heightText, imperial: weightInPounds)
                 }
             }
+        }
+    }
+
+    /// Opens `field` and closes whatever else was open (tapping the open row closes it).
+    private func toggleField(_ field: AboutYouField) {
+        let wasEditingHeight = openField == .height
+        openField = openField == field ? nil : field
+        // Height is the one field whose control writes to intermediate String bindings instead of
+        // straight to its stored default, so flush it the moment its row closes. `onDisappear` is
+        // still the backstop for dismissing the sheet with the row left open.
+        if wasEditingHeight, openField != .height { commitHeight() }
+    }
+
+    private func commitHeight() {
+        if let cm = ProfileFields.parseHeightCm(feetText: heightFeetText, inchesText: heightInchesText,
+                                               cmText: heightText, imperial: weightInPounds) {
+            heightCm = cm
         }
     }
 

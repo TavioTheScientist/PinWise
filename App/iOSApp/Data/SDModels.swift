@@ -383,19 +383,91 @@ extension SavedProtocol {
         }
     }
 
-    /// Human cadence label for display — weekdays as compact Monday-first letters so every
-    /// selected day is visible (e.g. "M W F"), not truncated. Every day (all 7 selected, or a
-    /// 1-day interval) collapses to "Daily".
+    /// The spoken 3-letter weekday name (1 = Sun … 7 = Sat) — the register a person actually uses
+    /// when they say their schedule out loud ("Mon, Wed, Fri"). Hardcoded rather than pulled from
+    /// `Calendar.shortWeekdaySymbols` for the same reason `shortWeekdayLabel` is: these strings sit
+    /// in a fixed-width stat cell and a locale-supplied symbol can be arbitrarily long, so a
+    /// localization pass has to re-measure the cells anyway rather than silently overflow them.
+    static func mediumWeekdayLabel(_ d: Int) -> String {
+        switch d {
+        case 1: return "Sun"; case 2: return "Mon"; case 3: return "Tue"; case 4: return "Wed"
+        case 5: return "Thu"; case 6: return "Fri"; case 7: return "Sat"; default: return "?"
+        }
+    }
+
+    /// Single-letter weekday initial (1 = Sun … 7 = Sat) — **position-DEPENDENT**, and that is the
+    /// whole difference from `shortWeekdayLabel` above. It is only legible inside a fixed, complete
+    /// Mon…Sun strip (Home's 7-day dose row), where the slot's position supplies the identity that
+    /// "T" and "S" can't carry on their own. Never use it for an arbitrary subset of days.
+    static func initialWeekdayLabel(_ d: Int) -> String {
+        String(mediumWeekdayLabel(d).prefix(1))
+    }
+
+    /// At or below this many selected weekdays, `cadenceText` spells the days out ("Mon, Wed, Fri");
+    /// above it, they collapse to the compact letter strip ("M T W Th F S").
+    ///
+    /// THREE, and the threshold is on the COUNT of days rather than on a measured width, because a
+    /// width test would have to be re-run per call site (a half-width stat cell, a one-line row
+    /// subtitle, a CSV field) and would make the same protocol read differently on two screens.
+    /// Three is where the two forms cross over on the tightest consumer, `ProtocolSummary.row`,
+    /// whose subtitle is "cadence · contents" on ONE truncating line: "Mon, Wed, Fri" is 13
+    /// characters and still leaves room for the compound names, while a 4th day pushes it to 18 and
+    /// starts eating them. It also happens to be where the *form* stops being a list and starts
+    /// being a pattern — once you dose 4+ days a week the useful read is the shape of the week, and
+    /// a run of letters shows that better (and shorter) than a comma list of names.
+    static let spelledCadenceDayLimit = 3
+
+    /// Human cadence label for display. Weekdays are Monday-first and ADAPT to how many are
+    /// selected: up to `spelledCadenceDayLimit` days read as spoken names ("Mon, Wed, Fri"), more
+    /// than that collapse to the compact strip ("M T W Th F S") so every selected day still fits
+    /// without truncation. Every day (all 7 selected, or a 1-day interval) collapses to "Daily".
     var cadenceText: String {
+        weekdayCadenceText(spellOutDays: true) ?? intervalCadenceText
+    }
+
+    /// The STABLE cadence string for machine-readable output (the CSV export). Always the compact
+    /// letter strip, regardless of how many days are selected.
+    ///
+    /// A deliberate fork from `cadenceText`, because the two have opposite requirements: a display
+    /// label should adapt to the space it is in, while an export column should have exactly one
+    /// grammar forever. Letting the adaptive label reach the CSV would mean a `cadence` field whose
+    /// shape depends on the row ("Mon, Wed, Fri" for one protocol, "M T W Th F S" for the next) —
+    /// and would additionally start quoting that field mid-file once a comma appeared in it. This
+    /// is byte-for-byte what the export emitted before the adaptive label existed, so anything
+    /// already parsing a Staxyz export keeps working.
+    var cadenceExportText: String {
+        weekdayCadenceText(spellOutDays: false) ?? intervalCadenceText
+    }
+
+    /// The non-weekday cadence phrasings, shared by both labels above.
+    private var intervalCadenceText: String {
         switch scheduleKind {
-        case .daily: return "Daily"
         case .everyNDays: return intervalDays <= 1 ? "Daily" : "Every \(intervalDays) days"
-        case .weekly, .specificWeekdays:
-            let selected = weekdays.filter { (1...7).contains($0) }
-            if Set(selected).count == 7 { return "Daily" }        // every day selected
-            let labels = SavedProtocol.mondayFirst(weekdays).map(SavedProtocol.shortWeekdayLabel)
-            return labels.isEmpty ? "Weekly" : labels.joined(separator: " ")
         case .asNeeded: return "As needed"
+        default: return "Daily"
+        }
+    }
+
+    /// The weekday phrasing, or nil when this protocol isn't weekday-scheduled (so the caller falls
+    /// through to `intervalCadenceText`).
+    private func weekdayCadenceText(spellOutDays: Bool) -> String? {
+        switch scheduleKind {
+        case .weekly, .specificWeekdays:
+            let ordered = SavedProtocol.mondayFirst(weekdays)
+            if ordered.count == 7 { return "Daily" }              // every day selected
+            if ordered.isEmpty { return "Weekly" }
+            // A single weekday reads as "Weekly", not as the day's name — because every surface that
+            // shows this cadence ALSO shows the next dose, which is that same weekday. "Mon ·
+            // Semaglutide … Mon" printed the same word twice on one row and read as an oversight.
+            // "Weekly" is strictly more informative here: it names the pattern, the right-hand column
+            // names the day, and together they say something neither says alone.
+            if ordered.count == 1 { return "Weekly" }
+            let spelled = spellOutDays && ordered.count <= SavedProtocol.spelledCadenceDayLimit
+            return spelled
+                ? ordered.map(SavedProtocol.mediumWeekdayLabel).joined(separator: ", ")
+                : ordered.map(SavedProtocol.shortWeekdayLabel).joined(separator: " ")
+        default:
+            return nil
         }
     }
 }

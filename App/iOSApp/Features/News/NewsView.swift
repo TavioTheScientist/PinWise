@@ -229,7 +229,10 @@ struct NewsView: View {
                 Spacer()
                 SearchToggleButton(isActive: searchActive) {
                     let willActivate = !searchActive
-                    withAnimation(.snappy) {
+                    // The panel reveal keeps its slide — it IS a disclosure, opening directly below
+                    // the button that opened it — but it now honors Reduce Motion like the rest of
+                    // the app's animation, which it was silently skipping.
+                    withAnimation(reduceMotion ? nil : .snappy) {
                         searchActive = willActivate
                         if !willActivate { clearPanelFilters() }   // closing clears search/category/new (NOT My compounds)
                     }
@@ -242,16 +245,31 @@ struct NewsView: View {
 
     /// Always-visible personal feed filter. Independent of the search reveal so users can filter to
     /// what they're taking in one tap.
+    ///
+    /// **The state lives on the CONTROL, and the control is the only thing that moves.** This row
+    /// used to spring a caption ("Showing news on what you're taking") in beside the chip on a
+    /// `.snappy` spring — so the act of filtering shoved the entire feed down the screen, and the
+    /// thing that visibly changed was the chrome rather than the switch you just flipped. A filter is
+    /// a boolean on a control and should read like one: an empty circle fills into a checkmark and
+    /// the chip takes the accent selection fill, animated inside the chip's OWN subtree so no
+    /// surrounding layout is animated at all. The results themselves swap without a transition,
+    /// which is correct — a query returns a different list, it doesn't slide one in.
+    ///
+    /// Nothing is lost with the caption gone: `AppliedFilterHeader` above the results already
+    /// reports that a filter is applied (count + Clear), which is how every other filtered list in
+    /// the app reports it, and the empty-stack guidance it carried is already the results list's
+    /// own empty state.
     private var myCompoundsBar: some View {
         HStack(spacing: Space.sm) {
-            SelectableChip(title: "Your compounds", isSelected: myStack) {
-                withAnimation(.snappy) { myStack.toggle() }
+            SelectableChip(title: "Your compounds", isSelected: myStack,
+                           systemImage: myStack ? "checkmark.circle.fill" : "circle") {
+                myStack.toggle()
             }
-            if myStack {
-                Text(userCompounds.isEmpty ? "Add a protocol or log a dose first."
-                                           : "Showing news on what you're taking")
-                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
-            }
+            // Two symbols with identical metrics, so the glyph swap can't jitter the chip's width.
+            // Scoped here rather than around the toggle: an `.animation` on the chip animates the
+            // chip, where a `withAnimation` would animate every layout the flag feeds — the feed
+            // included, which is exactly the jump being fixed.
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: myStack)
             Spacer(minLength: 0)
         }
         .sensoryFeedback(.selection, trigger: myStack)
