@@ -51,7 +51,21 @@ Two existing architectural decisions constrain everything below, and both are co
 
 ---
 
-## Phase 0 — Record the inputs. Ship in days, unblocks everything.
+## Phase 0 — Record the inputs. **SHIPPED 2026-08-04.**
+
+**Status: done, and deliberately incomplete.** `PeptideKit/Safety/ReconstitutionRecord.swift` holds
+the vocabulary (`Diluent`, `VialStorage`, `StorageExcursion`, `ReconstitutionRecord`) and
+`ReconstitutionTimeline`, the one place allowed to phrase it. `StoredVial` carries the four inputs as
+additive optionals where `nil` means NOT RECORDED, the vial builder captures them through three-state
+controls (so no answer is ever forced), and the vial card states the factual sentence above the
+generic discard guideline. 19 checks in BOTH harnesses (254 → 273), including one that asserts no
+clause may contain "potency", "expiry", "discard" or "%" — the refusal is now enforced, not just
+documented. Dart port at label-for-label parity.
+
+**Still owed from this phase:** the excursion LOG has a model and is persisted and phrased, but no
+entry UI yet — a user cannot add "left out 6 hours" from the app. That is the next slice.
+
+### Original plan
 
 **You cannot model what you never recorded, and you cannot retrofit history.** Every month this slips
 is a month of dataset you don't get back. This is the highest-urgency phase and needs no new science.

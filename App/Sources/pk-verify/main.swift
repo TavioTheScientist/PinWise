@@ -889,6 +889,94 @@ do {
           "server tier mirrors the client entitlement")
 }
 
+// MARK: - Stability Phase 0 — record the inputs, derive NOTHING
+section("Reconstitution record (stability Phase 0)")
+do {
+    var cal = Calendar(identifier: .gregorian)
+    cal.timeZone = TimeZone(identifier: "UTC")!
+    // Local helper: the harness's other `date(...)` is scoped to its own `do` block, and a fixed UTC
+    // calendar is what makes these day counts deterministic wherever CI runs.
+    func date(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 0, _ min: Int = 0) -> Date {
+        cal.date(from: DateComponents(year: y, month: m, day: d, hour: h, minute: min))!
+    }
+    let now = date(2026, 8, 4)
+
+    // The whole point of Phase 0: an unrecorded field stays unrecorded. A record that answers
+    // "not set" with a default is how folklore becomes a fact.
+    check(ReconstitutionRecord().isEmpty, "a blank record reports itself empty")
+    check(ReconstitutionTimeline.clauses(for: ReconstitutionRecord(), asOf: now, calendar: cal).isEmpty,
+          "empty record ⇒ NO clauses (never a 'no data' placeholder from the phrase layer)")
+    check(ReconstitutionTimeline.sentence(for: ReconstitutionRecord(), asOf: now, calendar: cal) == nil,
+          "empty record ⇒ nil sentence, not an empty string")
+
+    let full = ReconstitutionRecord(
+        reconstitutedOn: date(2026, 7, 21), diluent: .bacteriostaticWater,
+        storage: .refrigerated, isLightProtected: true,
+        excursions: [StorageExcursion(date: date(2026, 7, 30), hours: 6)])
+    let sentence = ReconstitutionTimeline.sentence(for: full, asOf: now, calendar: cal)
+    check(sentence == "Reconstituted 14 days ago with bacteriostatic water. Stored refrigerated. "
+          + "Kept out of light. One 6-hour room-temperature excursion.",
+          "full record reads as the roadmap's worked example, verbatim")
+
+    // Calendar days, not 86_400-second arithmetic.
+    check(ReconstitutionTimeline.clauses(for: ReconstitutionRecord(reconstitutedOn: date(2026, 8, 4)),
+                                         asOf: now, calendar: cal).first == "Reconstituted today",
+          "same calendar day ⇒ 'today', not '0 days ago'")
+    check(ReconstitutionTimeline.clauses(for: ReconstitutionRecord(reconstitutedOn: date(2026, 8, 3)),
+                                         asOf: now, calendar: cal).first == "Reconstituted yesterday",
+          "one day ⇒ 'yesterday'")
+    // A future date is a data-entry slip; state the fact and refuse to phrase a negative age.
+    check(ReconstitutionTimeline.clauses(for: ReconstitutionRecord(reconstitutedOn: date(2026, 8, 9)),
+                                         asOf: now, calendar: cal).first == "Reconstituted",
+          "future-dated ⇒ bare 'Reconstituted', never '-5 days ago'")
+
+    // nil light-protection and an explicit false must BOTH stay silent: one is unknown, the other is
+    // a fact about a vial nobody photographs. Only `true` earns a clause.
+    check(!ReconstitutionTimeline.clauses(for: ReconstitutionRecord(storage: .frozen, isLightProtected: nil),
+                                          asOf: now, calendar: cal).contains { $0.contains("light") },
+          "isLightProtected nil ⇒ no light clause")
+    check(!ReconstitutionTimeline.clauses(for: ReconstitutionRecord(storage: .frozen, isLightProtected: false),
+                                          asOf: now, calendar: cal).contains { $0.contains("light") },
+          "isLightProtected false ⇒ still no light clause")
+
+    // Excursions: one is stated precisely, several in aggregate.
+    let many = ReconstitutionRecord(excursions: [
+        StorageExcursion(date: date(2026, 7, 22), hours: 6),
+        StorageExcursion(date: date(2026, 7, 29), hours: 1.5),
+        StorageExcursion(date: date(2026, 8, 1), hours: 48, exposedTo: .roomTemperature)])
+    check(ReconstitutionTimeline.clauses(for: many, asOf: now, calendar: cal)
+            == ["3 recorded excursions, 55.5 hours total"],
+          "several excursions ⇒ one aggregate clause, not a log")
+    check(many.totalExcursionHours == 55.5, "totalExcursionHours sums what was reported")
+    check(StorageExcursion(date: now, hours: 1).durationPhrase == "1-hour",
+          "whole hours print without a trailing .0")
+    check(StorageExcursion(date: now, hours: 1.5).durationPhrase == "1.5-hour",
+          "fractional hours keep their precision")
+    check(StorageExcursion(date: now, hours: -3).hours == 0, "negative duration clamps to 0")
+    check(StorageExcursion(date: now, hours: 1, note: "").note == nil,
+          "an empty note normalises to nil, so callers need only one absence check")
+
+    // Diluent is a fact about the WATER. It must never acquire a shelf-life opinion.
+    check(Diluent.bacteriostaticWater.isPreserved && !Diluent.sterileWater.isPreserved,
+          "only bacteriostatic water is preserved")
+    check(Diluent.allCases.count == 3 && VialStorage.allCases.count == 3,
+          "both vocabularies are closed and CaseIterable")
+
+    // THE PHASE 0 REFUSAL, asserted rather than merely documented: no clause may imply a measurement
+    // or an expiry. If someone later teaches this type to estimate, this check is what stops them.
+    let forbidden = ["%", "potency", "expire", "expiry", "discard", "safe until", "remaining"]
+    let everyClause = (ReconstitutionTimeline.clauses(for: full, asOf: now, calendar: cal)
+                       + ReconstitutionTimeline.clauses(for: many, asOf: now, calendar: cal))
+        .joined(separator: " ").lowercased()
+    check(forbidden.allSatisfy { !everyClause.contains($0) },
+          "no clause claims potency, expiry or a discard date — Phase 0 records, it does not model")
+
+    // Round-trips as data, because the excursion log is persisted.
+    let coded = try! JSONEncoder().encode(full)
+    check((try? JSONDecoder().decode(ReconstitutionRecord.self, from: coded)) == full,
+          "ReconstitutionRecord round-trips through Codable")
+}
+
 // MARK: - Summary
 print("\n\(failures == 0 ? "✅ PASS" : "❌ FAIL") — \(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

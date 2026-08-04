@@ -210,6 +210,14 @@ struct VialRow: View {
             Text("Per shot: " + perShot)
                 .font(.caption2).foregroundStyle(BrandColor.textSecondary)
         }
+        // The factual timeline: only clauses the user themselves recorded. It sits ABOVE the discard
+        // guideline deliberately — what you actually told us outranks a generic 28-day convention, and
+        // reading them in that order is the difference between provenance and folklore. Absent when
+        // nothing is recorded; the builder is where an empty record gets filled, not here.
+        if let stability = ReconstitutionTimeline.sentence(for: vial.reconstitutionRecord) {
+            Text(stability)
+                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+        }
         if let bud = projection.beyondUseDate {
             Text(bud < Date()
                  ? "Past its 28-day discard guideline — inspect before use."
@@ -267,6 +275,13 @@ struct VialBuilderView: View {
     @State private var lotVendorText: String
     @State private var lotNumberText: String
     @State private var expandLot: Bool
+    // Stability Phase 0 inputs. All THREE-state (`nil` = the user hasn't said), because a two-state
+    // toggle would silently assert an answer on behalf of every vial anyone skips this section for —
+    // and "not recorded" is the state this whole feature exists to keep honest.
+    @State private var diluent: Diluent?
+    @State private var storage: VialStorage?
+    @State private var lightProtected: Bool?
+    @State private var expandStability: Bool
     @State private var coaAssayText: String
     @State private var coaContentText: String
     @State private var coaPurityText: String
@@ -311,6 +326,10 @@ struct VialBuilderView: View {
             _lotVendorText = State(initialValue: "")
             _lotNumberText = State(initialValue: "")
             _expandLot = State(initialValue: false)
+            _diluent = State(initialValue: nil)
+            _storage = State(initialValue: nil)
+            _lightProtected = State(initialValue: nil)
+            _expandStability = State(initialValue: false)
             _coaAssayText = State(initialValue: "")
             _coaContentText = State(initialValue: "")
             _coaPurityText = State(initialValue: "")
@@ -356,6 +375,12 @@ struct VialBuilderView: View {
         _lotVendorText = State(initialValue: "")
         _lotNumberText = State(initialValue: "")
         _expandLot = State(initialValue: v.lotID != nil)
+        _diluent = State(initialValue: v.diluentRaw.flatMap(Diluent.init(rawValue:)))
+        _storage = State(initialValue: v.storageRaw.flatMap(VialStorage.init(rawValue:)))
+        _lightProtected = State(initialValue: v.isLightProtected)
+        // Opens itself only when there is something to see. An empty section that unfurls on every
+        // edit trains people to collapse it, which is the opposite of collecting the data.
+        _expandStability = State(initialValue: !v.reconstitutionRecord.isEmpty)
         _coaAssayText = State(initialValue: v.coaAssayPercent.map(Self.fmt) ?? "")
         _coaContentText = State(initialValue: v.coaContentPercent.map(Self.fmt) ?? "")
         _coaPurityText = State(initialValue: v.coaPurityPercent.map(Self.fmt) ?? "")
@@ -615,6 +640,7 @@ struct VialBuilderView: View {
                     // COA correction is only for powder you reconstitute — a pre-mixed vial's
                     // stated strength is already corrected by the pharmacy.
                     lotCard
+                    stabilityCard
                     if !isPremixed { coaCard }
 
                     Card {
@@ -946,6 +972,75 @@ struct VialBuilderView: View {
     ///
     /// Extracted as its own property rather than inlined: this view's `body` is already near the
     /// type-checker's limit (see the note on `blendHero`).
+    /// Stability Phase 0 capture — the inputs, and nothing derived from them.
+    ///
+    /// Every control here is THREE-state, which is the whole design. A plain segmented picker would
+    /// force an answer, and a forced answer is indistinguishable from a real one once it is stored —
+    /// which is exactly the failure this feature exists to avoid. "Not recorded" therefore stays
+    /// selectable, and is the default.
+    ///
+    /// The copy states the honest limit up front. If a user reads this section expecting a shelf-life
+    /// number, the absence of one has to look deliberate rather than unfinished.
+    private var stabilityCard: some View {
+        DisclosureSection(
+            title: "Mixing & storage",
+            scent: ReconstitutionTimeline.sentence(for: draftRecord)
+                ?? "Optional — how it was mixed and kept",
+            isExpanded: expandStability,
+            toggle: { withAnimation(.easeInOut(duration: 0.2)) { expandStability.toggle() } }
+        ) {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                Text("Staxyz records this and states it back to you. It does not turn it into a potency or a shelf life — there is no measured stability data for most peptides, and a number without data behind it is a guess wearing a decimal point.")
+                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+
+                if !isPremixed {
+                    FieldRow("Diluent", hint: "Bacteriostatic water contains a preservative; plain sterile water does not.") {
+                        Picker("Diluent", selection: $diluent) {
+                            Text("Not recorded").tag(Diluent?.none)
+                            ForEach(Diluent.allCases, id: \.self) { d in
+                                Text(d.label).tag(Diluent?.some(d))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .tint(BrandColor.accentText)
+                    }
+                }
+
+                FieldRow("Normal storage", hint: "Where it lives between doses — not a one-off afternoon on the counter.") {
+                    Picker("Storage", selection: $storage) {
+                        Text("Not recorded").tag(VialStorage?.none)
+                        ForEach(VialStorage.allCases, id: \.self) { s in
+                            Text(s.label).tag(VialStorage?.some(s))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(BrandColor.accentText)
+                }
+
+                FieldRow("Kept out of light", hint: "Amber vial, or stored in a box or drawer.") {
+                    Picker("Light", selection: $lightProtected) {
+                        Text("Not recorded").tag(Bool?.none)
+                        Text("Yes").tag(Bool?.some(true))
+                        Text("No").tag(Bool?.some(false))
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+        }
+    }
+
+    /// The record as the form currently stands, so the collapsed row previews the same sentence the
+    /// vial card will show. Built from the draft rather than the saved vial — a scent line that lags a
+    /// field the user just changed reads as a bug.
+    private var draftRecord: ReconstitutionRecord {
+        ReconstitutionRecord(
+            reconstitutedOn: editing?.dateReconstituted,
+            diluent: isPremixed ? nil : diluent,
+            storage: storage,
+            isLightProtected: lightProtected,
+            excursions: editing?.storageExcursions ?? [])
+    }
+
     private var lotCard: some View {
         DisclosureSection(
             title: "Lot & vendor",
@@ -1148,6 +1243,12 @@ struct VialBuilderView: View {
         // Provenance: a powder vial mixed with solvent is reconstituted now. Preserve an existing
         // date across edits; clear it if the vial isn't a reconstituted powder (premixed / no water).
         vial.dateReconstituted = (!isPremixed && vol > 0) ? (vial.dateReconstituted ?? .now) : nil
+        // Stability inputs. Cleared for a pre-mixed vial for the same reason COA values are: it was
+        // never reconstituted, so a diluent recorded against it would be a claim about an event that
+        // did not happen. Storage and light DO still apply to a pre-mixed vial, so they survive.
+        vial.diluentRaw = isPremixed ? nil : diluent?.rawValue
+        vial.storageRaw = storage?.rawValue
+        vial.isLightProtected = lightProtected
         return true
     }
 
