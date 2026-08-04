@@ -19,9 +19,24 @@ is where a silent error is a dosing-safety problem rather than a cosmetic one.
 ```sh
 cd AndroidApp/peptide_kit
 dart pub get
-dart test          # ports of the Swift swift-testing suites
-dart run tool/pk_verify.dart   # port of `swift run pk-verify`
+dart analyze --fatal-infos                        # must be clean
+dart format --output=none --set-exit-if-changed . # must be idempotent
+dart run tool/pk_verify.dart                      # port of `swift run pk-verify`
+dart test                                         # ports of the swift-testing suites
 ```
+
+CI runs exactly that sequence as the **"Domain core (Dart port)"** job — ubuntu, 1× minutes, no
+simulator, which is the whole reason this layer was ported before any UI.
+
+### The harness check count is a tracked number
+
+`swift run pk-verify` reports **241/241**. `tool/pk_verify.dart` is its port and prints its own
+count, so a section quietly going missing is visible rather than invisible. Two rules:
+
+- **Never adjust an assertion to make it pass.** If Dart disagrees with Swift, that is a finding
+  about the port, not a number to edit.
+- When you add a ported module, add its harness section too. The trailing comment in
+  `tool/pk_verify.dart` lists what is still outstanding and what it should total.
 
 ## Canonical invariant
 

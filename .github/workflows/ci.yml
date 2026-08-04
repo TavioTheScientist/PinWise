@@ -1,8 +1,8 @@
 name: CI
 
-# Builds and tests Staxyz. The domain core (pure Swift/Foundation) runs on a cheap Linux
-# runner (1× minutes); only the iOS app build needs macOS + Xcode (10× minutes), so we keep
-# that job as lean as possible.
+# Builds and tests Staxyz. Both domain cores (Swift and its Dart port) are platform-agnostic and
+# run on cheap Linux runners (1× minutes); only the iOS app build needs macOS + Xcode
+# (10× minutes), so we keep that job as lean as possible.
 on:
   push:
     branches: [main]
@@ -30,6 +30,39 @@ jobs:
       - name: Run test suite
         working-directory: App
         run: swift test
+
+  dart-core:
+    name: Domain core (Dart port)
+    # 1× minutes, and needs no simulator — verifying anywhere is the whole point of porting
+    # this layer before any UI.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          # `stable`, not a pinned patch: the package declares `sdk: ^3.9.0` and pinning an exact
+          # version breaks CI whenever that build is retired. If a stable release ever breaks the
+          # build, pin here deliberately rather than loosening the analyzer.
+          sdk: stable
+      - name: Resolve dependencies
+        working-directory: AndroidApp/peptide_kit
+        run: dart pub get
+      - name: Analyze
+        working-directory: AndroidApp/peptide_kit
+        # --fatal-infos because the package is currently clean at info level, and the cheapest
+        # time to keep it that way is now.
+        run: dart analyze --fatal-infos
+      - name: Check formatting
+        working-directory: AndroidApp/peptide_kit
+        run: dart format --output=none --set-exit-if-changed .
+      # Same order as the Swift job: the assertion harness first, then the suites. It is the
+      # artifact whose check COUNT is tracked against the Swift's, so a drop is visible here.
+      - name: Verify dosing math (assertion harness)
+        working-directory: AndroidApp/peptide_kit
+        run: dart run tool/pk_verify.dart
+      - name: Run test suite (ports of the Swift suites)
+        working-directory: AndroidApp/peptide_kit
+        run: dart test
 
   ios-app:
     name: Build iOS app
