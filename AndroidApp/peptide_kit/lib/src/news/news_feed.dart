@@ -85,15 +85,20 @@ enum NewsSourceKind {
   /// Wire token — Swift's `rawValue`, which for this enum is the case name verbatim.
   String get rawValue => name;
 
-  /// **Throws on an unknown token, deliberately.** Swift leaves `NewsSource.Kind` with the
-  /// SYNTHESIZED `Codable` conformance, whose decode throws `DecodingError.dataCorrupted`
-  /// for a raw value it doesn't know — and since `JSONDecoder` aborts the whole document,
-  /// one unrecognised `kind` in one source fails the ENTIRE feed. That asymmetry with
-  /// [NewsCategory] (deliberately tolerant) is in the Swift, so it is reproduced here rather
-  /// than quietly improved: if source kinds ever grow, the Swift needs a tolerant
-  /// `init(from:)` first and this port follows it.
+  /// **Tolerant, and never throws** — mirroring the Swift's `Kind.init(from:)`.
+  ///
+  /// History worth keeping, because it explains the shape: the Swift originally left this enum
+  /// with the SYNTHESIZED `Codable`, which threw `DecodingError.dataCorrupted` on an unknown raw
+  /// value. Since `kind` sits inside an item's `sources` array, that error propagated to the top
+  /// and aborted the WHOLE document — one unrecognised word blanked the entire News tab, against
+  /// a feed fetched at runtime from a public repo that no app release could fix. This port
+  /// reproduced the throw faithfully and flagged it; the Swift was then fixed, and this follows.
+  ///
+  /// Unknown values fall back to [news] — the least specific kind, so a mislabeled citation
+  /// understates its provenance rather than overstating it. Calling an unknown source a `trial`
+  /// or `regulatory` filing would invent authority the document never asserted.
   static NewsSourceKind fromRawValue(String raw) =>
-      values.firstWhere((k) => k.name == raw);
+      values.firstWhere((k) => k.name == raw, orElse: () => news);
 }
 
 /// A citation backing a news item — the transparency guarantee.
