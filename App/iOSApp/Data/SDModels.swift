@@ -599,6 +599,30 @@ final class StoredVial {
     /// so the pointer lives on the child. nil = provenance not recorded, which is always allowed.
     var lotID: UUID? = nil
 
+    // MARK: Stability inputs (Phase 0) — recorded, never modelled
+    //
+    // These four exist so the app can STATE how a vial was mixed and kept. They deliberately feed no
+    // calculation: there is no measured stability data behind this app yet, so any number derived
+    // from them would be invention wearing units. See `ReconstitutionTimeline` in PeptideKit, whose
+    // whole contract is that refusal, and `docs/stability-intelligence-roadmap.md` for why recording
+    // comes first — history cannot be retrofitted, so every month not captured is data that will
+    // never exist.
+    //
+    // All additive optionals, CloudKit-safe, and `nil` means NOT RECORDED — which is a real state and
+    // must never collapse into a default. That is the difference between this and the "discard after
+    // 28 days" every competitor prints as though it were a fact.
+
+    /// What the powder was reconstituted with. Raw `Diluent.rawValue`; nil = not recorded.
+    var diluentRaw: String? = nil
+    /// Where the vial normally lives between doses. Raw `VialStorage.rawValue`; nil = not recorded.
+    var storageRaw: String? = nil
+    /// Amber vial / kept in the dark. Three-state ON PURPOSE: `nil` (never asked) is not `false`
+    /// (the user said no). A `Bool` here would silently assert the negative for every legacy vial.
+    var isLightProtected: Bool? = nil
+    /// Append-only log of departures from normal storage — "left out 6 hours", "travelled 2 days".
+    /// An array of a Codable struct, exactly like `apis`, so it needs no second model or join.
+    var storageExcursions: [StorageExcursion] = []
+
     init(
         id: UUID = UUID(), label: String = "", apis: [VialAPI] = [], solventVolumeMilliliters: Double? = nil,
         perDoseMicrograms: Double? = nil, dosesTaken: Int = 0, cost: Decimal? = nil, expirationDate: Date? = nil,
@@ -682,6 +706,22 @@ extension StoredVial {
     var primaryMass: Mass { Mass(micrograms: primaryAPI?.massMicrograms ?? 0) }
     var perDose: Mass { Mass(micrograms: perDoseMicrograms ?? 0) }
     var isReconstituted: Bool { (solventVolumeMilliliters ?? 0) > 0 }
+
+    /// The stability inputs as the domain type, so every surface phrases them through the ONE place
+    /// allowed to phrase them (`ReconstitutionTimeline`) rather than each view assembling its own
+    /// sentence. Same discipline as `ProtocolPresentation` owning dose-status wording.
+    ///
+    /// Unrecognised stored values decode to `nil` rather than throwing: a vial written by a newer
+    /// build with a vocabulary this one doesn't know must degrade to "not recorded", not blank the
+    /// screen — the same tolerant-at-read posture as `NewsSource.Kind`.
+    var reconstitutionRecord: ReconstitutionRecord {
+        ReconstitutionRecord(
+            reconstitutedOn: dateReconstituted,
+            diluent: diluentRaw.flatMap(Diluent.init(rawValue:)),
+            storage: storageRaw.flatMap(VialStorage.init(rawValue:)),
+            isLightProtected: isLightProtected,
+            excursions: storageExcursions)
+    }
     /// Names of every API — used to match logged doses to this vial.
     var apiNames: [String] { apis.map(\.name) }
 

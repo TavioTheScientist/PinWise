@@ -45,5 +45,6 @@ export 'src/review_prompt.dart';
 export 'src/safety/beyond_use_guidance.dart';
 export 'src/safety/compounded_dose_safety.dart';
 export 'src/safety/disclaimer.dart';
+export 'src/safety/reconstitution_record.dart';
 export 'src/subscription/trial_window.dart';
 export 'src/units.dart';
