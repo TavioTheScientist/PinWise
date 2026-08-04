@@ -81,6 +81,31 @@ targets:
         # early iteration; PeptideKit stays on Swift 6. Bump to "6.0" once the UI settles.
         SWIFT_VERSION: "5.0"
 
+  # Host-app unit tests for the parts of the app that can't live in PeptideKit. Today that is the
+  # StoreKit 2 subscription flow, which needs a real store to talk to: `SKTestSession` loads
+  # Staxyz.storekit programmatically and can expire or refund a transaction, so purchase / restore
+  # / expiry are verifiable headlessly. The scheme's storeKitConfiguration below only applies to
+  # the RUN action in Xcode, which is why this target ships the file as its OWN resource.
+  #
+  # Local-only on purpose: NOT in the scheme's build action, so `xcodebuild build -scheme Staxyz`
+  # (the CI gate) neither builds nor runs it. CI's runner has no iOS 26 simulator.
+  StaxyzTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: iOSAppTests
+      - path: Staxyz.storekit
+        buildPhase: resources
+    dependencies:
+      - target: Staxyz
+      - package: PeptideKit
+        product: PeptideKit
+    settings:
+      base:
+        # Matches the app target — `@testable import Staxyz` compiles against its module.
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: "YES"
+
 # Explicit shared scheme so CI (`xcodebuild -scheme Staxyz`) works headlessly.
 schemes:
   Staxyz:
@@ -99,3 +124,10 @@ schemes:
       # SubscriptionManager.ProductID and to the eventual App Store Connect products; a mismatch
       # fails silently (products just don't load).
       storeKitConfiguration: Staxyz.storekit
+    test:
+      config: Debug
+      # No storeKitConfiguration here: XcodeGen only emits that reference for the RUN action, and
+      # StaxyzTests does not need it — it builds its own SKTestSession from the copy of
+      # Staxyz.storekit in its resources, which is what gives it expire/refund control anyway.
+      targets:
+        - StaxyzTests
