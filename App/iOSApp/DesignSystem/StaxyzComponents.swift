@@ -250,6 +250,80 @@ struct CollapsibleNoteField: View {
     }
 }
 
+/// A settings row that READS AS A VALUE and discloses its editor on tap: the field's name on the
+/// left, its current value plus a rotating chevron on the right, and the caller's control revealed
+/// underneath. The collapsed row is deliberately indistinguishable in register from the read-only
+/// detail rows it sits beside — same body/caption pairing, same `textSecondary` value ink — so a
+/// card of settings reads as one list where some rows happen to be editable, which is the Apple
+/// Health "Health Details" idiom.
+///
+/// **Why this is a new component and not a reuse.** The interaction already exists twice in the
+/// system, but neither instance is reusable here. `CollapsibleNoteField` is hard-wired to a
+/// `TextField` and to "Add a note" copy. `DisclosureSection` wraps ITSELF in a `Card` and titles at
+/// `Typo.headline` — a *section* register, whereas these rows live INSIDE a card at body register.
+/// What genuinely transfers is the RULE, and it is reproduced here on purpose: the value renders
+/// only while COLLAPSED, because once the control is open the control *is* the value, and printing
+/// both invites them to contradict each other (an unset birthday reading "Not set" directly above a
+/// wheel showing a date). VoiceOver still reports the value in both states — it has no "look at the
+/// wheel" option.
+///
+/// Expansion is caller-owned (as in `DisclosureSection`) so a card can enforce one-open-at-a-time.
+struct DisclosureRow<Content: View>: View {
+    let title: String
+    /// The current value, shown while collapsed. Callers pass their own "unset" wording.
+    let value: String
+    /// An optional line explaining what the setting affects, revealed with the control (it is
+    /// guidance for the act of changing the value, so it has no job while collapsed).
+    var hint: String? = nil
+    let isExpanded: Bool
+    let toggle: () -> Void
+    @ViewBuilder var content: () -> Content
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            Button {
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { toggle() }
+            } label: {
+                HStack(spacing: Space.sm) {
+                    Text(title)
+                        .font(Typo.body)
+                        .foregroundStyle(BrandColor.textPrimary)
+                    Spacer(minLength: Space.sm)
+                    if !isExpanded {
+                        Text(value)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(BrandColor.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(BrandColor.textSecondary)
+                        .rotationEffect(.degrees(isExpanded ? 0 : -90))
+                }
+                // A FLOOR, not a fixed height — the row must grow with Dynamic Type.
+                .frame(minHeight: 44)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
+            .accessibilityValue(value)
+            .accessibilityHint(isExpanded ? "Hides the picker" : "Shows a picker to change this")
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    if let hint {
+                        Text(hint).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    }
+                    content().frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+    }
+}
+
 struct SectionHeader: View {
     let title: String
     var body: some View {
