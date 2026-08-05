@@ -7,6 +7,7 @@ import PeptideKit
 /// held in a shared in-memory engine, so it survives closing/reopening the drawer within a session
 /// and resets on app restart or after 3h idle (see AssistantEngine).
 struct AssistantDrawer: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isOpen: Bool
     @Environment(\.colorScheme) private var scheme
 
@@ -35,10 +36,15 @@ struct AssistantDrawer: View {
                         .overlay(alignment: .leading) { Rectangle().fill(BrandColor.stroke).frame(width: 0.5) }
                         .ignoresSafeArea()
                         .shadow(color: .black.opacity(0.45), radius: 24, x: -8)
-                        .transition(.move(edge: .trailing))
+                        // Under Reduce Motion the panel CROSS-FADES instead of sliding. This is the app's
+                        // largest moving surface (~85–92% of screen width, full height), i.e. the strongest
+                        // vestibular trigger it has — and it shipped ungated, against the rule `Motion`'s own
+                        // doc comment states. The scrim already fades, so the whole drawer becomes one clean
+                        // dissolve: gentler, not absent.
+                        .transition(reduceMotion ? .opacity : .move(edge: .trailing))
                 }
             }
-            .animation(Motion.drawer, value: isOpen)
+            .animation(Motion.gated(Motion.drawer, reduceMotion), value: isOpen)
         }
         .allowsHitTesting(isOpen)
     }
