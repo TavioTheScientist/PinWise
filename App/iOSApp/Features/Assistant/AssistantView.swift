@@ -41,6 +41,7 @@ struct AssistantDrawer: View {
                         // vestibular trigger it has — and it shipped ungated, against the rule `Motion`'s own
                         // doc comment states. The scrim already fades, so the whole drawer becomes one clean
                         // dissolve: gentler, not absent.
+                        .drawerDismiss(edge: .trailing, width: width, isOpen: $isOpen)
                         .transition(reduceMotion ? .opacity : .move(edge: .trailing))
                 }
             }

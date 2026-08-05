@@ -104,12 +104,13 @@ struct CompoundsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { toggleFilter() } label: {
-                    Image(systemName: filterActive ? "xmark" : "magnifyingglass")
-                        .contentTransition(.symbolEffect(.replace))
-                }
-                .tint(BrandColor.accentText)
-                .accessibilityLabel(filterActive ? "Close search and filters" : "Search and filter")
+                // The SHARED trigger, not a bare toolbar glyph. `StaxyzComponents` declares the
+                // reveal-on-demand filter pattern (magnifier → SearchField + FilterChipRail →
+                // AppliedFilterHeader), and News already used `SearchToggleButton` while this screen
+                // hand-rolled an unstyled `Image` — so the two halves of one documented pattern looked
+                // unrelated, and a user who learned the circular magnifier on News did not find it
+                // here. Learnability across screens is worth more than the pixels a bare glyph saves.
+                SearchToggleButton(isActive: filterActive) { toggleFilter() }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -226,12 +227,7 @@ struct CompoundLegendView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
-        // Glass sheet — content passes beneath the presentation; the canvas is the material, cards stay opaque.
-        .presentationBackground {
-            BrandColor.background.opacity(0.5).background(.ultraThinMaterial)
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .glassSheet()   // the app's one reference-sheet recipe
     }
 
     private func tierRow(_ tier: EvidenceTier, _ desc: String) -> some View {

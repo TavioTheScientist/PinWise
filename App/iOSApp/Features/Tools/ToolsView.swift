@@ -178,6 +178,12 @@ struct ToolsCustomizeView: View {
             .scrollContentBackground(.hidden)
             .heroScreen()
             .environment(\.editMode, .constant(.active))   // always in reorder mode; grips + toggles visible
+            // One feedback per control GROUP, at the container — the app's documented rule, and this
+            // screen was the only feature area with none. `order` covers the reorder (native `List`
+            // drag already ships its own lift/drop haptics, so this fires on the COMMITTED move) and
+            // `hidden` covers the show/hide toggles.
+            .sensoryFeedback(.impact(weight: .light), trigger: order)
+            .sensoryFeedback(.selection, trigger: hidden)
             .navigationTitle("Customize Tools")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -6,6 +6,7 @@ import PeptideKit
 /// *formula* of one or more APIs (single-compound or a blend). Tap a vial to edit it.
 struct InventoryList: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \StoredVial.dateAcquired, order: .reverse) private var vials: [StoredVial]
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
     // Needed so a vial delete can null the soft `vialID` links on every dose that drew from it.
@@ -13,6 +14,9 @@ struct InventoryList: View {
     @Query private var lots: [StoredLot]
     @State private var showBuilder = false
     @State private var editTarget: EditTarget?
+    /// The vial awaiting a delete confirmation. A vial rather than a Bool so the dialog can name what
+    /// it is about to remove — "Remove Semaglutide 10 mg?" is answerable; "Are you sure?" is not.
+    @State private var pendingRemoval: StoredVial?
     /// Identifiable wrapper so a tapped vial can drive `.sheet(item:)` (same pattern as protocols).
     private struct EditTarget: Identifiable { let id = UUID(); let vial: StoredVial }
 
@@ -59,13 +63,22 @@ struct InventoryList: View {
                             Button { editTarget = EditTarget(vial: vial) } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
-                            Button(role: .destructive) { vial.reconcileDelete(in: context, doses: logs, protocols: protocols) } label: {
+                            // Routed through the same confirmation as the inline button. A long-press
+                            // makes reaching this deliberate, but the tap that follows is still one tap
+                            // on a destructive item that never names what it is about to remove.
+                            Button(role: .destructive) { pendingRemoval = vial } label: {
                                 Label("Depleted — remove", systemImage: "trash.slash")
                             }
                         }
                         // Empty (or expired) vials get a one-tap way out of the inventory.
                         if projection.wholeDosesRemaining == 0 || (vial.expiryState?.isError ?? false) {
-                            Button(role: .destructive) { vial.reconcileDelete(in: context, doses: logs, protocols: protocols) } label: {
+                            // CONFIRMED, like its sibling in the builder. This was a full-width
+                            // destructive button that deleted a vial — and nulled the `vialID` on every
+                            // dose drawn from it — on ONE tap, with no confirmation, sitting directly
+                            // beneath a tappable card. Forgiveness was inversely proportional to
+                            // consequence: the same delete reached from the builder already showed a
+                            // dialog. Apple's Agency principle wants the opposite relationship.
+                            Button(role: .destructive) { pendingRemoval = vial } label: {
                                 Label(projection.wholeDosesRemaining == 0 ? "Depleted — remove from inventory"
                                                                           : "Expired — remove from inventory",
                                       systemImage: "trash.slash")
@@ -79,6 +92,22 @@ struct InventoryList: View {
                     }
                 }
             }
+        }
+        .confirmationDialog(pendingRemoval.map { "Remove \($0.displayName)?" } ?? "Remove this vial?",
+                            isPresented: Binding(get: { pendingRemoval != nil },
+                                                 set: { if !$0 { pendingRemoval = nil } }),
+                            titleVisibility: .visible) {
+            Button("Remove from inventory", role: .destructive) {
+                if let v = pendingRemoval {
+                    withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) {
+                        v.reconcileDelete(in: context, doses: logs, protocols: protocols)
+                    }
+                }
+                pendingRemoval = nil
+            }
+            Button("Keep it", role: .cancel) { pendingRemoval = nil }
+        } message: {
+            Text("Doses you already logged from this vial are kept — they just stop pointing at it.")
         }
         .sheet(isPresented: $showBuilder) { VialBuilderView() }
         .sheet(item: $editTarget) { VialBuilderView(editing: $0.vial) }

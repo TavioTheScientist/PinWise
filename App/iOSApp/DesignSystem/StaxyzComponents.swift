@@ -821,6 +821,105 @@ struct AdherenceRing: View {
     }
 }
 
+extension View {
+    /// The app's REFERENCE-sheet chrome: a glass canvas that lets the page beneath show through, with
+    /// a drag indicator and medium/large detents.
+    ///
+    /// Exists because this exact recipe was copy-pasted in two files — comment and all — while a third
+    /// sheet set detents but no background, and the remaining ~30 took iOS defaults. The app therefore
+    /// had three sheet looks assigned by whichever file the author happened to be in. Sheet chrome is
+    /// the frame around every Settings and reference screen, so an accidental register is visible
+    /// constantly.
+    ///
+    /// **Use for REFERENCE sheets** — things you read and dismiss (glossaries, explainers, legal). Task
+    /// sheets that you fill in (the vial builder, the protocol builder, sign-in) stay opaque and
+    /// `.large`: a form wants a stable, undistracting canvas, and a half-height detent invites a
+    /// dismissal mid-entry.
+    func glassSheet(detents: Set<PresentationDetent> = [.medium, .large]) -> some View {
+        self
+            .presentationBackground {
+                BrandColor.background.opacity(0.5).background(.ultraThinMaterial)
+            }
+            .presentationDetents(detents)
+            .presentationDragIndicator(.visible)
+    }
+}
+
+/// Swipe-to-dismiss for an edge-anchored drawer.
+///
+/// **This closes the one Apple-principle gap a token set cannot.** *Designing Fluid Interfaces* calls
+/// interruptibility the single most important principle, and both drawers were non-interruptible: they
+/// could only be dismissed by a scrim tap or the ✕, so a user who started the universal iOS reflex —
+/// swiping a left-edge drawer away — got nothing at all. A panel already in flight also could not be
+/// caught and reversed.
+///
+/// Three behaviours, each doing a specific job:
+/// - **1:1 tracking in the closing direction.** The panel goes exactly where the finger goes. Anything
+///   less breaks the illusion that you are moving the thing itself.
+/// - **Rubber-banding the wrong way** (12% of travel), rather than a hard stop. A boundary that simply
+///   refuses reads as broken; one that resists reads as physical.
+/// - **Velocity dismissal, not just distance.** A quick flick dismisses even when short, via SwiftUI's
+///   `predictedEndTranslation` — which is the system's own momentum projection, and the right native
+///   equivalent of "compute velocity and dismiss above a threshold". Reusing Apple's projection means
+///   the drawer agrees with every other iOS gesture instead of inventing its own feel.
+///
+/// Under Reduce Motion the gesture stays fully active — it is direct manipulation, not decoration, and
+/// removing it would take away a navigation affordance rather than reduce vestibular load.
+struct DrawerDismiss: ViewModifier {
+    let edge: HorizontalEdge
+    let width: CGFloat
+    @Binding var isOpen: Bool
+    @State private var drag: CGFloat = 0
+
+    /// Fraction of panel width that commits a dismissal on distance alone.
+    private let commitFraction: CGFloat = 0.3
+    /// Fraction the projected endpoint must pass for a flick to commit.
+    private let flickFraction: CGFloat = 0.55
+
+    private func closingComponent(_ raw: CGFloat) -> CGFloat {
+        edge == .leading ? min(raw, 0) : max(raw, 0)
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .offset(x: drag)
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 10)
+                    .onChanged { value in
+                        let raw = value.translation.width
+                        let closing = closingComponent(raw)
+                        // Whatever is left over is travel in the OPENING direction, which has nowhere
+                        // to go — resist it instead of allowing the panel to over-extend.
+                        let overshoot = raw - closing
+                        drag = closing + overshoot * 0.12
+                    }
+                    .onEnded { value in
+                        let closed = closingComponent(value.translation.width)
+                        let projected = closingComponent(value.predictedEndTranslation.width)
+                        let committed = abs(closed) > width * commitFraction
+                            || abs(projected) > width * flickFraction
+                        if committed {
+                            isOpen = false
+                        } else {
+                            // Snap back on the drawer's own spring so an abandoned gesture settles the
+                            // same way an opening one does.
+                            withAnimation(Motion.drawer) { drag = 0 }
+                        }
+                    }
+            )
+            // Reset when the drawer is dismissed by ANY route (drag, scrim tap, ✕), so the next open
+            // does not start pre-offset.
+            .onChange(of: isOpen) { _, open in if !open { drag = 0 } }
+    }
+}
+
+extension View {
+    /// Makes an edge-anchored drawer panel swipe-dismissable. Apply to the PANEL, not the container.
+    func drawerDismiss(edge: HorizontalEdge, width: CGFloat, isOpen: Binding<Bool>) -> some View {
+        modifier(DrawerDismiss(edge: edge, width: width, isOpen: isOpen))
+    }
+}
+
 /// Remembers which entrances have already played in THIS PROCESS.
 ///
 /// The reason this exists: `RootTabView` selects its screen with a `switch` inside a `Group`, which

@@ -139,6 +139,10 @@ struct NewsView: View {
     /// identity on every store change, so keying on the arrays themselves would rebuild as often as
     /// the computed property did.
     @State private var userCompounds: Set<String> = []
+    /// Owned here so a filter change can reset the feed to the top. `.scrollsToTopOnReselect` installs
+    /// its own `.scrollPosition` inside a private modifier, which this cannot reach — so the position
+    /// is hoisted rather than the shared modifier widened, keeping that modifier's contract intact.
+    @State private var scrollPos = ScrollPosition(edge: .top)
     private var feed: NewsFeed { loader.feed }
 
     /// Every compound the user is currently on — from active protocols, inventory, and recent logs.
@@ -223,7 +227,17 @@ struct NewsView: View {
                 .padding(Space.lg)
             }
             .heroScreen()
+            .scrollPosition($scrollPos)
             .scrollsToTopOnReselect(.news)
+            // Toggling a filter removes ~200–240pt from the top of the content (the "Top story"
+            // header and the featured card), and the scroll offset was PRESERVED against the now
+            // shorter feed — so a user who had scrolled before deciding to filter watched the whole
+            // page lurch upward. That disorientation, not the 160ms chip fade, is what a filter
+            // toggle actually felt like.
+            //
+            // Deliberately NOT animated: a new query starting at the top is a jump-cut. Animating a
+            // 200pt scroll would take longer and draw attention to the very movement being removed.
+            .onChange(of: isFiltering) { scrollPos.scrollTo(edge: .top) }
             .toolbar(.hidden, for: .navigationBar)
             .task { await loader.load() }
             // Seed the cache, then refresh it only when the underlying data actually changes.
