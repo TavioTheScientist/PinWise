@@ -132,7 +132,12 @@ struct ProtocolsView: View {
                         Label("Delete", systemImage: "trash")
                     }
                 }
-                .entrance(i)
+                // NO `.entrance` here, deliberately. The panel picker is a `_ConditionalContent`
+                // branch swap, so switching to "Your protocols" REBUILDS every card — the stagger
+                // replayed on a control used tens of times a day, putting the last card ~280ms late,
+                // while the vials panel (which never had one) appeared instantly. Two halves of one
+                // segmented control behaving differently. Removed rather than mirrored onto the other
+                // half: the fix for a stagger on a high-frequency control is no stagger.
             }
         }
 
@@ -162,7 +167,7 @@ struct ProtocolsView: View {
                         Label("Delete", systemImage: "trash")
                     }
                 }
-                .entrance(active.count + i)
+
             }
         }
     }

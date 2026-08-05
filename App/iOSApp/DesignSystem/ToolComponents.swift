@@ -95,7 +95,10 @@ struct SyringeGauge: View {
                             .offset(x: min(max(2 + fillWidth - 1, 0), width - 2), y: 0)
                     }
                 }
-                .animation(reduceMotion ? nil : Motion.emphasis, value: units)
+                // Kept as a SPRING on purpose: this fires per keystroke on a decimal pad, and springs
+                // retarget from their current velocity, so continuous input stays smooth. That is the
+                // interruptible case springs exist for — do not convert it to a duration curve.
+                .animation(Motion.gated(Motion.emphasis, reduceMotion), value: units)
             }
             .frame(height: gaugeHeight)
 

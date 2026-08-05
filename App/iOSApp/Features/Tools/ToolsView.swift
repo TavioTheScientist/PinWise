@@ -151,6 +151,7 @@ struct ToolsView: View {
 /// the native, VoiceOver-friendly List `.onMove` (rock-solid), and the grid behind updates live as
 /// the sheet writes the layout straight to AppStorage.
 struct ToolsCustomizeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
     @AppStorage(ToolLayout.orderKey) private var orderRaw = ""
     @AppStorage(ToolLayout.hiddenKey) private var hiddenRaw = ""
@@ -181,7 +182,9 @@ struct ToolsCustomizeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Reset") { withAnimation { resetToDefault() } }
+                    // Rewrites the whole saved layout (order + every hidden flag), so it earns a
+                    // named token rather than an anonymous ~550ms spring.
+                    Button("Reset") { withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { resetToDefault() } }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }.fontWeight(.semibold)
@@ -445,7 +448,6 @@ private struct TitrationLadderBar: View {
     let phases: [TitrationPlanner.Phase]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var revealed = false
 
     private static let gap: CGFloat = 3
     private static let barHeight: CGFloat = 30
@@ -465,15 +467,11 @@ private struct TitrationLadderBar: View {
             }
         }
         .frame(height: Self.barHeight)
-        // Left-anchored grow-in on arrival; instant under Reduce Motion.
-        .scaleEffect(x: revealed ? 1 : 0, anchor: .leading)
-        .onAppear {
-            if reduceMotion {
-                revealed = true
-            } else {
-                withAnimation(.easeOut(duration: 0.5)) { revealed = true }
-            }
-        }
+        // NO reveal animation, deliberately. This grew from `scaleEffect(x: 0)` over 500ms, which is
+        // three faults at once: it animated from nothing (the `scale(0)` failure), it ran at 500ms on a
+        // non-modal element, and it was decoration over FUNCTIONAL DATA — a dose ladder the user is
+        // reading. It was also the only entrance in the app that bypassed the shared `.entrance(_:)`.
+        // If an arrival cue is ever wanted here, use `.entrance(0, group: "titration")` and nothing else.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Plan timeline")
         .accessibilityValue(summary)

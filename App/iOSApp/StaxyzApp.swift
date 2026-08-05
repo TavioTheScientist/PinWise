@@ -177,8 +177,8 @@ struct RootView: View {
             }
         }
         // Slow, eased cross-dissolves between gates so the hand-off feels premium (not abrupt).
-        .animation(.easeInOut(duration: 0.55), value: auth.isAuthenticated)
-        .animation(.easeInOut(duration: 0.55), value: acceptedVersion)
+        .animation(Motion.gate, value: auth.isAuthenticated)
+        .animation(Motion.gate, value: acceptedVersion)
         // One-time: seed the weight unit from the device region (user can override in Settings).
         .task {
             // DEBUG-only demo-data seeder for screenshots (see Debug/DebugSeeder.swift). Detached
@@ -236,7 +236,7 @@ struct RootView: View {
             // could actually use the app.
             if isAuth { Task { await subs.beginTrialIfNeeded() } }
         }
-        .animation(.easeInOut(duration: 0.55), value: subs.hasAccess)
+        .animation(Motion.gate, value: subs.hasAccess)
         .preferredColorScheme(AppearanceMode.from(appearanceRaw).colorScheme)
         // Also force the window's UIKit style so dynamic BrandColor tokens resolve to the same
         // appearance as SwiftUI-native views (prevents invisible native text on mismatch).

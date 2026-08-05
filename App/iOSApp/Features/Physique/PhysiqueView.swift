@@ -5,6 +5,7 @@ import PhotosUI
 /// Progress-photo tracker — capture or import physique photos and watch changes over time.
 /// Photos are stored on-device only (`PhysiquePhotoStore`); nothing is uploaded.
 struct PhysiqueView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var context
     @Query(sort: \PhysiquePhoto.timestamp, order: .reverse) private var photos: [PhysiquePhoto]
 
@@ -48,7 +49,8 @@ struct PhysiqueView: View {
             if !photos.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(selecting ? "Done" : "Select") {
-                        withAnimation(.snappy) {
+                        // `.snappy` is 500ms despite the name; also ungated.
+                        withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) {
                             selecting.toggle()
                             if !selecting { selection.removeAll() }
                         }
@@ -211,7 +213,7 @@ struct PhysiqueView: View {
         }
         try? context.save()
         selection.removeAll()
-        withAnimation(.snappy) { selecting = false }
+        withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { selecting = false }
     }
 }
 

@@ -79,13 +79,15 @@ struct SettingsView: View {
     private func pushRow<Dest: View>(_ title: String, icon: String, tint: Color, value: String? = nil,
                                      @ViewBuilder dest: () -> Dest) -> some View {
         NavigationLink { dest() } label: { SettingsRow(title: title, icon: icon, tint: tint, value: value) }
-            .buttonStyle(.plain)
+            // `PressableRowStyle`, not `.plain`: these are full-width pressable ROWS, and 0.985 is the
+            // right amount at that width where a card's 0.97 would read as a lurch.
+            .buttonStyle(PressableRowStyle())
     }
 
     private func sheetRow(_ title: String, icon: String, tint: Color, value: String? = nil,
                           action: @escaping () -> Void) -> some View {
         Button(action: action) { SettingsRow(title: title, icon: icon, tint: tint, value: value) }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
     }
 }
 
@@ -160,7 +162,7 @@ private struct NotificationsSettingsView: View {
                     Label("Open iOS notification settings", systemImage: "bell.badge")
                         .font(.footnote.weight(.semibold)).foregroundStyle(BrandColor.accentText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableRowStyle())
             }
             .padding(Space.lg)
         }
@@ -350,7 +352,7 @@ struct MembershipView: View {
                     .foregroundStyle(BrandColor.accentText)
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
             .disabled(subs.isWorking)
         }
         .task { await subs.load() }

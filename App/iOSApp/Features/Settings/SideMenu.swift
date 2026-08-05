@@ -72,7 +72,9 @@ struct SideMenuDrawer: View {
                         .frame(width: 40, height: 40)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                // `PressableRowStyle`, not `.plain`: these are full-width pressable ROWS, and 0.985 is the
+                // right amount at that width where a card's 0.97 would read as a lurch.
+                .buttonStyle(PressableRowStyle())
                 .accessibilityLabel("Close menu")
             }
             .padding(.top, topInset + Space.md)
@@ -101,7 +103,7 @@ struct SideMenuDrawer: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
             // Keep the account identity audible — VoiceOver users check guest vs signed-in here.
             .accessibilityLabel("Your profile — \(headerName.isEmpty ? "not set up" : headerName), \(auth.accountSubtitle)")
             .padding(.horizontal, Space.xl)
@@ -151,7 +153,7 @@ struct SideMenuDrawer: View {
             .padding(.vertical, Space.md)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableRowStyle())
         .accessibilityLabel(title)
     }
 
@@ -194,7 +196,7 @@ struct SideMenuDrawer: View {
                 .padding(.vertical, Space.xs)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
             .accessibilityLabel("\(handle) on \(asset.replacingOccurrences(of: "Social", with: ""))")
         }
     }
@@ -217,7 +219,7 @@ struct SideMenuDrawer: View {
             .padding(.vertical, Space.md)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableRowStyle())
         .accessibilityLabel(title)
     }
 }
@@ -354,7 +356,7 @@ struct AboutView: View {
                 .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(BrandColor.stroke, lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
             .sheet(isPresented: $showTerms) { LegalDocumentView() }
         }
     }

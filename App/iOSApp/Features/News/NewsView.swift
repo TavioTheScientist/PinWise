@@ -252,7 +252,7 @@ struct NewsView: View {
                     // The panel reveal keeps its slide — it IS a disclosure, opening directly below
                     // the button that opened it — but it now honors Reduce Motion like the rest of
                     // the app's animation, which it was silently skipping.
-                    withAnimation(reduceMotion ? nil : .snappy) {
+                    withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) {
                         searchActive = willActivate
                         if !willActivate { clearPanelFilters() }   // closing clears search/category/new (NOT My compounds)
                     }

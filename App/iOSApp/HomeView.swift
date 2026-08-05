@@ -116,17 +116,17 @@ struct HomeView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.xl) {
-                    header.entrance(0)
+                    header.entrance(0, group: "home")
                     // Dosing leads; the (optional) health snapshot sits below it.
                     if !activeProtocols.isEmpty {
-                        heroActive.entrance(1)
-                        stackCard.entrance(2)
+                        heroActive.entrance(1, group: "home")
+                        stackCard.entrance(2, group: "home")
                         // Directly under the card that says what's due, so the statement and the
                         // action are adjacent. Self-hiding, so on a day with nothing due Home looks
                         // exactly as it did before.
-                        logDueAction.entrance(3)
+                        logDueAction.entrance(3, group: "home")
                     } else if !recent.isEmpty {
-                        heroActivity.entrance(1)
+                        heroActivity.entrance(1, group: "home")
                     } else {
                         emptyState
                     }
@@ -135,7 +135,7 @@ struct HomeView: View {
                     if !hideHealthCard {
                         HomeHealthCard()
                             .padding(.top, Space.xxxl - Space.xl)
-                            .entrance(4)
+                            .entrance(4, group: "home")
                     }
                 }
                 .padding(Space.lg)
@@ -276,7 +276,9 @@ struct HomeView: View {
             if let m = celebratingMilestone {
                 milestoneBadge(m)
                     .padding(Space.md)
-                    .transition(reduceMotion ? .opacity : .scale(scale: 0.6).combined(with: .opacity))
+                    // 0.92, not 0.6. Nothing in the physical world appears from 60% of itself —
+                    // that is the `scale(0)` failure mode in a softer form. The standard is 0.9–0.97.
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.92).combined(with: .opacity))
             }
         }
         .onAppear { checkMilestone() }
@@ -285,7 +287,7 @@ struct HomeView: View {
         .task(id: celebratingMilestone) {
             guard celebratingMilestone != nil else { return }
             try? await Task.sleep(for: .seconds(3.5))
-            withAnimation { celebratingMilestone = nil }
+            withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { celebratingMilestone = nil }
         }
     }
 
@@ -461,7 +463,11 @@ struct HomeView: View {
         }
         if earned > celebratedMilestone {
             celebratedMilestone = earned
-            withAnimation(reduceMotion ? nil : Motion.emphasis) { celebratingMilestone = earned }
+            // `celebrate`, not `emphasis`: a crossed milestone is the ONE place in this app where bounce is
+            // earned. `emphasis` is now critically damped (it was being used for four unrelated
+            // non-gesture jobs while carrying bounce 0.20), so this call site would otherwise have
+            // silently lost the overshoot that makes it read as a celebration.
+            withAnimation(Motion.gated(Motion.celebrate, reduceMotion)) { celebratingMilestone = earned }
         } else if earned < celebratedMilestone {
             celebratedMilestone = earned
         }
@@ -634,6 +640,7 @@ struct HomeView: View {
 /// invite to connect a wearable or log a lab. Tap to open Labs & metrics; connecting Health
 /// lives in the menu.
 struct HomeHealthCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("weightInPounds") private var pounds = true
     // Same key HomeView gates on — setting it here removes the card from Home; menu → Connections
     // flips it back on.
@@ -751,7 +758,7 @@ struct HomeHealthCard: View {
                     Spacer()
                     Menu {
                         Button(role: .destructive) {
-                            withAnimation { hidden = true }
+                            withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { hidden = true }
                         } label: { Label("Hide from Home", systemImage: "eye.slash") }
                     } label: {
                         Image(systemName: "ellipsis")

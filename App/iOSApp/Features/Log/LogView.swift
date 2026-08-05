@@ -271,7 +271,9 @@ struct LogView: View {
             .task(id: confirmation) {
                 guard confirmation != nil else { return }
                 try? await Task.sleep(for: .seconds(2.5))
-                withAnimation(.easeInOut) { confirmation = nil }
+                // Exit is FASTER than the entrance: the banner leaving is the system letting go, and a
+                // departing confirmation is no longer information the user needs to track.
+                withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { confirmation = nil }
             }
             .onAppear {
                 // Protocol-first, always opening on the "Which protocol?" picker with nothing
@@ -472,7 +474,7 @@ struct LogView: View {
     @ViewBuilder
     private var earlyDisclosure: some View {
         Button {
-            withAnimation(Motion.emphasis) {
+            withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) {
                 showEarly.toggle()
                 // Collapsing hides the row that opened the entry fields — drop the selection with it.
                 if !showEarly, let sel = selectedProtocolID,
@@ -535,6 +537,8 @@ struct LogView: View {
                 // the width the radio leaves.
                 ProtocolSummary(presentation: presentation, layout: .row)
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    // `.replace.offUp` reads as the mark ARRIVING rather than two glyphs swapping.
+                    .contentTransition(.symbolEffect(.replace.offUp))
                     .font(.title3)
                     .foregroundStyle(isSelected ? BrandColor.accent : BrandColor.textSecondary)
             }

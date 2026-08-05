@@ -98,6 +98,7 @@ final class TabScrollCoordinator {
 }
 
 private struct ScrollToTopOnReselect: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let tab: AppTab
     @Environment(TabScrollCoordinator.self) private var coordinator
     @State private var position = ScrollPosition(edge: .top)
@@ -107,7 +108,9 @@ private struct ScrollToTopOnReselect: ViewModifier {
             .scrollPosition($position)
             .onChange(of: coordinator.token) {
                 guard coordinator.target == tab else { return }
-                withAnimation(.easeInOut) { position.scrollTo(edge: .top) }
+                // 350ms for a gesture iOS itself performs near-instantly. `disclosure` (220ms) is the
+                // shortest honest option; scroll-to-top should feel like a jump, not a journey.
+                withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { position.scrollTo(edge: .top) }
             }
     }
 }

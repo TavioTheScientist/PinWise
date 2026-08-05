@@ -7,6 +7,7 @@ import SwiftData
 /// testing will happen — the confirmation says so in plain words. The purpose is to learn which
 /// compounds and test types people actually want covered.
 struct TestingRequestView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     let lot: StoredLot
@@ -62,6 +63,7 @@ struct TestingRequestView: View {
                     } label: {
                         HStack(alignment: .top, spacing: Space.md) {
                             Image(systemName: kinds.contains(kind) ? "checkmark.circle.fill" : "circle")
+                                .contentTransition(.symbolEffect(.replace.offUp))
                                 .font(.title3)
                                 .foregroundStyle(kinds.contains(kind) ? BrandColor.accent : BrandColor.textSecondary)
                             VStack(alignment: .leading, spacing: 2) {
@@ -122,6 +124,6 @@ struct TestingRequestView: View {
                                      contactPreference: contact)
         context.insert(request)
         try? context.save()
-        withAnimation(Motion.emphasis) { submitted = true }
+        withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { submitted = true }
     }
 }

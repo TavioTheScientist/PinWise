@@ -549,6 +549,9 @@ struct SearchToggleButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: isActive ? "xmark" : "magnifyingglass")
+                // The glyph IS the state here, and it was hard-cutting. `.replace` makes the change
+                // legible without animating the chip around it.
+                .contentTransition(.symbolEffect(.replace))
                 .font(.headline.weight(.semibold))
                 .foregroundStyle(BrandColor.textPrimary)
                 .frame(width: 40, height: 40)
@@ -818,12 +821,40 @@ struct AdherenceRing: View {
     }
 }
 
+/// Remembers which entrances have already played in THIS PROCESS.
+///
+/// The reason this exists: `RootTabView` selects its screen with a `switch` inside a `Group`, which
+/// DESTROYS the outgoing screen. `Entrance` keyed its state off a per-instance `@State` plus
+/// `.onAppear`, so returning to a tab rebuilt the view and replayed the whole reveal — on Home that
+/// is 0.51s (4 × 40ms stagger + 350ms) before the dashboard is readable, paid dozens of times a day,
+/// on data the user opened Home specifically to read. It also inverted the frequency rule the rest of
+/// the app follows, and contradicted a decision this codebase had already made out loud: `AdherenceRing`
+/// refuses to sweep in ("renders at its value immediately") while the `.entrance(1)` wrapper around its
+/// own card faded and lifted it anyway.
+///
+/// A first launch is a first launch. A tab switch is not.
+@MainActor
+private final class EntranceLedger {
+    static let shared = EntranceLedger()
+    private var played: Set<String> = []
+    /// True only the first time this key is claimed in this process.
+    func claim(_ key: String) -> Bool { played.insert(key).inserted }
+}
+
 /// One-shot staggered entrance for list/section arrivals: fade + 12pt rise, delayed by
 /// `index` × `Motion.stagger`. Apply from a ForEach (or ordered siblings) as `.entrance(i)`.
 /// Reduce Motion collapses it to a quick opacity-only fade with no offset or stagger.
+///
+/// **Plays once per process per (group, index).** On any later appearance the content arrives at rest —
+/// note `shown = true` is set OUTSIDE any animation there, so there is no fade to see rather than a
+/// fast one. Pass `group` to keep separate screens from sharing a ledger key.
 struct Entrance: ViewModifier {
     let index: Int
+    let group: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // A literal initialiser, deliberately: per CLAUDE.md, `@State private var x = <expr>` re-evaluates
+    // `<expr>` on every re-init of the struct, so the ledger claim must NOT live here — it would fire
+    // repeatedly and the "once" guarantee would be a lie.
     @State private var shown = false
 
     func body(content: Content) -> some View {
@@ -832,6 +863,10 @@ struct Entrance: ViewModifier {
             .offset(y: shown || reduceMotion ? 0 : 12)
             .onAppear {
                 guard !shown else { return }
+                guard EntranceLedger.shared.claim("\(group)#\(index)") else {
+                    shown = true            // already played this launch — arrive at rest
+                    return
+                }
                 let anim = reduceMotion
                     ? Animation.easeOut(duration: 0.2)
                     : Motion.entrance.delay(Double(index) * Motion.stagger)
@@ -841,9 +876,10 @@ struct Entrance: ViewModifier {
 }
 
 extension View {
-    /// Staggered entrance reveal — `index` is the view's position in its arriving group.
-    func entrance(_ index: Int) -> some View {
-        modifier(Entrance(index: index))
+    /// Staggered entrance reveal — `index` is the view's position in its arriving group, `group`
+    /// names the screen so two screens' entrances don't share a ledger key. Plays ONCE per launch.
+    func entrance(_ index: Int, group: String = "default") -> some View {
+        modifier(Entrance(index: index, group: group))
     }
 }
 

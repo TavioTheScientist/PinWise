@@ -18,6 +18,7 @@ import PeptideKit
 /// "Right now" gauge answers "what's high/low" at a glance; tap any compound for exact numbers. Compounds
 /// with no known half-life are named as omitted, not dropped. Educational estimate — not dosing advice.
 struct ActiveLevelsView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<SavedProtocol> { $0.isActive })
     private var activeProtocols: [SavedProtocol]
     @Query private var loggedDoses: [LoggedDose]
@@ -186,7 +187,7 @@ struct ActiveLevelsView: View {
                 ForEach(models) { gaugeRow($0).transition(.opacity) }
             }
             // Logging a dose (or a compound clearing) fades the row in/out rather than hard-cutting.
-            .animation(.easeInOut(duration: 0.35), value: models.map(\.id))
+            .animation(Motion.gated(Motion.emphasis, reduceMotion), value: models.map(\.id))
         }
     }
 

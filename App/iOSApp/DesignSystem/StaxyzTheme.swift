@@ -337,6 +337,14 @@ enum Motion {
     static let disclosure = Animation.easeOut(duration: 0.22)
 
     static let entrance = Animation.easeOut(duration: 0.35)                       // staggered list entrances
+
+    /// Full-screen GATE hand-off (sign-in → app, paywall → app). The ONE token above 300ms, and it is
+    /// justified twice: it is seen at most once per launch, and it is a whole-viewport page transition
+    /// rather than a UI element. Was three copies of `.easeInOut(duration: 0.55)` — 550ms is nearly 2×
+    /// the UI budget, and a slow gate is the first thing a new user experiences, so it reads as a slow
+    /// app. `easeInOut` is kept here, unlike everywhere else: a symmetric cross-dissolve has no side
+    /// that is "entering" more than the other.
+    static let gate = Animation.easeInOut(duration: 0.42)
     static let drawer = Animation.spring(duration: 0.38, bounce: 0.1)             // existing drawer feel
     static let stagger: Double = 0.04                                             // 40ms/row (Oura)
 

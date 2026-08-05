@@ -6,6 +6,7 @@ import PeptideKit
 // plus the user's own added compounds.
 
 struct CompoundsView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var context
     @Query(sort: \CustomCompound.name) private var custom: [CustomCompound]
     @State private var search = ""
@@ -105,6 +106,7 @@ struct CompoundsView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button { toggleFilter() } label: {
                     Image(systemName: filterActive ? "xmark" : "magnifyingglass")
+                        .contentTransition(.symbolEffect(.replace))
                 }
                 .tint(BrandColor.accentText)
                 .accessibilityLabel(filterActive ? "Close search and filters" : "Search and filter")
@@ -139,7 +141,9 @@ struct CompoundsView: View {
     }
 
     private func toggleFilter() {
-        withAnimation(.snappy) {
+        // `.snappy` is `spring(duration: 0.5, bounce: 0.15)` — 500ms, despite the name, and it was
+        // ungated. A filter re-apply is a state change, not a celebration.
+        withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) {
             filterActive.toggle()
             if !filterActive { clearFilters() }   // closing the panel clears the filters
         }
