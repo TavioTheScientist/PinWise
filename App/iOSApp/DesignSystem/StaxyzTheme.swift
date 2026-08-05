@@ -261,6 +261,18 @@ enum Typo {
     // Instrument data voice — uppercase micro-labels over tabular values (Whoop/Strava/Oura).
     static let microLabel = Font.system(size: 11, weight: .semibold)
     static let microTracking: CGFloat = 1.1          // pair with .tracking() at call sites
+
+    /// Tracking for LARGE display type — negative, and that is the whole point.
+    ///
+    /// **Tracking is size-specific; one value for all sizes is wrong somewhere.** Letters read too far
+    /// apart as they grow, so display text wants tightening while small text wants the opposite. This app
+    /// already had the small half right (`microTracking` +1.1 at 11pt, +0.5 on button caps) and nothing at
+    /// all on the large half — so 28–44pt type was rendering at a spacing tuned for body copy.
+    ///
+    /// ≈ -0.02em, the standard display adjustment, expressed in points at this scale. Applied via
+    /// `.displayTracking()` rather than baked into the `Font`, because SwiftUI carries tracking as a view
+    /// modifier and not as a font trait.
+    static let displayTracking: CGFloat = -0.7
     /// 3-up stat-grid value register (Strava: 11pt caps label over 17/700 tabular value).
     ///
     /// Declared against the `.body` TEXT STYLE rather than a fixed `size: 17`, so it actually
@@ -320,6 +332,15 @@ enum Motion {
     /// rather than machined on every card in the app.
     static let press = Animation.spring(duration: 0.16, bounce: 0)
 
+    /// Press RELEASE, deliberately slower than the press itself.
+    ///
+    /// The checklist item this fixes is "same enter/exit transition speed" — and the principle behind it
+    /// is *slow where the user is deciding, fast where the system is responding*. A press is the user
+    /// acting, so it must be immediate; the release is the surface relaxing, and it may take its time.
+    /// One duration in both directions is the thing that reads as mechanical. Matches UIKit's own
+    /// highlight/unhighlight asymmetry.
+    static let pressRelease = Animation.spring(duration: 0.26, bounce: 0)
+
     /// A state change worth noticing but not celebrating: a form reflowing, a gauge redrawing.
     /// Critically damped for the same reason as `press` — three of its four original call sites were
     /// non-gesture changes wearing a bouncy spring.
@@ -335,8 +356,14 @@ enum Motion {
     /// `easeInOut`: an accordion is content ENTERING, and `easeInOut` front-loads slowness onto the
     /// exact frame the user is watching.
     static let disclosure = Animation.easeOut(duration: 0.22)
+    /// Disclosure COLLAPSE. A section closing is content the user has finished with; it should leave
+    /// quicker than it arrived.
+    static let disclosureOut = Animation.easeOut(duration: 0.16)
 
-    static let entrance = Animation.easeOut(duration: 0.35)                       // staggered list entrances
+    /// Staggered list entrances. 280ms, not 350: the checklist caps a UI-element duration at ~300ms,
+    /// and a stagger multiplies its own duration by the number of items — so every 10ms here is paid
+    /// once per row.
+    static let entrance = Animation.easeOut(duration: 0.28)
 
     /// Full-screen GATE hand-off (sign-in → app, paywall → app). The ONE token above 300ms, and it is
     /// justified twice: it is seen at most once per launch, and it is a whole-viewport page transition
@@ -346,6 +373,9 @@ enum Motion {
     /// that is "entering" more than the other.
     static let gate = Animation.easeInOut(duration: 0.42)
     static let drawer = Animation.spring(duration: 0.38, bounce: 0.1)             // existing drawer feel
+    /// Drawer CLOSE. Faster than opening: dismissing is the user asking to get out of the way, and a
+    /// panel that lingers on the way out reads as the app arguing.
+    static let drawerOut = Animation.spring(duration: 0.28, bounce: 0)
     static let stagger: Double = 0.04                                             // 40ms/row (Oura)
 
     /// Applies the reduce-motion policy in ONE place, so a call site cannot forget it.
@@ -461,7 +491,9 @@ struct PressableStyle: ButtonStyle {
         return configuration.label
             .scaleEffect(pressed ? (reduceMotion ? 0.99 : 0.97) : 1)
             .opacity(pressed ? 0.96 : 1)
-            .animation(Motion.press, value: pressed)
+            // Direction-aware: `pressed` is already the NEW state here, so pressing picks `press` and
+            // releasing picks `pressRelease`.
+            .animation(pressed ? Motion.press : Motion.pressRelease, value: pressed)
     }
 }
 
@@ -479,6 +511,8 @@ struct PressableRowStyle: ButtonStyle {
         return configuration.label
             .scaleEffect(pressed ? (reduceMotion ? 0.997 : 0.985) : 1)
             .opacity(pressed ? 0.94 : 1)
-            .animation(Motion.press, value: pressed)
+            // Direction-aware: `pressed` is already the NEW state here, so pressing picks `press` and
+            // releasing picks `pressRelease`.
+            .animation(pressed ? Motion.press : Motion.pressRelease, value: pressed)
     }
 }

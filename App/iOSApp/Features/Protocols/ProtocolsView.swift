@@ -174,7 +174,7 @@ struct ProtocolsView: View {
 
     private var header: some View {
         Text("Stack")
-            .font(Typo.screenTitle)
+            .font(Typo.screenTitle).displayTracking()
             .foregroundStyle(BrandColor.textPrimary)
             .minimumScaleFactor(0.7)
             .lineLimit(1)

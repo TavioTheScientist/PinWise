@@ -258,7 +258,7 @@ struct NewsView: View {
         VStack(alignment: .leading, spacing: Space.xs) {
             HStack(alignment: .center) {
                 Text("News")
-                    .font(Typo.screenTitle)
+                    .font(Typo.screenTitle).displayTracking()
                     .foregroundStyle(BrandColor.textPrimary)
                 Spacer()
                 SearchToggleButton(isActive: searchActive) {
@@ -452,7 +452,7 @@ struct FeaturedNewsCard: View {
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                 }
                 Text(item.headline)
-                    .font(Typo.title)
+                    .font(Typo.title).displayTracking()
                     .foregroundStyle(BrandColor.textPrimary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(3)
@@ -544,7 +544,7 @@ struct NewsDetailView: View {
                         .font(.caption)
                         .foregroundStyle(BrandColor.textSecondary)
                     Text(item.headline)
-                        .font(Typo.title)
+                        .font(Typo.title).displayTracking()
                         .foregroundStyle(BrandColor.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

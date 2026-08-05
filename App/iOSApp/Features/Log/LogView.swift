@@ -214,7 +214,7 @@ struct LogView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     Text("Log a dose")
-                        .font(Typo.screenTitle)
+                        .font(Typo.screenTitle).displayTracking()
                         .foregroundStyle(BrandColor.textPrimary)
                         .minimumScaleFactor(0.7).lineLimit(1)
 

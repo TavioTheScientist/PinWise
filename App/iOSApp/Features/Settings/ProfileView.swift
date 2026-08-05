@@ -302,7 +302,7 @@ struct ProfileView: View {
 
             VStack(spacing: Space.sm) {
                 Text(name.isEmpty ? "Set up your profile" : name)
-                    .font(Typo.title)
+                    .font(Typo.title).displayTracking()
                     .foregroundStyle(BrandColor.textPrimary)
                     .multilineTextAlignment(.center)
                 // "Guest" is taxonomy (neutral); "Staxyz Member" is the app's ONE sanctioned

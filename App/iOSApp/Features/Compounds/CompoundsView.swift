@@ -343,7 +343,7 @@ struct CompoundDetailView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            Text(compound.name).font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+            Text(compound.name).font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
             if !compound.aliases.isEmpty {
                 Text(compound.aliases.joined(separator: " · "))
                     .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)

@@ -230,7 +230,7 @@ struct BiomarkersView: View {
             MicroLabel(selected.displayName)
             HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
                 Text(format(latest))
-                    .font(Typo.numberLG)
+                    .font(Typo.numberLG).displayTracking()
                     .foregroundStyle(BrandColor.data)
                     .contentTransition(.numericText(value: latest))
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: latest)

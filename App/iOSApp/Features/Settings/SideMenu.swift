@@ -53,7 +53,9 @@ struct SideMenuDrawer: View {
                         .transition(reduceMotion ? .opacity : .move(edge: .leading))
                 }
             }
-            .animation(Motion.gated(Motion.drawer, reduceMotion), value: isOpen)
+            // Direction-aware: `isOpen` is already the new value, so opening uses `drawer` and
+            // closing the faster `drawerOut`. Same enter/exit timing is the checklist item.
+            .animation(Motion.gated(isOpen ? Motion.drawer : Motion.drawerOut, reduceMotion), value: isOpen)
         }
         .allowsHitTesting(isOpen)
         .sheet(item: $route) { $0.view }
@@ -328,7 +330,7 @@ struct AboutView: View {
         MenuSheet(title: "About & Legal") {
             Card {
                 VStack(alignment: .leading, spacing: Space.sm) {
-                    Text("Staxyz").font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                    Text("Staxyz").font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     Text("The source of truth for peptides and dose tracking — transparent about where the evidence stands.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                     HStack {

@@ -45,7 +45,9 @@ struct AssistantDrawer: View {
                         .transition(reduceMotion ? .opacity : .move(edge: .trailing))
                 }
             }
-            .animation(Motion.gated(Motion.drawer, reduceMotion), value: isOpen)
+            // Direction-aware: `isOpen` is already the new value, so opening uses `drawer` and
+            // closing the faster `drawerOut`. Same enter/exit timing is the checklist item.
+            .animation(Motion.gated(isOpen ? Motion.drawer : Motion.drawerOut, reduceMotion), value: isOpen)
         }
         .allowsHitTesting(isOpen)
     }
@@ -307,7 +309,7 @@ struct AssistantView: View {
                     Image(systemName: "sparkles.rectangle.stack")
                         .font(.largeTitle).foregroundStyle(BrandColor.accentText)
                     Text("Sign in to chat with Natt")
-                        .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                        .font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     Text("Natt, Staxyz's AI assistant, comes with your account. Sign in with Apple or email to start chatting — everything else stays free for guests.")
                         .font(.callout).foregroundStyle(BrandColor.textSecondary)
                 }
@@ -330,7 +332,7 @@ struct AssistantView: View {
                     Image(systemName: "exclamationmark.bubble")
                         .font(.largeTitle).foregroundStyle(BrandColor.accentText)
                     Text("Before you chat with Natt")
-                        .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                        .font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     Text("Natt is Staxyz's AI assistant. A few things to know first.")
                         .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     VStack(alignment: .leading, spacing: Space.md) {

@@ -259,7 +259,7 @@ struct BiometricLockView: View {
                     .font(.system(size: 46))
                     .foregroundStyle(BrandColor.accentText)
                 Text("Staxyz is locked")
-                    .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                    .font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                 Button { Task { await unlock() } } label: {
                     Label("Unlock with \(BiometricLock.biometryName)", systemImage: "lock.open")
                         .font(.body.weight(.semibold))

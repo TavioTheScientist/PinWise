@@ -105,7 +105,7 @@ struct TestingRequestView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.largeTitle).foregroundStyle(BrandColor.success)
                 Text("Interest registered")
-                    .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                    .font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                 Text("We'll use this to prioritise testing partnerships. It isn't an order yet — nothing has been charged, shipped, or booked.")
                     .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
             }

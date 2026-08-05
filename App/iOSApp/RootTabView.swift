@@ -263,7 +263,7 @@ struct PlaceholderScreen: View {
                 Image(systemName: systemImage)
                     .font(.largeTitle)
                     .foregroundStyle(BrandColor.accentText)
-                Text(title).font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                Text(title).font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                 Text(subtitle)
                     .font(Typo.body)
                     .foregroundStyle(BrandColor.textSecondary)

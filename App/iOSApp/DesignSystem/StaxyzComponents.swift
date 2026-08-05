@@ -728,7 +728,8 @@ struct DisclosureSection<Content: View>: View {
             // remember either. It previously animated at 0.22 while its three callers each wrapped
             // the toggle in `withAnimation(.easeInOut(duration: 0.2))` — and the inner animation
             // WINS, so the duration written at the call site was never the duration that played.
-            .animation(Motion.gated(Motion.disclosure, reduceMotion), value: isExpanded)
+            .animation(Motion.gated(isExpanded ? Motion.disclosure : Motion.disclosureOut, reduceMotion),
+                       value: isExpanded)
         }
     }
 
@@ -819,6 +820,12 @@ struct AdherenceRing: View {
         .accessibilityLabel("Adherence")
         .accessibilityValue("\(pct) percent of your recent scheduled doses taken")
     }
+}
+
+extension View {
+    /// Tightens tracking for large display type. Pair with `Typo.screenTitle` / `title` / `numberXL` /
+    /// `numberLG` / `numberHero` — never with body or caption text, which wants the opposite sign.
+    func displayTracking() -> some View { tracking(Typo.displayTracking) }
 }
 
 /// `.ultraThinMaterial`, unless the user has asked for less transparency — then an opaque surface.

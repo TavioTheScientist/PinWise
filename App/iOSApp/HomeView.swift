@@ -175,7 +175,7 @@ struct HomeView: View {
                 // Date eyebrow — the instrument micro-register above the display greeting.
                 MicroLabel(Date.now.formatted(.dateTime.weekday(.wide).month().day()))
                 Text(greeting ?? "Track your protocol.\nKnow the science.")
-                    .font(Typo.screenTitle)
+                    .font(Typo.screenTitle).displayTracking()
                     .foregroundStyle(BrandColor.textPrimary)
                     .minimumScaleFactor(0.7).lineLimit(2)
             }
@@ -483,7 +483,7 @@ struct HomeView: View {
         Card(style: .hero, padding: Space.xl) {
             HStack(alignment: .center, spacing: Space.lg) {
                 VStack(alignment: .leading, spacing: Space.xs) {
-                    Text("\(thisWeekCount)").font(Typo.numberHero).foregroundStyle(BrandColor.textPrimary)
+                    Text("\(thisWeekCount)").font(Typo.numberHero).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     MicroLabel("Doses logged this week")
                 }
                 Spacer(minLength: 0)

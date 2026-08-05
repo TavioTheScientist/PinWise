@@ -124,7 +124,7 @@ struct ToolsView: View {
     private var header: some View {
         HStack(alignment: .center) {
             Text("Tools")
-                .font(Typo.screenTitle)
+                .font(Typo.screenTitle).displayTracking()
                 .foregroundStyle(BrandColor.textPrimary)
             Spacer()
             Button { showCustomize = true } label: {
@@ -334,7 +334,7 @@ struct ReverseDoseView: View {
                     VStack(alignment: .leading, spacing: Space.sm) {
                         MicroLabel("You drew about")
                         Text(dose?.displayString ?? "—")
-                            .font(Typo.numberXL)
+                            .font(Typo.numberXL).displayTracking()
                             .foregroundStyle(BrandColor.accentText)
                             .contentTransition(.numericText(value: dose?.micrograms ?? 0))
                             .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: dose?.micrograms)
