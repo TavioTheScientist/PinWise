@@ -174,7 +174,7 @@ private struct StaxyzTabBar: View {
         // as floating glass, and it is now the bar's primary separation (dark `.chrome` shadow
         // does nothing over bare black — it only works where a card scrolls beneath).
         .background(BrandColor.surfaceElevated.opacity(0.55), in: Capsule())
-        .background(.ultraThinMaterial, in: Capsule())
+        .background { GlassMaterial().clipShape(Capsule()) }
         // Flatten to one silhouette BEFORE the shadow so it follows the capsule plus the
         // protruding crest arc instead of haloing each icon. (compositingGroup, never
         // drawingGroup — Metal rasterization kills the material's backdrop sampling.)

@@ -428,7 +428,7 @@ struct FrostedTagChip: View {
             .padding(.vertical, Space.xs)
             .foregroundStyle(.white)
             .background(Color.black.opacity(0.6), in: Capsule())
-            .background(.ultraThinMaterial, in: Capsule())
+            .background { GlassMaterial().clipShape(Capsule()) }
     }
 }
 
@@ -821,6 +821,23 @@ struct AdherenceRing: View {
     }
 }
 
+/// `.ultraThinMaterial`, unless the user has asked for less transparency — then an opaque surface.
+///
+/// Apple lists Reduce Transparency alongside Reduce Motion as an INDEPENDENT accessibility signal, and
+/// the app read it nowhere: all five glass surfaces (the floating tab bar, chips, both drawers, and the
+/// reference-sheet canvas) blurred regardless. For someone who turned it on because translucency makes
+/// text hard to resolve, a blurred backdrop under 11pt tracked caps is exactly the problem they were
+/// trying to switch off.
+///
+/// Returning a `ShapeStyle` rather than wrapping the view keeps every call site a one-word change and
+/// leaves the shape (`Capsule`, rect, whatever) in the caller's hands.
+struct GlassMaterial: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    var body: some View {
+        if reduceTransparency { BrandColor.surfaceElevated } else { Color.clear.background(.ultraThinMaterial) }
+    }
+}
+
 extension View {
     /// The app's REFERENCE-sheet chrome: a glass canvas that lets the page beneath show through, with
     /// a drag indicator and medium/large detents.
@@ -838,7 +855,7 @@ extension View {
     func glassSheet(detents: Set<PresentationDetent> = [.medium, .large]) -> some View {
         self
             .presentationBackground {
-                BrandColor.background.opacity(0.5).background(.ultraThinMaterial)
+                BrandColor.background.opacity(0.5).background { GlassMaterial() }
             }
             .presentationDetents(detents)
             .presentationDragIndicator(.visible)

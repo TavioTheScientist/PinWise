@@ -97,7 +97,7 @@ struct PhysiqueView: View {
                         .background(BrandColor.ctaFill, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
                         .foregroundStyle(BrandColor.onCtaFill)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableStyle())   // filled CTA-family button
             }
             PhotosPicker(selection: $pickerItem, matching: .images) {
                 Label("Add from library", systemImage: "photo.on.rectangle")
@@ -180,7 +180,7 @@ struct PhysiqueView: View {
                 }
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableStyle())   // photo grid thumbnail — same shape as ToolCard, which presses
         .contextMenu {
             if !selecting {
                 Button(role: .destructive) { delete(photo) } label: { Label("Delete", systemImage: "trash") }

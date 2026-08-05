@@ -32,7 +32,7 @@ struct AssistantDrawer: View {
                         // black scrim works AGAINST a bright panel and no ultraThin tint below
                         // ~0.9 holds textSecondary at 4.5:1 over dark content behind the drawer.
                         .background(BrandColor.background.opacity(scheme == .dark ? 0.7 : 0.92))
-                        .background(.ultraThinMaterial)
+                        .background { GlassMaterial() }
                         .overlay(alignment: .leading) { Rectangle().fill(BrandColor.stroke).frame(width: 0.5) }
                         .ignoresSafeArea()
                         .shadow(color: .black.opacity(0.45), radius: 24, x: -8)

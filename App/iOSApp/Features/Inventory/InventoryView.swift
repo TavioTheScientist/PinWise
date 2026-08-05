@@ -261,6 +261,7 @@ struct VialRow: View {
 /// Pre-mixed vials are entered the way the label reads — strength (mg/mL) + volume; powder
 /// vials as total mass + the volume you mix in.
 struct VialBuilderView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotionBuilder
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \CustomCompound.name) private var customCompounds: [CustomCompound]
@@ -311,6 +312,12 @@ struct VialBuilderView: View {
     @State private var storage: VialStorage?
     @State private var lightProtected: Bool?
     @State private var expandStability: Bool
+    /// Draft excursion log. Held locally and written on save like every other field, so backing out of
+    /// the sheet discards an unintended entry — an append-only record should not gain rows from a form
+    /// the user abandoned.
+    @State private var excursions: [StorageExcursion] = []
+    @State private var newExcursionHours = ""
+    @State private var newExcursionExposure: VialStorage = .roomTemperature
     @State private var coaAssayText: String
     @State private var coaContentText: String
     @State private var coaPurityText: String
@@ -359,6 +366,7 @@ struct VialBuilderView: View {
             _storage = State(initialValue: nil)
             _lightProtected = State(initialValue: nil)
             _expandStability = State(initialValue: false)
+            _excursions = State(initialValue: [])
             _coaAssayText = State(initialValue: "")
             _coaContentText = State(initialValue: "")
             _coaPurityText = State(initialValue: "")
@@ -410,6 +418,7 @@ struct VialBuilderView: View {
         // Opens itself only when there is something to see. An empty section that unfurls on every
         // edit trains people to collapse it, which is the opposite of collecting the data.
         _expandStability = State(initialValue: !v.reconstitutionRecord.isEmpty)
+        _excursions = State(initialValue: v.storageExcursions)
         _coaAssayText = State(initialValue: v.coaAssayPercent.map(Self.fmt) ?? "")
         _coaContentText = State(initialValue: v.coaContentPercent.map(Self.fmt) ?? "")
         _coaPurityText = State(initialValue: v.coaPurityPercent.map(Self.fmt) ?? "")
@@ -1046,6 +1055,8 @@ struct VialBuilderView: View {
                     .tint(BrandColor.accentText)
                 }
 
+                excursionEditor
+
                 FieldRow("Kept out of light", hint: "Amber vial, or stored in a box or drawer.") {
                     Picker("Light", selection: $lightProtected) {
                         Text("Not recorded").tag(Bool?.none)
@@ -1053,6 +1064,68 @@ struct VialBuilderView: View {
                         Text("No").tag(Bool?.some(false))
                     }
                     .pickerStyle(.segmented)
+                }
+            }
+        }
+    }
+
+    /// Excursion log — the append-only half of the stability record.
+    ///
+    /// Entry is deliberately ONE number plus a picker, not a date-and-time form. A user recording "left
+    /// it out about six hours" knows the duration and does not reliably know the timestamp, and asking
+    /// for precision they do not have is how a record fills up with invented values. The date is stamped
+    /// as now; the duration is what they actually observed.
+    ///
+    /// Removal is allowed while DRAFTING, because a typo is not history — but the list is written only on
+    /// save, so an abandoned sheet adds nothing.
+    @ViewBuilder private var excursionEditor: some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            FieldRow("Time out of storage",
+                     hint: "Left on a counter, or travelled unrefrigerated. Add one per occasion.") {
+                HStack(spacing: Space.sm) {
+                    TextField("Hours", text: $newExcursionHours)
+                        .keyboardType(.decimalPad)
+                        .staxyzField()
+                        .frame(maxWidth: 96)
+                    Picker("Exposed to", selection: $newExcursionExposure) {
+                        ForEach(VialStorage.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(BrandColor.accentText)
+                    Spacer(minLength: 0)
+                    Button {
+                        guard let h = Double(newExcursionHours), h > 0 else { return }
+                        withAnimation(Motion.gated(Motion.disclosure, reduceMotionBuilder)) {
+                            excursions.append(StorageExcursion(date: .now, hours: h,
+                                                               exposedTo: newExcursionExposure))
+                        }
+                        newExcursionHours = ""
+                    } label: {
+                        Text("Add").font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(PressableStyle())
+                    .disabled(Double(newExcursionHours).map { $0 <= 0 } ?? true)
+                }
+            }
+
+            ForEach(excursions) { ex in
+                HStack(spacing: Space.sm) {
+                    Text("\(ex.durationPhrase) \(ex.exposedTo.excursionPhrase)")
+                        .font(Typo.caption2).foregroundStyle(BrandColor.textPrimary)
+                    Text(ex.date.formatted(.dateTime.month(.abbreviated).day()))
+                        .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    Spacer(minLength: 0)
+                    Button {
+                        withAnimation(Motion.gated(Motion.disclosure, reduceMotionBuilder)) {
+                            excursions.removeAll { $0.id == ex.id }
+                        }
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .font(.caption)
+                            .foregroundStyle(BrandColor.textSecondary)
+                    }
+                    .buttonStyle(PressableStyle())
+                    .accessibilityLabel("Remove this excursion")
                 }
             }
         }
@@ -1067,7 +1140,7 @@ struct VialBuilderView: View {
             diluent: isPremixed ? nil : diluent,
             storage: storage,
             isLightProtected: lightProtected,
-            excursions: editing?.storageExcursions ?? [])
+            excursions: excursions)
     }
 
     private var lotCard: some View {
@@ -1278,6 +1351,7 @@ struct VialBuilderView: View {
         vial.diluentRaw = isPremixed ? nil : diluent?.rawValue
         vial.storageRaw = storage?.rawValue
         vial.isLightProtected = lightProtected
+        vial.storageExcursions = excursions
         return true
     }
 

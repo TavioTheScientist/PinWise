@@ -538,7 +538,7 @@ struct RampUpPlannerView: View {
                         .font(.body.weight(.semibold))
                         .foregroundStyle(activeProtocols.isEmpty ? BrandColor.textSecondary : BrandColor.accentText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableRowStyle())   // full-width "Build a titration plan" row
                 .disabled(activeProtocols.isEmpty)
             } footer: {
                 Text(activeProtocols.isEmpty
@@ -562,7 +562,7 @@ struct RampUpPlannerView: View {
                                 Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PressableRowStyle())   // full-width plan row with a chevron
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) { removePlan(p) } label: { Label("Delete", systemImage: "trash") }
                             Button { builderTarget = RampBuilderTarget(protocolID: p.id) } label: { Label("Edit", systemImage: "pencil") }
@@ -712,7 +712,7 @@ private struct RampBuilderSheet: View {
                             Button { phases.removeAll { $0.id == phase.id } } label: {
                                 Image(systemName: "minus.circle.fill").foregroundStyle(BrandColor.textSecondary)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(PressableStyle())   // inline minus-circle — the glyph IS the target
                         }
                     }
                 }
@@ -720,7 +720,7 @@ private struct RampBuilderSheet: View {
                     Label("Add a phase", systemImage: "plus.circle.fill")
                         .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableRowStyle())   // full-width "Add a phase" row
             }
         }
     }

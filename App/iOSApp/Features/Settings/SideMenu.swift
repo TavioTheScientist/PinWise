@@ -38,7 +38,7 @@ struct SideMenuDrawer: View {
                         // black scrim works AGAINST a bright panel and no ultraThin tint below
                         // ~0.9 holds textSecondary at 4.5:1 over dark content behind the drawer.
                         .background(BrandColor.background.opacity(scheme == .dark ? 0.7 : 0.92))
-                        .background(.ultraThinMaterial)
+                        .background { GlassMaterial() }
                         .overlay(alignment: .trailing) {
                             Rectangle().fill(BrandColor.stroke).frame(width: 0.5)
                         }

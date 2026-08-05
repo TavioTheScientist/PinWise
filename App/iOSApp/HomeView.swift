@@ -331,6 +331,12 @@ struct HomeView: View {
                         .font(.caption)
                         .foregroundStyle(BrandColor.textSecondary)
                 )
+                // Concatenation alone was not enough at accessibility-XXXL: with the column that
+                // narrow, even "doses" exceeded the width, and a `Text` with no other legal break
+                // will split INSIDE a word — the run rendered as "6 / dos / es". Allowing it to
+                // scale down means the only thing that gives is the type size, never the word.
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
                 // The best rides the VALUE line, not the label line above it. Sharing the label's
                 // line put "DOSE STREAK" and "YOUR BEST" in ~185pt of tracked 11pt caps, which
                 // wrapped the label to two lines; and the comparison belongs beside the number it

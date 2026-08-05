@@ -217,7 +217,7 @@ struct ActiveLevelsView: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableRowStyle())   // gaugeRow — a full-width card-shaped row
     }
 
     // MARK: - Timeline (range selector + primary/secondary split)
@@ -365,7 +365,7 @@ struct ActiveLevelsView: View {
                             }
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PressableRowStyle())   // legend row toggle
                     }
                 }
             }
