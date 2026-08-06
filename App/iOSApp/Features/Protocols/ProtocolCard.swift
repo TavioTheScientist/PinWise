@@ -360,8 +360,16 @@ struct ProtocolSummary: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.7)
                 Spacer(minLength: Space.sm)
-                Text(presentation.rowFact)
-                    .font(Typo.caption.weight(.semibold))
+                // The status reads as a STATUS, not as more prose. It was the same size and weight
+                // as the cadence line beneath it, in a colour that only differs for urgent states —
+                // so "Logged" and "As needed" arrived at identical visual weight despite meaning
+                // completely different things (one is a fact about today, the other is the schedule
+                // itself). Uppercase micro-caps with tracking is the register this app already uses
+                // for instrument labels, and it separates status from content at a glance without
+                // spending colour, which the chrome rules reserve.
+                Text(presentation.rowFact.uppercased())
+                    .font(Typo.microLabel)
+                    .tracking(Typo.microTracking)
                     .foregroundStyle(presentation.rowFactColor)
                     .layoutPriority(1)
                     .lineLimit(1)

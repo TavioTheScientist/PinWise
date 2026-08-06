@@ -326,6 +326,11 @@ enum Typo {
     /// small because they are already 30–48pt, i.e. larger than body text even at accessibility
     /// sizes. The 17pt `statValue` was the one that genuinely needed to grow, and it now does.
     static let statValue = Font.system(.body, design: .rounded).weight(.bold).monospacedDigit()
+    /// The SECONDARY numeric register — a figure that belongs on the card but must not compete with
+    /// its hero. `.subheadline` is 15pt to `statValue`'s 17, same rounded/tabular treatment, so the
+    /// difference reads as rank rather than as a different kind of number. Added because Home showed
+    /// three figures at one weight and therefore had no hero at all.
+    static let numberSM = Font.system(.subheadline, design: .rounded).weight(.bold).monospacedDigit()
     /// "The number is the headline" hero figure (Home activity hero).
     static let numberHero = Font.system(size: 48, weight: .black, design: .rounded).monospacedDigit()
 }

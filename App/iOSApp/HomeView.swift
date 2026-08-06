@@ -112,10 +112,19 @@ struct HomeView: View {
         return activeProtocols.compactMap { $0.upcomingDose(loggedToday: $0.loggedToday(in: logs)) }.min()
     }
 
+    /// True once the user has logged any dose, ever. Latched in `@AppStorage`, deliberately, rather
+    /// than derived from the log query: deleting your history should not make the app re-introduce
+    /// itself. "First real action" happens once.
+    @AppStorage("didLogFirstDose") private var hasLoggedFirstDose = false
+
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
-                VStack(alignment: .leading, spacing: Space.xl) {
+                // `xxl`, not `xl`. The brief's first point was that everything competes at similar
+                // weight; part of that is spacing — sections separated by the same gap that
+                // separates rows inside them read as one continuous list rather than as distinct
+                // modules. More air between sections is what lets the hero be a hero.
+                VStack(alignment: .leading, spacing: Space.xxl) {
                     header.entrance(0, group: "home")
                     // Dosing leads; the (optional) health snapshot sits below it.
                     if !activeProtocols.isEmpty {
@@ -141,6 +150,10 @@ struct HomeView: View {
                 .padding(Space.lg)
             }
             .heroScreen()
+            // Latch on the first dose that exists, and never look again. `recent` is already queried
+            // for the hero, so this costs nothing.
+            .onAppear { if !hasLoggedFirstDose && !recent.isEmpty { hasLoggedFirstDose = true } }
+            .onChange(of: recent.count) { if !hasLoggedFirstDose && !recent.isEmpty { hasLoggedFirstDose = true } }
             .scrollsToTopOnReselect(.home)
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: HomeRoute.self) { _ in BiomarkersView() }
@@ -172,12 +185,32 @@ struct HomeView: View {
             }
 
             VStack(alignment: .leading, spacing: Space.xs) {
-                // Date eyebrow — the instrument micro-register above the display greeting.
+                // The date is the header. Permanently.
                 MicroLabel(Date.now.formatted(.dateTime.weekday(.wide).month().day()))
-                Text(greeting ?? "Track your protocol.\nKnow the science.")
-                    .font(Typo.screenTitle).displayTracking()
-                    .foregroundStyle(BrandColor.textPrimary)
-                    .minimumScaleFactor(0.7).lineLimit(2)
+                // The positioning line shows ONLY until the first dose is logged, then never again.
+                //
+                // "Track your protocol. Know the science." earns its place while the app is still
+                // introducing itself — it tells a new user what this is for. The moment they log a
+                // dose it stops being orientation and becomes a slogan on a utility screen, competing
+                // at 34pt with the thing they actually opened Home to read. Apple's Home and Health
+                // lead with data, not a tagline.
+                //
+                // Retiring it also resolves the hierarchy problem underneath: with the headline gone,
+                // the adherence ring and next pin are unambiguously the hero rather than the second
+                // loudest thing on the screen.
+                if !hasLoggedFirstDose {
+                    Text("Track your protocol.\nKnow the science.")
+                        .font(Typo.screenTitle).displayTracking()
+                        .foregroundStyle(BrandColor.textPrimary)
+                        .minimumScaleFactor(0.7).lineLimit(2)
+                } else if let greeting {
+                    // A greeting is personal rather than promotional, so it survives — but one
+                    // register quieter, so it sits above the hero instead of competing with it.
+                    Text(greeting)
+                        .font(Typo.title).displayTracking()
+                        .foregroundStyle(BrandColor.textPrimary)
+                        .minimumScaleFactor(0.7).lineLimit(2)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -257,15 +290,20 @@ struct HomeView: View {
                 // Self-hiding, the same way the strip that used to live here was: with nothing
                 // scheduled (an as-needed-only stack), the streak can never move, and a progress bar
                 // that is structurally frozen at zero is worse than no progress bar.
+                // The milestone bar stays, the grading sentence does not.
+                //
+                // "Counts a dose logged up to 2 days late — your protocol's catch-up window" is true,
+                // and it is documentation. On the surface you open to answer "where am I right now",
+                // a paragraph explaining the scoring rule is the app talking about itself. It reads
+                // as system text on a screen that should feel calm.
+                //
+                // The rule is not lost — it belongs where someone goes to ask about it (protocol
+                // detail), not where everyone lands every day. The number's credibility comes from
+                // the denominator under the ring ("Last 17 doses"), which is the honest part and
+                // stays.
                 if !events.isEmpty {
                     Divider().overlay(BrandColor.stroke)
                     milestoneProgress(run)
-                    // The grading rule, stated once and quietly. A streak whose rule is invisible is
-                    // a number taken on faith, which is what makes streak mechanics read as arbitrary.
-                    if let gracePhrase {
-                        Text(gracePhrase)
-                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
-                    }
                 }
             }
         }
@@ -307,7 +345,8 @@ struct HomeView: View {
     /// same-day precision the rule deliberately does not require: `DosePolicy` documents why the
     /// grace is right (semaglutide guidance permits catching up, and punishing correct behavior is
     /// the documented failure mode of naive streak mechanics). The rule is clinically reasoned, so
-    /// the LABEL was the thing that was wrong. `gracePhrase` states the window in full below.
+    /// the LABEL was the thing that was wrong. The grading rule itself is no longer stated on
+    /// Home — see the note on the milestone block for why.
     ///
     /// "Personal best 6" used to sit on a third line under a 6-dose streak — the same number twice,
     /// spending a whole line to tell a user at their best that their best is what they already see.
@@ -327,8 +366,11 @@ struct HomeView: View {
             .foregroundStyle(streak.current > 0 ? BrandColor.warning : BrandColor.textSecondary)
             .accessibilityHidden(true)
         (
+            // `numberSM`, not `statValue`: the ring and the next pin are the hero, and three
+            // figures at the same weight is why this card read as flat. The streak stays legible
+            // and stops competing — one primary number, everything else supporting it.
             Text("\(streak.current)")
-                .font(Typo.statValue)
+                .font(Typo.numberSM)
                 .foregroundStyle(BrandColor.textPrimary)
             + Text(" \(streak.current == 1 ? "dose" : "doses")")
                 .font(.caption)
@@ -436,34 +478,6 @@ struct HomeView: View {
             }
         }
         .frame(height: 6)
-    }
-
-    /// How the streak is graded, in the app's own policy terms — derived from `DosePolicy`, the same
-    /// per-cadence window `doseEvents` credits doses with, so this sentence cannot drift from the rule
-    /// it describes. No day count is written here.
-    ///
-    /// Reports the WIDEST window across the active protocols, because the streak merges every
-    /// protocol's events into one chain. When the protocols genuinely disagree it says so rather than
-    /// quietly extending a weekly protocol's 2-day catch-up to a daily one, which has none.
-    ///
-    /// **As-needed protocols are excluded, not counted as a zero-day window.** They have no scheduled
-    /// slot to be late for, so they contribute nothing to `doseEvents` and must not drag the sentence
-    /// into its plural form — which is exactly what happened on a stack of one weekly protocol plus
-    /// one as-needed: the card hedged about "each protocol's own window" when only one protocol was
-    /// ever being graded.
-    ///
-    /// nil when nothing is on a schedule at all, i.e. when there is no grading to explain.
-    private var gracePhrase: String? {
-        let scheduled = activeProtocols.map(\.dosePolicy).filter { $0 != .asNeeded }
-        let windows = Set(scheduled.map(\.attributionGraceDays))
-        guard let widest = windows.max() else { return nil }
-        guard widest > 0 else {
-            return "Counts a dose only on the day it was scheduled — this cadence has no catch-up window."
-        }
-        let unit = widest == 1 ? "day" : "days"
-        return windows.count > 1
-            ? "Counts a dose logged up to \(widest) \(unit) late, following each protocol's own catch-up window."
-            : "Counts a dose logged up to \(widest) \(unit) late — your protocol's catch-up window."
     }
 
     private func milestoneBadge(_ m: Int) -> some View {
