@@ -224,7 +224,7 @@ struct ActiveLevelsView: View {
                         // gauge fill beside it, both of which already say it.
                         .foregroundStyle(m.status.isElevated ? BrandColor.textPrimary : BrandColor.textSecondary)
                         .lineLimit(1)
-                    Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                    DisclosureChevron()
                 }
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {

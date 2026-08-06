@@ -103,9 +103,7 @@ struct SideMenuDrawer: View {
                             .lineLimit(1)
                     }
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(Typo.captionEmphasis)
-                        .foregroundStyle(BrandColor.textSecondary)
+                    DisclosureChevron()
                 }
                 .contentShape(Rectangle())
             }
@@ -358,7 +356,7 @@ struct AboutView: View {
                     Image(systemName: "doc.text").foregroundStyle(BrandColor.accentText)
                     Text("Terms of Service & Privacy Policy").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                     Spacer()
-                    Image(systemName: "chevron.right").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    DisclosureChevron()
                 }
                 .padding(Space.lg)
                 .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))

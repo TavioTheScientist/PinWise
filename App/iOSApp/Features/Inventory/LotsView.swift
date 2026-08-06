@@ -67,8 +67,7 @@ private struct LotRow: View {
                         .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                    DisclosureChevron()
                 }
                 if !lot.vendor.isEmpty {
                     Text(lot.vendor).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)

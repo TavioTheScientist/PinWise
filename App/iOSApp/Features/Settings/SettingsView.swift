@@ -140,7 +140,7 @@ private struct SettingsRow: View {
                 Text(value).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
-            Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+            DisclosureChevron()
         }
         .padding(.vertical, Space.sm)
         .contentShape(.rect)

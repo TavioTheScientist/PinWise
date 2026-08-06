@@ -404,7 +404,7 @@ struct AssistantView: View {
                 Image(systemName: icon).font(.body).frame(width: 24).foregroundStyle(BrandColor.accentText)
                 Text(title).font(.body).foregroundStyle(BrandColor.textPrimary)
                 Spacer()
-                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                DisclosureChevron()
             }
             .padding(Space.md)
             .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
