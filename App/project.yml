@@ -98,6 +98,29 @@ targets:
         # INFOPLIST_KEY_ values into it. Without this line the key is silently dropped (verified:
         # the built plist simply had no NSHealthUpdateUsageDescription).
         debug:
+          # DEBUG BUILDS USE THE OLD BUNDLE ID, AND THIS IS THE POINT — not an oversight.
+          #
+          # Sign in with Apple is a per-BUNDLE-ID grant. `com.pinwise.app` holds a cached grant on the
+          # local simulator (`authorization.db`, credential_state = 1) from when the app shipped under
+          # that name; `com.staxyz.app` has none, and Apple will not mint a fresh one because there is
+          # no Apple Developer account, so no registered App ID. A ⌘R build under the new id therefore
+          # CANNOT log in — it fails as `M2 missing (bad password)` / `Invalid client.`, which reads
+          # like a credential problem and is not one.
+          #
+          # Pointing DEBUG at the id that has the grant means ⌘R produces an app that can actually sign
+          # in, and there is exactly one Staxyz icon on the device instead of one that works and one
+          # that cannot. Release is untouched below and still ships `com.staxyz.app`, so nothing about
+          # the shipping identity changes — which is the distinction that matters. The old warning
+          # ("never commit the bundle override") was about overriding the SHIPPING id; scoping it to
+          # the Debug configuration is the opposite of that.
+          #
+          # REMOVE THIS the moment the Developer account exists and `com.staxyz.app` has a registered
+          # App ID with the Sign In with Apple capability — at that point debug should exercise the
+          # real identity, and leaving this in would hide a genuine problem.
+          #
+          # Supabase already lists BOTH ids in `external_apple_client_id`, so the token exchange
+          # validates either way and lands on the same user.
+          PRODUCT_BUNDLE_IDENTIFIER: com.pinwise.app
           GENERATE_INFOPLIST_FILE: "YES"
           INFOPLIST_KEY_NSHealthUpdateUsageDescription: "DEBUG builds only: the screenshot seeder writes sample weight, heart-rate, HRV, sleep and step data so the app can be photographed with realistic history."
 
