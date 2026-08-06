@@ -185,7 +185,7 @@ struct BiomarkersView: View {
                 .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
             if seriesForSelected.count == 1 {
                 Text("One more entry and the trend appears.")
-                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
     }
@@ -243,6 +243,13 @@ struct BiomarkersView: View {
     /// every row no longer repeats the word "Weight" — the value becomes the row's subject. And it
     /// shows five until asked for more, because fourteen near-identical rows competed with the chart
     /// they exist to support.
+    /// "210.1 lb" — the unit stored at entry time wins, so a later lb/kg switch cannot reinterpret
+    /// a historical reading.
+    private func historyLabel(_ e: BiomarkerEntry, fallbackUnit: String) -> String {
+        let unit: String = e.unitRaw ?? fallbackUnit
+        return format(e.value) + " " + unit
+    }
+
     @ViewBuilder private var history: some View {
         let rows = seriesForSelected.reversed().map { $0 }
         if !rows.isEmpty {
@@ -250,15 +257,18 @@ struct BiomarkersView: View {
                 SectionHeader(title: "History")
                 ForEach(showAllHistory ? rows : Array(rows.prefix(4)), id: \.id) { e in
                     HStack(spacing: Space.sm) {
-                        Text(format(e.value) + " " + (e.unitRaw ?? selected.unit(pounds: weightInPounds)))
+                        // Composed before the ViewBuilder rather than inside it: string concatenation
+                        // plus an optional-coalesce plus a method call in one expression pushed the
+                        // type-checker past its budget ("unable to type-check in reasonable time").
+                        Text(historyLabel(e, fallbackUnit: selected.unit(pounds: weightInPounds)))
                             .font(Typo.statValue).foregroundStyle(BrandColor.textPrimary)
                         Spacer(minLength: Space.sm)
                         Text(e.timestamp.relativeLabel())
-                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                             .lineLimit(1)
                         Button { context.delete(e); try? context.save() } label: {
                             Image(systemName: "trash")
-                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         }
                         .buttonStyle(PressableStyle())
                         .accessibilityLabel("Delete this \(selected.displayName) entry")
@@ -273,7 +283,7 @@ struct BiomarkersView: View {
                 if rows.count > 4 {
                     Button { withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { showAllHistory.toggle() } } label: {
                         Text(showAllHistory ? "Show less" : "Show all \(rows.count)")
-                            .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                            .font(Typo.captionEmphasis).foregroundStyle(BrandColor.accentText)
                     }
                     .buttonStyle(PressableRowStyle())
                 }
@@ -326,7 +336,7 @@ struct BiomarkersView: View {
                 if let delta = deltaVsPrevious { deltaChip(delta) }
                 if let last = seriesForSelected.last {
                     Text("Updated \(last.timestamp.relativeLabel())")
-                        .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
             }
         }
@@ -339,7 +349,7 @@ struct BiomarkersView: View {
                 .font(.system(size: 9, weight: .semibold))
             Text(format(abs(delta)) + " " + selected.unit(pounds: weightInPounds))
         }
-        .font(.caption.weight(.semibold))
+        .font(Typo.captionEmphasis)
         .foregroundStyle(BrandColor.textSecondary)
         .padding(.horizontal, Space.sm)
         .padding(.vertical, Space.xs)
@@ -405,7 +415,7 @@ struct BiomarkersView: View {
                 .monospacedDigit()
                 .foregroundStyle(BrandColor.textPrimary)
             Text(e.timestamp, format: .dateTime.month(.abbreviated).day())
-                .font(.caption2)
+                .font(Typo.microCaption)
                 .foregroundStyle(BrandColor.textSecondary)
         }
         .padding(.horizontal, Space.sm)
@@ -424,7 +434,7 @@ struct BiomarkersView: View {
             let display = weightInPounds ? kg * 2.20462 : kg
             Button { valueText = format(display) } label: {
                 Text("Use Health weight — \(format(display)) \(selected.unit(pounds: weightInPounds))")
-                    .font(.caption.weight(.semibold))
+                    .font(Typo.captionEmphasis)
                     .foregroundStyle(BrandColor.data)
             }
             .buttonStyle(.plain)

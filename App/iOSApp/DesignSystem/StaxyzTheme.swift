@@ -271,9 +271,9 @@ enum Typo {
     static let body = Font.system(.callout)
     /// 13pt. Named for the STYLE it wraps, which it previously was not.
     ///
-    /// This was `Typo.caption` wrapping `.footnote` while `Typo.caption2` wrapped `.caption` — the
+    /// This was `Typo.caption` wrapping `.footnote` while `Typo.caption` wrapped `.caption` — the
     /// names sat one rung off the styles underneath them. The cost was invisible and large: an author
-    /// who wanted a caption typed `.font(.caption)`, got output byte-identical to `Typo.caption2`, and
+    /// who wanted a caption typed `.font(.caption)`, got output byte-identical to `Typo.caption`, and
     /// never learned the token existed. 142 of the app's ~316 raw font calls were that mistake. A
     /// design system whose names do not match what they wrap is optional by construction.
     static let footnote = Font.system(.footnote, weight: .medium)

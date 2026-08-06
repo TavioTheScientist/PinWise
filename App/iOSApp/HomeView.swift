@@ -306,7 +306,7 @@ struct HomeView: View {
                         // denominator is a number you have to take on faith, and this app's whole
                         // position is that it does not ask for faith. It is quiet now, not gone.
                         Text(judged > 0 ? "Last \(judged) doses" : "No doses due yet")
-                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                             .lineLimit(1).minimumScaleFactor(0.8)
                     }
                     Spacer(minLength: Space.sm)
@@ -317,7 +317,7 @@ struct HomeView: View {
                     if run.current > 0 {
                         HStack(spacing: 4) {
                             Image(systemName: "flame.fill")
-                                .font(.caption2)
+                                .font(Typo.microCaption)
                                 .foregroundStyle(BrandColor.warning)
                             Text("\(run.current)")
                                 .font(Typo.numberSM)
