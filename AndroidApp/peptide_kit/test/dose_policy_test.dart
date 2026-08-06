@@ -125,17 +125,34 @@ void main() {
       expect(state(0.5), DoseLateness.due); // 30 min — still simply due
     });
 
+    test('past the due window it is late, up to the 18-hour ceiling', () {
+      expect(state(1.5), DoseLateness.late);
+      expect(state(17.9), DoseLateness.late);
+      // Was `state(35.9) == late`, because a weekly protocol's nudge window is 36h. The flat
+      // 18-hour overdue window now caps every cadence: past 18h the app stops asking, whatever
+      // the schedule. The nudge window can only ever pull the boundary IN, never past the ceiling.
+    });
+
     test(
-      'past the due window it is late, and stays late to the end of the nudge window',
+      'past 18 hours the dose has LAPSED — the app stops asking, on every cadence',
       () {
-        expect(state(1.5), DoseLateness.late);
-        expect(state(35.9), DoseLateness.late);
+        expect(state(18.1), DoseLateness.lapsed);
+        expect(state(24 * 7.0), DoseLateness.lapsed);
+        // The rule that matters: a WEEKLY protocol lapses at 18h even though its own nudge window is
+        // 36h. Checked because the Swift implementation evaluated the cadence window first and
+        // silently never lapsed a weekly dose at all.
+        expect(state(18.1).isActionable, isFalse);
+        expect(state(17.9).isActionable, isTrue);
       },
     );
 
-    test('past the nudge window it is missed — urgency stops here', () {
-      expect(state(36.1), DoseLateness.missed);
-      expect(state(24 * 7.0), DoseLateness.missed);
+    test('lapsing stops the nagging without touching adherence credit', () {
+      // Two different questions, deliberately two different numbers. Collapsed into one, a user who
+      // logged a dose the app had merely stopped ASKING about would silently lose the credit their
+      // cadence entitles them to.
+      expect(DosePolicy.long.attributionGraceDays, 2);
+      expect(DosePolicy.short.attributionGraceDays, 0);
+      expect(DoseLateness.overdueWindowHours, 18);
     });
 
     test('a daily schedule goes missed far sooner than a weekly one', () {
