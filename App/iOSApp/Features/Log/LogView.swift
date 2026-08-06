@@ -49,6 +49,7 @@ struct LogView: View {
     @State private var showNotes = false
     /// "When" is collapsed by default (defaults to now); expand only to backdate a dose.
     @State private var showWhen = false
+    @State private var showSite = false
     @State private var savedCount = 0
     /// Brief on-screen confirmation after a save — so an off-schedule/early log is never silent.
     @State private var confirmation: String?
@@ -187,12 +188,6 @@ struct LogView: View {
         default:
             return "\(name) is injected subcutaneously — abdomen, thigh, upper arm, or flank."
         }
-    }
-
-    /// GENERAL injection guidance — explicitly framed as general so the user never mistakes it for a
-    /// compound-specific instruction.
-    private var generalSiteNote: String {
-        "In general — the abdomen absorbs fastest and most consistently, and rotating sites each time helps avoid lipohypertrophy."
     }
 
     /// Compact value shown in the collapsed "When" header: "Now" while it's ~current, else the time.
@@ -392,13 +387,18 @@ struct LogView: View {
                     // With nothing due, the card STATES that rather than asking a question it then
                     // answers with "nothing". The prompt only earns the top line when there is
                     // something to pick.
-                    Text(dueRows.isEmpty ? "Nothing due today" : "Which protocol are you logging?")
-                        .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                    // The ordering used to be implied by every row's "Due today · …" subtitle prefix.
-                    // The timing now sits right-aligned in the row's own fact slot, so state the sort
-                    // once, quietly — a hint under the prompt, not a heading.
-                    if !dueRows.isEmpty {
-                        Text("Soonest first").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    // ONE line, not three. The screen already says "Log a dose" in its title, so
+                    // "Which protocol are you logging?" above "Soonest first" was the screen naming
+                    // itself three times at three sizes before the first fact. `MicroLabel` is the
+                    // register for an ordering hint; the rows themselves answer the question.
+                    //
+                    // "Nothing due today" survives at full weight, because that is a STATE rather than
+                    // a prompt — it is the answer, and it earns the line.
+                    if dueRows.isEmpty {
+                        Text("Nothing due today")
+                            .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                    } else {
+                        MicroLabel("Soonest first")
                     }
                 }
                 // A vertical list of full-width rows — every protocol visible at a glance, soonest-due
@@ -704,48 +704,62 @@ struct LogView: View {
 
     // MARK: Site / when / notes (shared)
 
+    /// Three one-line rows: Where · When · Notes.
+    ///
+    /// This was a five-field form. One `VStack(spacing: Space.lg)` gave identical vertical weight to
+    /// the site question, a suggestion button, two footnote paragraphs, the When disclosure and
+    /// Notes — so the thing you MUST answer ranked exactly as loud as the thing you almost never
+    /// open, and Log read as a form to fill rather than a decision to confirm.
+    ///
+    /// Collapsed, the card is three value rows and the tab reads: pick a protocol → confirm where →
+    /// LOG. The site picker still opens to the same selector; it just no longer occupies the screen
+    /// by default. `DisclosureRow` is the app's existing value-row idiom, so this is adoption rather
+    /// than invention — and it is the seam that makes swapping in the body map cheap later.
     private var siteCard: some View {
         Card {
-            VStack(alignment: .leading, spacing: Space.lg) {
-                FieldRow("Where did you inject?", hint: "Front or back, then a spot. Only doses with a site show on your injection map.") {
-                    siteSelector
-                }
-                if let suggested = suggestedSite, suggested != site {
-                    Button { site = suggested; showBack = suggested.isBack } label: {
-                        Label("Recommended: \(suggested.displayName)", systemImage: "sparkles")
-                            .font(Typo.caption).foregroundStyle(BrandColor.accentText)
-                    }
-                }
-                // Two clearly-scoped footnotes: one names the compound (specific), one is flagged general.
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(compoundSiteNote)
-                    Text(generalSiteNote)
-                }
-                .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
-                // Collapsible "When" — defaults to now, so it stays collapsed; the header shows the
-                // chosen time so it's never ambiguous. Expand only to log an earlier dose.
-                VStack(alignment: .leading, spacing: Space.xs) {
-                    Button { withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { showWhen.toggle() } } label: {
-                        HStack(spacing: Space.sm) {
-                            Text("When").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                            Text(whenLabel).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
-                            Spacer()
-                            Image(systemName: showWhen ? "chevron.up" : "chevron.down")
-                                .font(Typo.captionEmphasis).foregroundStyle(BrandColor.textSecondary)
+            VStack(alignment: .leading, spacing: Space.sm) {
+                DisclosureRow(title: "Where",
+                              value: siteRowValue,
+                              hint: "Only doses with a site show on your injection map.",
+                              isExpanded: showSite,
+                              toggle: { withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { showSite.toggle() } }) {
+                    VStack(alignment: .leading, spacing: Space.md) {
+                        siteSelector
+                        if let suggested = suggestedSite, suggested != site {
+                            Button { site = suggested; showBack = suggested.isBack } label: {
+                                Label("Use \(suggested.displayName)", systemImage: "sparkles")
+                                    .font(Typo.caption).foregroundStyle(BrandColor.accentText)
+                            }
+                            .buttonStyle(PressableStyle())
                         }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    if showWhen {
-                        DatePicker("", selection: $timestamp, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
-                            .labelsHidden()
-                            .padding(.top, 2)
+                        // Names the compound and changes per log, so it earns its line. The general
+                        // rotation guidance that used to sit beside it was identical on log #1 and
+                        // log #400 and is already written properly in the injection-map info sheet —
+                        // it was documentation on a daily surface.
+                        Text(compoundSiteNote)
+                            .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
-                // Collapsible notes — the app's standard note affordance.
+
+                DisclosureRow(title: "When",
+                              value: whenLabel,
+                              isExpanded: showWhen,
+                              toggle: { withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { showWhen.toggle() } }) {
+                    DatePicker("", selection: $timestamp, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
+                        .labelsHidden()
+                }
+
                 CollapsibleNoteField(text: $notes, expanded: $showNotes, title: "Notes")
             }
         }
+    }
+
+    /// The collapsed Where row. Offers the suggestion WITHOUT writing it — a log must record where
+    /// you actually injected, so the site is never auto-filled (see `site`'s own note).
+    private var siteRowValue: String {
+        if let site { return site.displayName }
+        if let suggested = suggestedSite { return "Suggested · \(suggested.displayName)" }
+        return "Not set"
     }
 
     private var siteSelector: some View {

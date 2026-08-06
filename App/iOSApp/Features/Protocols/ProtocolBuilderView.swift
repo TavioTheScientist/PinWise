@@ -28,6 +28,7 @@ struct ProtocolBuilderView: View {
     @State private var isActive: Bool = true
     @State private var notes: String = ""
     @State private var showNotes = false
+    @State private var showDeleteConfirm = false
     @State private var remindersOn = false
     @State private var reminderTime: Date = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
 
@@ -244,7 +245,11 @@ struct ProtocolBuilderView: View {
                         .opacity(canSave ? 1 : 0.5)
 
                     if editing != nil {
-                        Button(role: .destructive) { deleteProtocol() } label: {
+                        // Confirms, like its sibling. Deleting a protocol takes its schedule and its
+                        // reminders with it, and `VialBuilderView` already guards the same class of
+                        // action — this was the remaining instance of forgiveness being inversely
+                        // proportional to consequence.
+                        Button(role: .destructive) { showDeleteConfirm = true } label: {
                             Label("Delete protocol", systemImage: "trash")
                                 .font(.body.weight(.semibold))
                                 .frame(maxWidth: .infinity)
@@ -258,6 +263,13 @@ struct ProtocolBuilderView: View {
             .heroScreen()
             .navigationTitle(editing == nil ? "New protocol" : "Edit protocol")
             .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(trimmedName.isEmpty ? "Delete this protocol?" : "Delete \(trimmedName)?",
+                            isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("Delete protocol", role: .destructive) { deleteProtocol() }
+            Button("Keep it", role: .cancel) { }
+        } message: {
+            Text("Doses you've already logged are kept. Reminders for this protocol stop.")
+        }
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
             // Custom compounds aren't queryable in init — swap placeholders for the real thing.
             .onAppear {
