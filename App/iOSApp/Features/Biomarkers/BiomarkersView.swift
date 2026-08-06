@@ -74,6 +74,8 @@ struct BiomarkersView: View {
     @State private var showNote = false
     @State private var savedCount = 0
     @State private var range: ChartRange = .all
+    @State private var showAllHistory = false
+    @State private var showLogSheet = false
     @State private var scrubDate: Date?
     @State private var health = HealthManager.shared
 
@@ -121,89 +123,162 @@ struct BiomarkersView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.lg) {
-                Text("Log labs and body metrics — A1c, glucose, lipids, blood pressure, weight — and watch them trend with your protocol.")
-                    .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
+            // The page answers ONE question — what is my current weight and which way is it going —
+            // so it is ordered by that answer: switch metric, read the number, see the trend, log,
+            // then history if you want it. The old order led with a form and a paragraph, so the
+            // number you came for was below the fold.
+            // UNEVEN spacing, deliberately. Even gaps are what make a page read as a stack of
+            // components rather than a composition: the hero and its chart are ONE object and sit
+            // close together, then a longer pause before history, which is a different tier.
+            VStack(alignment: .leading, spacing: Space.xxxl) {
+                metricRail
 
-                Card {
-                    VStack(alignment: .leading, spacing: Space.lg) {
-                        FieldRow("Which metric?") {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: Space.sm) {
-                                    ForEach(BiomarkerType.allCases) { t in chip(t) }
-                                }
-                                .padding(.vertical, 2)
-                            }
-                        }
-                        FieldRow("Value") {
-                            VStack(alignment: .leading, spacing: Space.sm) {
-                                HStack {
-                                    TextField(selected.placeholder, text: $valueText).keyboardType(.decimalPad).staxyzField()
-                                    Text(selected.unit(pounds: weightInPounds)).foregroundStyle(BrandColor.textSecondary)
-                                }
-                                healthPrefillButton
-                            }
-                        }
-                        CollapsibleNoteField(text: $note, expanded: $showNote,
-                                             hint: "Optional — e.g. \"fasting\", \"post-workout\".")
-                        PrimaryButton(title: "Log \(selected.displayName)", systemImage: "plus") { save() }
-                            .disabled(!canSave).opacity(canSave ? 1 : 0.5)
-                    }
-                }
-
-                if seriesForSelected.count >= 2 {
-                    trendCard
-                } else if !seriesForSelected.isEmpty {
-                    Text("Log \(selected.displayName) at least twice to see a trend.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
-                }
-
-                if !entries.isEmpty {
-                    Card {
-                        VStack(alignment: .leading, spacing: Space.sm) {
-                            SectionHeader(title: "Recent")
-                            ForEach(Array(entries.prefix(14)), id: \.id) { e in
-                                let type = BiomarkerType(rawValue: e.typeRaw)
-                                HStack(spacing: Space.sm) {
-                                    Text(type?.displayName ?? e.typeRaw).font(.body).foregroundStyle(BrandColor.textPrimary)
-                                    Spacer()
-                                    // Honor the unit stored at entry time (provenance); legacy rows
-                                    // (nil) fall back to the current global lb/kg preference.
-                                    Text(format(e.value) + " " + (e.unitRaw ?? type?.unit(pounds: weightInPounds) ?? ""))
-                                        .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.data)
-                                    Text(e.timestamp.relativeLabel())
-                                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
-                                    // Visible delete — a wrong entry (e.g. a mistyped weight) can be
-                                    // removed here, then re-logged above. (Context menu kept as a backup.)
-                                    Button { context.delete(e); try? context.save() } label: {
-                                        Image(systemName: "trash")
-                                            .font(.caption)
-                                            .foregroundStyle(BrandColor.textSecondary)
-                                            .padding(.leading, Space.xs)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel("Delete this \(type?.displayName ?? e.typeRaw) entry")
-                                }
-                                .contextMenu {
-                                    Button(role: .destructive) { context.delete(e); try? context.save() } label: { Label("Delete", systemImage: "trash") }
-                                }
-                            }
-                        }
-                    }
+                if seriesForSelected.isEmpty {
+                    firstRunGuidance
                 } else {
-                    Text("No metrics logged yet.").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    heroAndTrend
                 }
 
+                history
             }
             .padding(Space.lg)
         }
         .heroScreen()
-        .navigationTitle("Labs & metrics")
+        .navigationTitle(selected.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        // Logging is an ACTION, so it lives where actions live — not as a permanent block in a
+        // composition about a number. As a field-and-button in the flow it was a standard component
+        // sitting between the chart and the history, which is the thing that made the page read as
+        // stacked rather than authored. A toolbar affordance keeps it one tap away and gives the
+        // page back to the value and its trend.
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showLogSheet = true } label: { Image(systemName: "plus") }
+                    .tint(BrandColor.accentText)
+                    .accessibilityLabel("Log \(selected.displayName)")
+            }
+        }
+        .sheet(isPresented: $showLogSheet) { logSheet }
         .sensoryFeedback(.success, trigger: savedCount)
         .task { await health.refreshIfConnected() }
         .onChange(of: selected) { scrubDate = nil }
         .onChange(of: range) { scrubDate = nil }
+    }
+
+    /// Metric switching, as a quiet control rather than a labelled form field. It used to sit inside
+    /// a `FieldRow("Which metric?")` in the logging card, which made choosing what to LOOK at feel
+    /// like the first step of filling in a form.
+    private var metricRail: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Space.sm) {
+                ForEach(BiomarkerType.allCases) { t in chip(t) }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    /// Shown ONLY while this metric has no readings. The explanatory paragraph used to head the page
+    /// on every visit; after the first entry it is noise on a screen the user opens to read a number.
+    private var firstRunGuidance: some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            Text("Log \(selected.displayName.lowercased()) and watch it trend with your protocol.")
+                .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
+            if seriesForSelected.count == 1 {
+                Text("One more entry and the trend appears.")
+                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+            }
+        }
+    }
+
+    /// The hero and its chart, as ONE region rather than a value card above a chart widget.
+    private var heroAndTrend: some View {
+        // `Space.md`, not `lg`: the chart is not a sibling of the number, it is the number's
+        // evidence. Binding them tightly is what makes them read as one composed object.
+        VStack(alignment: .leading, spacing: Space.md) {
+            trendHero
+            if seriesForSelected.count >= 2 {
+                trendChart
+                Picker("Range", selection: $range) {
+                    ForEach(ChartRange.allCases) { r in Text(r.rawValue).tag(r) }
+                }
+                .pickerStyle(.segmented)
+                .sensoryFeedback(.selection, trigger: range)
+            }
+        }
+    }
+
+    /// Logging in ONE row instead of a form block.
+    ///
+    /// It was a `Card` holding three labelled `FieldRow`s and a full-width `PrimaryButton`, occupying
+    /// the top half of the screen permanently — so the dominant element on a page about a number was
+    /// the apparatus for entering one. A single field, its unit, and a compact commit control is the
+    /// same capability at a fraction of the vertical cost. The note stays available and collapsed.
+    private var logSheet: some View {
+        MenuSheet(title: "Log \(selected.displayName)") {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                HStack(spacing: Space.sm) {
+                    TextField(selected.placeholder, text: $valueText)
+                        .keyboardType(.decimalPad)
+                        .staxyzField()
+                    Text(selected.unit(pounds: weightInPounds))
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                        .fixedSize()
+                }
+                healthPrefillButton
+                CollapsibleNoteField(text: $note, expanded: $showNote,
+                                     hint: "Optional — e.g. \"fasting\", \"post-workout\".")
+                PrimaryButton(title: "Log \(selected.displayName)", systemImage: "plus") {
+                    save()
+                    showLogSheet = false
+                }
+                .disabled(!canSave).opacity(canSave ? 1 : 0.5)
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    /// Recent readings for THIS metric, five by default.
+    ///
+    /// Two changes make it stop reading as a database dump. It is filtered to the selected metric, so
+    /// every row no longer repeats the word "Weight" — the value becomes the row's subject. And it
+    /// shows five until asked for more, because fourteen near-identical rows competed with the chart
+    /// they exist to support.
+    @ViewBuilder private var history: some View {
+        let rows = seriesForSelected.reversed().map { $0 }
+        if !rows.isEmpty {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                SectionHeader(title: "History")
+                ForEach(showAllHistory ? rows : Array(rows.prefix(4)), id: \.id) { e in
+                    HStack(spacing: Space.sm) {
+                        Text(format(e.value) + " " + (e.unitRaw ?? selected.unit(pounds: weightInPounds)))
+                            .font(Typo.statValue).foregroundStyle(BrandColor.textPrimary)
+                        Spacer(minLength: Space.sm)
+                        Text(e.timestamp.relativeLabel())
+                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .lineLimit(1)
+                        Button { context.delete(e); try? context.save() } label: {
+                            Image(systemName: "trash")
+                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        }
+                        .buttonStyle(PressableStyle())
+                        .accessibilityLabel("Delete this \(selected.displayName) entry")
+                    }
+                    .padding(.vertical, Space.xxs)
+                    .contextMenu {
+                        Button(role: .destructive) { context.delete(e); try? context.save() } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
+                if rows.count > 4 {
+                    Button { withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { showAllHistory.toggle() } } label: {
+                        Text(showAllHistory ? "Show less" : "Show all \(rows.count)")
+                            .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                    }
+                    .buttonStyle(PressableRowStyle())
+                }
+            }
+        }
     }
 
     // MARK: - Trend card
@@ -227,19 +302,31 @@ struct BiomarkersView: View {
     private var trendHero: some View {
         let latest = seriesForSelected.last?.value ?? 0
         return VStack(alignment: .leading, spacing: Space.xs) {
-            MicroLabel(selected.displayName)
+            // No `MicroLabel(selected.displayName)` — the navigation title already names the metric,
+            // and the chip rail above shows which one is selected. Printing it a third time directly
+            // over the number added a line without adding a fact.
             HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+                // `numberHero`, not `numberLG`. This is the one thing the page exists to show, and
+                // it was rendering at the same size as a stat inside a card elsewhere in the app.
                 Text(format(latest))
-                    .font(Typo.numberLG).displayTracking()
+                    .font(Typo.numberHero).displayTracking()
                     .foregroundStyle(BrandColor.data)
                     .contentTransition(.numericText(value: latest))
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: latest)
+                    .lineLimit(1).minimumScaleFactor(0.6)
                 Text(selected.unit(pounds: weightInPounds))
-                    .font(.caption)
+                    .font(Typo.caption)
                     .foregroundStyle(BrandColor.textSecondary)
-                if let delta = deltaVsPrevious {
-                    deltaChip(delta)
-                        .padding(.leading, Space.xs)
+            }
+            // The delta moves BELOW the number rather than beside it. Sharing the baseline made two
+            // figures compete on one line; underneath, it reads as a caption to the value — which is
+            // what it is. "Direction of change" is one of the three things this page must answer at
+            // a glance, so it stays immediately adjacent.
+            HStack(spacing: Space.sm) {
+                if let delta = deltaVsPrevious { deltaChip(delta) }
+                if let last = seriesForSelected.last {
+                    Text("Updated \(last.timestamp.relativeLabel())")
+                        .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
                 }
             }
         }
