@@ -146,7 +146,7 @@ struct ReconstitutionCalculatorView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Dose off the label instead")
             }
-            .font(Typo.caption2.weight(.semibold))
+            .font(Typo.caption.weight(.semibold))
             .foregroundStyle(BrandColor.accentText)
         }
     }
@@ -180,7 +180,7 @@ struct ReconstitutionCalculatorView: View {
                 // than inventing a second voice for the same fact.
                 if let adjusted = labelVsAdjusted {
                     Text(adjusted)
-                        .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
 
                 // For a blend vial, restate what that single draw delivers per compound.
@@ -207,7 +207,7 @@ struct ReconstitutionCalculatorView: View {
                                 ForEach(vials) { v in Button(v.displayName) { applyVial(v) } }
                             } label: {
                                 Label("Use one of your vials", systemImage: "cross.vial")
-                                    .font(.caption.weight(.semibold))
+                                    .font(Typo.captionEmphasis)
                                     .foregroundStyle(BrandColor.accentText)
                                     .lineLimit(1)
                             }
@@ -256,7 +256,7 @@ struct ReconstitutionCalculatorView: View {
 
                 // Dilution education, demoted from the old result card to a screen footnote.
                 Text("Doses depend on the peptide amount and your dose — not the water. More water just dilutes it, so you draw a larger volume for the same dose.")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
             }
             .padding(Space.lg)
         }
@@ -366,7 +366,7 @@ private struct DoseHeroCard: View {
                         // Short per-keystroke roll — an appearance reveal would lag live edits.
                         .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: result?.syringeUnits)
                     Text("units")
-                        .font(Typo.caption)
+                        .font(Typo.footnote)
                         .foregroundStyle(BrandColor.textSecondary)
                 }
 
@@ -377,7 +377,7 @@ private struct DoseHeroCard: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                         Text(errorMessage)
                     }
-                    .font(.caption)
+                    .font(Typo.caption)
                     .foregroundStyle(BrandColor.warning)
                 } else {
                     HStack(alignment: .top, spacing: Space.md) {

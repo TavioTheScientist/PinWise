@@ -234,9 +234,9 @@ enum ChartPalette {
     static let categorical: [Color] = [
         Color(light: 0x4A4F5C, dark: 0xD8D8DE),   // graphite / silver — the neutral rung
         Color(light: 0x0E7C86, dark: 0x4FD1C5),   // teal   (aligns with `data`)
-        Color(light: 0x9A5B00, dark: 0xFFB020),   // amber  (aligns with `warning`)
+        Color(light: 0x8A6A1F, dark: 0xD9A94E),   // ochre — deliberately NOT `warning`
         Color(light: 0xA83A63, dark: 0xE8A0B8),   // rose   (the chrome family's data cousin)
-        Color(light: 0x1F7A45, dark: 0x18E39A),   // green — light value warmed off `success`
+        Color(light: 0x1F7A45, dark: 0x6FBF95),   // sage  — deliberately NOT `success`
     ]                                             // to widen the gap from the teal at index 1
 }
 
@@ -269,10 +269,24 @@ enum Typo {
     static let title = Font.system(.title, weight: .bold)
     static let headline = Font.system(.title3, weight: .semibold)
     static let body = Font.system(.callout)
-    static let caption = Font.system(.footnote, weight: .medium)
+    /// 13pt. Named for the STYLE it wraps, which it previously was not.
+    ///
+    /// This was `Typo.caption` wrapping `.footnote` while `Typo.caption2` wrapped `.caption` — the
+    /// names sat one rung off the styles underneath them. The cost was invisible and large: an author
+    /// who wanted a caption typed `.font(.caption)`, got output byte-identical to `Typo.caption2`, and
+    /// never learned the token existed. 142 of the app's ~316 raw font calls were that mistake. A
+    /// design system whose names do not match what they wrap is optional by construction.
+    static let footnote = Font.system(.footnote, weight: .medium)
     /// The sub-caption register (footnotes, disclaimers, secondary hints) — one token so the
     /// smallest text is consistent instead of scattered raw `.caption2`/`.footnote` calls.
-    static let caption2 = Font.system(.caption)
+    /// 12pt — the same size as a raw `.caption`, so the obvious spelling and the token now agree.
+    static let caption = Font.system(.caption)
+    /// 11pt — the smallest register. Distinct from `microLabel`, which is the same size but
+    /// semibold and uppercase-by-convention: this one is for quiet prose, that one for instrument
+    /// labels. Two names, two jobs, one size.
+    static let microCaption = Font.system(.caption2)
+    /// The semibold caption, hand-spelled 45 times before this existed.
+    static let captionEmphasis = Font.system(.caption, weight: .semibold)
     // Rounded design for vital numbers — the Apple Health/Fitness signature; reads as a
     // considered product choice rather than default system type.
     static let numberXL = Font.system(size: 40, weight: .black, design: .rounded).monospacedDigit()

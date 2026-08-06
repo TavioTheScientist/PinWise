@@ -457,7 +457,7 @@ struct LegalDocumentView: View {
                     .pickerStyle(.segmented)
 
                     Text("Effective \(LegalDocuments.effectiveDate)")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
 
                     ForEach(doc == .terms ? LegalDocuments.terms : LegalDocuments.privacy) { section in
                         VStack(alignment: .leading, spacing: Space.xs) {

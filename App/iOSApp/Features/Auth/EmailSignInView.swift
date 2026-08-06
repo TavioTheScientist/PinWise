@@ -57,7 +57,7 @@ struct EmailSignInView: View {
                     }
 
                     if isWorking {
-                        HStack(spacing: Space.sm) { ProgressView(); Text(codeSent ? "Signing you in…" : "Sending code…").font(.caption).foregroundStyle(BrandColor.textSecondary) }
+                        HStack(spacing: Space.sm) { ProgressView(); Text(codeSent ? "Signing you in…" : "Sending code…").font(Typo.caption).foregroundStyle(BrandColor.textSecondary) }
                     }
                     if let notice = auth.notice, !notice.isEmpty {
                         Text(notice).font(.footnote).foregroundStyle(BrandColor.warning)

@@ -39,7 +39,7 @@ struct DataExportView: View {
                 VStack(alignment: .leading, spacing: Space.sm) {
                     SectionHeader(title: "Your data, as a CSV")
                     Text("Exports everything you've logged in Staxyz — doses, protocols, vials, lots, symptoms, and lab/metric entries — plus your Apple Health snapshots if you've connected Health, and your COA documents themselves. It stays yours: the files go wherever you send them, and nothing is uploaded here.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     countRow("Doses", doses.count)
                     countRow("Protocols", protocols.count)
                     countRow("Vials", vials.count)
@@ -52,7 +52,7 @@ struct DataExportView: View {
             }
 
             Text("Staxyz stores everything on this device and syncs nothing. This export is the way to keep a copy — including the COA files, which aren't part of any automatic backup.")
-                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 .padding(.horizontal, Space.lg)
 
             if let url = exportURL {
@@ -76,7 +76,7 @@ struct DataExportView: View {
             } else {
                 Text(totalRows == 0 ? "Nothing to export yet — log a dose or connect Health first."
                                     : "Preparing your file…")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -87,7 +87,7 @@ struct DataExportView: View {
         HStack {
             Text(label).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
             Spacer()
-            Text("\(n)").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+            Text("\(n)").font(Typo.captionEmphasis).foregroundStyle(BrandColor.textSecondary)
         }
         .padding(.vertical, 1)
     }

@@ -220,7 +220,7 @@ struct FieldRow<Content: View>: View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
             if let hint {
-                Text(hint).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                Text(hint).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
             content.padding(.top, 2)
         }
@@ -248,11 +248,11 @@ struct CollapsibleNoteField: View {
                     Text(text.isEmpty ? "Add a note" : title)
                         .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                     if !expanded, !text.isEmpty {
-                        Text(text).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                        Text(text).font(Typo.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                     }
                     Spacer(minLength: Space.sm)
                     Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.captionEmphasis).foregroundStyle(BrandColor.textSecondary)
                         .rotationEffect(.degrees(expanded ? 0 : -90))
                 }
                 .contentShape(.rect)
@@ -261,7 +261,7 @@ struct CollapsibleNoteField: View {
 
             if expanded {
                 VStack(alignment: .leading, spacing: Space.xs) {
-                    if let hint { Text(hint).font(.caption).foregroundStyle(BrandColor.textSecondary) }
+                    if let hint { Text(hint).font(Typo.caption).foregroundStyle(BrandColor.textSecondary) }
                     TextField(placeholder, text: $text, axis: .vertical).staxyzField()
                 }
             }
@@ -318,7 +318,7 @@ struct DisclosureRow<Content: View>: View {
                             .minimumScaleFactor(0.85)
                     }
                     Image(systemName: "chevron.down")
-                        .font(.caption.weight(.semibold))
+                        .font(Typo.captionEmphasis)
                         .foregroundStyle(BrandColor.textSecondary)
                         .rotationEffect(.degrees(isExpanded ? 0 : -90))
                 }
@@ -334,7 +334,7 @@ struct DisclosureRow<Content: View>: View {
             if isExpanded {
                 VStack(alignment: .leading, spacing: Space.xs) {
                     if let hint {
-                        Text(hint).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        Text(hint).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                     content().frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -347,7 +347,7 @@ struct SectionHeader: View {
     let title: String
     var body: some View {
         Text(title.uppercased())
-            .font(Typo.caption)
+            .font(Typo.footnote)
             .fontWeight(.semibold)
             .tracking(1.2)
             .foregroundStyle(BrandColor.textSecondary)
@@ -485,7 +485,7 @@ struct SelectableChip: View {
     var body: some View {
         Button(action: action) {
             label
-                .font(.caption.weight(.semibold))
+                .font(Typo.captionEmphasis)
                 .foregroundStyle(isSelected ? BrandColor.onAccent : BrandColor.textPrimary)
                 .padding(.horizontal, Space.md)
                 .padding(.vertical, Space.sm)
@@ -598,10 +598,10 @@ struct AppliedFilterHeader: View {
     var body: some View {
         HStack {
             Text("\(count) result\(count == 1 ? "" : "s")")
-                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.footnote).foregroundStyle(BrandColor.textSecondary)
             Spacer()
             Button("Clear", action: onClear)
-                .font(Typo.caption.weight(.semibold)).tint(BrandColor.accentText)
+                .font(Typo.footnote.weight(.semibold)).tint(BrandColor.accentText)
         }
     }
 }
@@ -761,14 +761,14 @@ struct DisclosureSection<Content: View>: View {
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 if let scent, !isExpanded, collapsible {
-                    Text(scent).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    Text(scent).font(Typo.footnote).foregroundStyle(BrandColor.textSecondary)
                         .lineLimit(1)
                 }
             }
             Spacer(minLength: Space.sm)
             if showChevron {
                 Image(systemName: "chevron.down")
-                    .font(.caption.weight(.semibold))
+                    .font(Typo.captionEmphasis)
                     .foregroundStyle(BrandColor.textSecondary)
                     .rotationEffect(.degrees(isExpanded ? 0 : -90))
                     .padding(.top, Space.xs)
@@ -844,6 +844,9 @@ extension View {
     /// Tightens tracking for large display type. Pair with `Typo.screenTitle` / `title` / `numberXL` /
     /// `numberLG` / `numberHero` — never with body or caption text, which wants the opposite sign.
     func displayTracking() -> some View { modifier(DisplayTracking()) }
+    /// The 20pt rung. `Typo.headline` renders at ~34 sites and was the one register in the scale with
+    /// no optical adjustment at all — the constant was declared and documented, then never wired up.
+    func headlineTracking() -> some View { modifier(HeadlineTracking()) }
 }
 
 /// Tracking for large display type, scaled with the text so the em ratio holds.
@@ -854,6 +857,11 @@ extension View {
 /// −0.02em at the default size, but roughly −0.013em at accessibility sizes — which is the "one value
 /// for every size is wrong somewhere" fault this modifier exists to avoid, re-appearing at exactly the
 /// sizes where tightening matters most. `@ScaledMetric` scales the base with the font, holding the ratio.
+private struct HeadlineTracking: ViewModifier {
+    @ScaledMetric(relativeTo: .title3) private var amount: CGFloat = Typo.headlineTracking
+    func body(content: Content) -> some View { content.tracking(amount) }
+}
+
 private struct DisplayTracking: ViewModifier {
     @ScaledMetric(relativeTo: .largeTitle) private var amount: CGFloat = Typo.displayTracking
     func body(content: Content) -> some View { content.tracking(amount) }

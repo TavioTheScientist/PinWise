@@ -118,7 +118,9 @@ private struct SettingsRow: View {
     @ScaledMetric(relativeTo: .callout) private var iconTile: CGFloat = 30
     let title: String
     let icon: String
-    var tint: Color = BrandColor.accentText
+    // Defaults to the decision, not away from it: the per-row hues were removed on purpose
+    // (see the note above), so a row added without a tint must inherit that, not the brand metal.
+    var tint: Color = BrandColor.textSecondary
     var value: String? = nil
 
     var body: some View {
@@ -135,7 +137,7 @@ private struct SettingsRow: View {
                 .layoutPriority(1)
             Spacer(minLength: Space.sm)
             if let value {
-                Text(value).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                Text(value).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
@@ -173,7 +175,7 @@ private struct NotificationsSettingsView: View {
                             VStack(alignment: .leading, spacing: Space.xxs) {
                                 Text("Show compound names").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                 Text("Off keeps doses private — reminders just say “Dose due now.”")
-                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -253,7 +255,7 @@ private struct PrivacySecuritySettingsView: View {
                                     Text("Unlock with \(BiometricLock.biometryName)")
                                         .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                     Text("Require \(BiometricLock.biometryName) each time you open Staxyz. Off by default.")
-                                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
@@ -265,7 +267,7 @@ private struct PrivacySecuritySettingsView: View {
                                 Text("Share Apple Health with Natt")
                                     .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                 Text("Let Natt use your Apple Health metrics — weight, heart rate, HRV, sleep, steps — to personalize answers. You agree to this when you start using Natt; turn it off anytime.")
-                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -308,7 +310,7 @@ private struct AboutSettingsView: View {
                     }
                 }
                 Text("Staxyz is for tracking and education — not medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
             }
             .padding(Space.lg)
         }
@@ -339,7 +341,7 @@ private struct AboutSettingsView: View {
         HStack {
             Text(key).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
             Spacer()
-            Text(value).font(.caption).foregroundStyle(BrandColor.textSecondary)
+            Text(value).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
         }
     }
 }
@@ -385,7 +387,7 @@ struct MembershipView: View {
 
             Button { Task { await subs.restore() } } label: {
                 Text(subs.isWorking ? "Restoring…" : "Restore purchases")
-                    .font(.caption.weight(.semibold))
+                    .font(Typo.captionEmphasis)
                     .foregroundStyle(BrandColor.accentText)
                     .frame(maxWidth: .infinity)
             }
@@ -428,7 +430,7 @@ struct MembershipView: View {
                     Text(daysLeft == 0
                          ? "Subscribe to keep everything below."
                          : "Nothing changes until it ends, and nothing is charged before then.")
-                        .font(Typo.caption)
+                        .font(Typo.footnote)
                         .foregroundStyle(BrandColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -471,7 +473,7 @@ struct MembershipView: View {
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                Text(detail).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -491,7 +493,7 @@ struct MembershipView: View {
                     Spacer(minLength: 0)
                 }
                 Text(renewalLine)
-                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.footnote).foregroundStyle(BrandColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -512,7 +514,7 @@ struct MembershipView: View {
                     }
                 }
                 Text("Subscriptions are managed by Apple in your App Store account.")
-                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
 
@@ -521,7 +523,7 @@ struct MembershipView: View {
                 SectionHeader(title: "Included")
                 Text("Your full stack and history, every tool, Natt at 10 messages a day, and a "
                      + "full export whenever you want it.")
-                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.footnote).foregroundStyle(BrandColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -569,11 +571,11 @@ struct MembershipView: View {
                     Text(name).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                     if isBestValue { TagChip(text: "Best value") }
                 }
-                Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                Text(detail).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
             Spacer(minLength: Space.sm)
             Text(headline)
-                .font(.caption.weight(.semibold))
+                .font(Typo.captionEmphasis)
                 .foregroundStyle(BrandColor.textPrimary)
                 .monospacedDigit()
         }

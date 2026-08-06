@@ -155,7 +155,7 @@ struct BiomarkersView: View {
                     trendCard
                 } else if !seriesForSelected.isEmpty {
                     Text("Log \(selected.displayName) at least twice to see a trend.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
 
                 if !entries.isEmpty {
@@ -170,14 +170,14 @@ struct BiomarkersView: View {
                                     // Honor the unit stored at entry time (provenance); legacy rows
                                     // (nil) fall back to the current global lb/kg preference.
                                     Text(format(e.value) + " " + (e.unitRaw ?? type?.unit(pounds: weightInPounds) ?? ""))
-                                        .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.data)
+                                        .font(Typo.captionEmphasis).foregroundStyle(BrandColor.data)
                                     Text(e.timestamp.relativeLabel())
-                                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                     // Visible delete — a wrong entry (e.g. a mistyped weight) can be
                                     // removed here, then re-logged above. (Context menu kept as a backup.)
                                     Button { context.delete(e); try? context.save() } label: {
                                         Image(systemName: "trash")
-                                            .font(.caption)
+                                            .font(Typo.caption)
                                             .foregroundStyle(BrandColor.textSecondary)
                                             .padding(.leading, Space.xs)
                                     }
@@ -191,7 +191,7 @@ struct BiomarkersView: View {
                         }
                     }
                 } else {
-                    Text("No metrics logged yet.").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    Text("No metrics logged yet.").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
 
             }
@@ -235,7 +235,7 @@ struct BiomarkersView: View {
                     .contentTransition(.numericText(value: latest))
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: latest)
                 Text(selected.unit(pounds: weightInPounds))
-                    .font(.caption)
+                    .font(Typo.caption)
                     .foregroundStyle(BrandColor.textSecondary)
                 if let delta = deltaVsPrevious {
                     deltaChip(delta)
@@ -252,7 +252,7 @@ struct BiomarkersView: View {
                 .font(.system(size: 9, weight: .semibold))
             Text(format(abs(delta)) + " " + selected.unit(pounds: weightInPounds))
         }
-        .font(.caption.weight(.semibold))
+        .font(Typo.captionEmphasis)
         .foregroundStyle(BrandColor.textSecondary)
         .padding(.horizontal, Space.sm)
         .padding(.vertical, Space.xs)
@@ -271,19 +271,30 @@ struct BiomarkersView: View {
                     yStart: .value("Base", yDomain.lowerBound),
                     yEnd: .value(selected.rawValue, e.value)
                 )
-                .foregroundStyle(BrandColor.data.opacity(0.16))
+                // Gradient to zero rather than a flat 0.16 slab. A block fill terminating in a hard
+                // edge at the axis competes with the line it sits under and carries no information
+                // the fitted domain does not already give. Home's sparkline is the house reference.
+                .foregroundStyle(LinearGradient(colors: [BrandColor.data.opacity(0.18),
+                                                         BrandColor.data.opacity(0)],
+                                                startPoint: .top, endPoint: .bottom))
                 .interpolationMethod(.monotone)
                 LineMark(x: .value("Date", e.timestamp), y: .value(selected.rawValue, e.value))
                     .foregroundStyle(BrandColor.data)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                     .interpolationMethod(.monotone)
+                // Density-gated. A dot per entry means ~90 filled symbols across a 90-day series, at
+                // which point the dots ARE the texture and the line reads as a connector between
+                // them — the data stops being the most prominent element, which is the one rule.
+                // Below a dozen points the dots are useful; above it they are noise.
                 PointMark(x: .value("Date", e.timestamp), y: .value(selected.rawValue, e.value))
                     .foregroundStyle(BrandColor.data)
-                    .symbolSize(36)
+                    .symbolSize(chartSeries.count <= 12 ? 30 : 0)
             }
             if let s = scrubbedEntry {
+                // Not `stroke` — that is the GRIDLINE token, so the indicator tracking the user's
+                // finger was indistinguishable from decoration.
                 RuleMark(x: .value("Date", s.timestamp))
-                    .foregroundStyle(BrandColor.stroke)
+                    .foregroundStyle(BrandColor.textSecondary.opacity(0.8))
                     .lineStyle(StrokeStyle(lineWidth: 1))
                 PointMark(x: .value("Date", s.timestamp), y: .value(selected.rawValue, s.value))
                     .foregroundStyle(BrandColor.data)
@@ -318,7 +329,7 @@ struct BiomarkersView: View {
                 .monospacedDigit()
                 .foregroundStyle(BrandColor.textPrimary)
             Text(e.timestamp, format: .dateTime.month(.abbreviated).day())
-                .font(.caption2)
+                .font(Typo.microCaption)
                 .foregroundStyle(BrandColor.textSecondary)
         }
         .padding(.horizontal, Space.sm)
@@ -337,7 +348,7 @@ struct BiomarkersView: View {
             let display = weightInPounds ? kg * 2.20462 : kg
             Button { valueText = format(display) } label: {
                 Text("Use Health weight — \(format(display)) \(selected.unit(pounds: weightInPounds))")
-                    .font(.caption.weight(.semibold))
+                    .font(Typo.captionEmphasis)
                     .foregroundStyle(BrandColor.data)
             }
             .buttonStyle(.plain)

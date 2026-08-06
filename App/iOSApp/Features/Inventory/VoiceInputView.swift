@@ -38,7 +38,7 @@ struct VoiceInputView: View {
                     }
 
                     if isReading {
-                        HStack(spacing: Space.sm) { ProgressView(); Text("Reading…").font(.caption).foregroundStyle(BrandColor.textSecondary) }
+                        HStack(spacing: Space.sm) { ProgressView(); Text("Reading…").font(Typo.caption).foregroundStyle(BrandColor.textSecondary) }
                     }
                     if let error {
                         Text(error).font(.footnote).foregroundStyle(BrandColor.warning)
@@ -82,7 +82,7 @@ struct VoiceInputView: View {
                 row("Expires", r.expiration.map { $0.formatted(.dateTime.month().day().year()) } ?? "—")
                 if r.isEmpty {
                     Text("Didn't catch that. Say the compound, dose, and any volume or expiry clearly, then try again.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 } else {
                     PrimaryButton(title: "Use these details", systemImage: "checkmark") {
                         onApply(r); dismiss()
@@ -102,7 +102,7 @@ struct VoiceInputView: View {
 
     private func row(_ key: String, _ value: String) -> some View {
         HStack {
-            Text(key).font(.caption).foregroundStyle(BrandColor.textSecondary)
+            Text(key).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             Spacer()
             Text(value).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
         }

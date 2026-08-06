@@ -127,7 +127,7 @@ struct ProtocolBuilderView: View {
                         VStack(alignment: .leading, spacing: Space.lg) {
                             Text("Your dose from each vial").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                             Text("Set the dose you take per injection — not the vial's total. One vial makes a protocol; add more to build a stack that shares the schedule below.")
-                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
 
                             ForEach($items) { $item in
                                 VStack(alignment: .leading, spacing: Space.sm) {
@@ -139,7 +139,7 @@ struct ProtocolBuilderView: View {
                                                 .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                                             if let vid = item.vialID, let v = vials.first(where: { $0.id == vid }) {
                                                 Label("From \(v.displayName)", systemImage: "cross.vial.fill")
-                                                    .font(.caption2).foregroundStyle(BrandColor.accentText)
+                                                    .font(Typo.microCaption).foregroundStyle(BrandColor.accentText)
                                             }
                                         }
                                         Spacer()
@@ -164,10 +164,10 @@ struct ProtocolBuilderView: View {
                                                 .font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                                             ForEach(breakdown) { line in
                                                 HStack {
-                                                    Text(line.name).font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                                    Text(line.name).font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                                     Spacer()
                                                     Text(line.dose.displayString(in: item.doseUnit))
-                                                        .font(.caption2).foregroundStyle(BrandColor.textPrimary)
+                                                        .font(Typo.microCaption).foregroundStyle(BrandColor.textPrimary)
                                                 }
                                             }
                                         }
@@ -180,7 +180,7 @@ struct ProtocolBuilderView: View {
 
                             if vials.isEmpty {
                                 Text("No vials yet — add one under Your vials first. Protocols schedule doses from the vials you own.")
-                                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                             } else {
                                 // Exclude vials already on the protocol — adding the same physical
                                 // vial twice would double-count one injection.
@@ -189,7 +189,7 @@ struct ProtocolBuilderView: View {
                                     ForEach(available) { v in Button(v.displayName) { addVial(v) } }
                                 } label: {
                                     Label(items.isEmpty ? "Choose a vial" : "Add another vial", systemImage: "plus")
-                                        .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                                        .font(Typo.captionEmphasis).foregroundStyle(BrandColor.accentText)
                                 }
                                 .disabled(available.isEmpty)
                             }
@@ -211,7 +211,7 @@ struct ProtocolBuilderView: View {
                                 Stepper("Every \(intervalDays) days", value: $intervalDays, in: 1...30)
                                     .foregroundStyle(BrandColor.textPrimary)
                             } else if kind == .specificWeekdays || kind == .weekly {
-                                Text("Which days?").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                Text("Which days?").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                                 weekdayPicker
                             }
                         }

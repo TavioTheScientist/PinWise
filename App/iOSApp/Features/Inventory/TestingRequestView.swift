@@ -49,7 +49,7 @@ struct TestingRequestView: View {
                 Text(lot.compoundName.isEmpty ? "Unnamed compound" : lot.compoundName)
                     .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 if !lot.displaySummary.isEmpty {
-                    Text(lot.displaySummary).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    Text(lot.displaySummary).font(Typo.footnote).foregroundStyle(BrandColor.textSecondary)
                 }
             }
         }
@@ -69,7 +69,7 @@ struct TestingRequestView: View {
                             VStack(alignment: .leading, spacing: Space.xxs) {
                                 Text(kind.label).font(.body.weight(.semibold))
                                     .foregroundStyle(BrandColor.textPrimary)
-                                Text(kind.blurb).font(Typo.caption2)
+                                Text(kind.blurb).font(Typo.caption)
                                     .foregroundStyle(BrandColor.textSecondary)
                             }
                             Spacer(minLength: 0)
@@ -95,7 +95,7 @@ struct TestingRequestView: View {
             .disabled(kinds.isEmpty)
 
         Text("This is not an order. Nothing is charged, nothing is shipped, and no test is booked. Staxyz uses these to decide which testing partnerships to pursue first.")
-            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
     }
 
     @ViewBuilder
@@ -111,7 +111,7 @@ struct TestingRequestView: View {
             }
         }
         Text("Saved on your device. You can see and remove your requests from this lot at any time.")
-            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
     }
 
     private func submit() {

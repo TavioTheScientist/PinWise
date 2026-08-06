@@ -295,7 +295,7 @@ struct ProtocolSummary: View {
 
             // The compounds and the dose, on one quiet line.
             Text(presentation.perShot ?? "\(presentation.contents) · \(presentation.doseText)")
-                .font(Typo.caption2)
+                .font(Typo.caption)
                 .foregroundStyle(BrandColor.textSecondary)
 
             // Deliberately `textSecondary`, NOT `warning`. A planned dose increase weeks out is
@@ -303,7 +303,7 @@ struct ProtocolSummary: View {
             // sitting directly above it, and two ambers mean neither reads as the alarm.
             if let titrationNote = presentation.titrationNote {
                 Label(titrationNote, systemImage: "chart.line.uptrend.xyaxis")
-                    .font(Typo.caption2.weight(.semibold))
+                    .font(Typo.caption.weight(.semibold))
                     .foregroundStyle(BrandColor.textSecondary)
             }
 
@@ -312,7 +312,7 @@ struct ProtocolSummary: View {
             // things that already went wrong, not for things merely scheduled.
             if let overdueNote = presentation.overdueNote {
                 Label(overdueNote, systemImage: "exclamationmark.triangle.fill")
-                    .font(Typo.caption2.weight(.semibold))
+                    .font(Typo.caption.weight(.semibold))
                     .foregroundStyle(BrandColor.danger)
             }
 
@@ -376,7 +376,7 @@ struct ProtocolSummary: View {
                 chevron
             }
             Text("\(presentation.cadence) · \(presentation.contents)")
-                .font(Typo.caption2)
+                .font(Typo.caption)
                 .foregroundStyle(BrandColor.textSecondary)
                 .lineLimit(1)
         }

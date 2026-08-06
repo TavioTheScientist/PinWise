@@ -317,12 +317,12 @@ struct ProfileView: View {
 
             if let photoError {
                 Text(photoError)
-                    .font(.caption)
+                    .font(Typo.caption)
                     .foregroundStyle(BrandColor.warning)
             }
             if photos.image != nil {
                 Button("Remove photo") { photos.clear() }
-                    .font(.caption.weight(.semibold))
+                    .font(Typo.captionEmphasis)
                     .foregroundStyle(BrandColor.textSecondary)
             }
         }
@@ -476,7 +476,7 @@ struct ProfileView: View {
             Text(label).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
             Spacer()
             HStack(spacing: Space.xs) {
-                if let icon { Image(systemName: icon).font(.caption) }
+                if let icon { Image(systemName: icon).font(Typo.caption) }
                 Text(value).font(.caption.weight(.medium))
             }
             .foregroundStyle(BrandColor.textSecondary)

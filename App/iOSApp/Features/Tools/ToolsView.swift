@@ -170,7 +170,7 @@ struct ToolsCustomizeView: View {
                         }
                 } footer: {
                     Text("Drag to reorder. Turn a tool off to hide it from the Tools tab — you can turn it back on any time.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
                 .listRowBackground(BrandColor.surface)
             }
@@ -215,7 +215,7 @@ struct ToolsCustomizeView: View {
                 .background(item.hue.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 1) {
                 Text(item.title).font(.body.weight(.medium)).foregroundStyle(BrandColor.textPrimary)
-                Text(item.subtitle).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                Text(item.subtitle).font(Typo.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
             }
             Spacer(minLength: Space.sm)
             Toggle("", isOn: Binding(
@@ -273,7 +273,7 @@ private struct ToolCard: View {
                     Spacer(minLength: Space.md)
                     VStack(alignment: .leading, spacing: Space.xs) {
                         Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                        Text(subtitle).font(.caption).foregroundStyle(BrandColor.textSecondary).multilineTextAlignment(.leading)
+                        Text(subtitle).font(Typo.caption).foregroundStyle(BrandColor.textSecondary).multilineTextAlignment(.leading)
                     }
                 }
                 // minHeight on the INNER content keeps grid tiles equal-height (Card pads
@@ -420,7 +420,7 @@ struct TitrationPreviewView: View {
                                 VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text(phase.dose.displayString).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                                     Text("\(phase.startDate.formatted(.dateTime.month().day())) – \(phase.endDate.formatted(.dateTime.month().day())) · \(weeks(phase.durationDays)) wks")
-                                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                                 }
                                 Spacer()
                                 if template.initiationOnlyStepIndices.contains(phase.id) {
@@ -544,7 +544,7 @@ struct RampUpPlannerView: View {
                 Text(activeProtocols.isEmpty
                      ? "Add an active protocol first, then build its titration plan."
                      : "Set a dose ladder; your protocol's dose steps up on its own as each phase ends.")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
             .listRowBackground(BrandColor.surface)
 
@@ -556,7 +556,7 @@ struct RampUpPlannerView: View {
                             HStack(spacing: Space.sm) {
                                 VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
-                                    Text(planSummary(p)).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                                    Text(planSummary(p)).font(Typo.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                                 }
                                 Spacer(minLength: Space.sm)
                                 Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
@@ -575,7 +575,7 @@ struct RampUpPlannerView: View {
 
             Section {
                 Text("Informational planning aid, not medical advice. Discuss any dose change with your clinician.")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
             }
             .listRowBackground(Color.clear)
         }
@@ -657,7 +657,7 @@ private struct RampBuilderSheet: View {
                         if !phases.isEmpty { previewCard }
                     }
                     Text("Informational planning aid, not medical advice. Discuss any dose change with your clinician.")
-                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 }
                 .padding(Space.lg)
             }
@@ -726,7 +726,7 @@ private struct RampBuilderSheet: View {
                 }
                 Button { addPhase() } label: {
                     Label("Add a phase", systemImage: "plus.circle.fill")
-                        .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                        .font(Typo.captionEmphasis).foregroundStyle(BrandColor.accentText)
                 }
                 .buttonStyle(PressableRowStyle())   // full-width "Add a phase" row
             }
@@ -741,7 +741,7 @@ private struct RampBuilderSheet: View {
                     HStack {
                         Text(r.dose).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         Spacer()
-                        Text(r.range).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        Text(r.range).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
             }
@@ -779,11 +779,11 @@ private struct RampBuilderSheet: View {
     /// a chopped "wk" would leave the number unitless.
     @ViewBuilder private func phaseDuration(_ phase: Binding<EditablePhase>) -> some View {
         HStack(spacing: Space.sm) {
-            Text("for").font(.caption).foregroundStyle(BrandColor.textSecondary).fixedSize()
+            Text("for").font(Typo.caption).foregroundStyle(BrandColor.textSecondary).fixedSize()
             TextField("4", text: phase.weeksText)
                 .keyboardType(.numberPad).staxyzField()
                 .frame(minWidth: 44)
-            Text("wks").font(.caption).foregroundStyle(BrandColor.textSecondary).fixedSize()
+            Text("wks").font(Typo.caption).foregroundStyle(BrandColor.textSecondary).fixedSize()
         }
     }
 

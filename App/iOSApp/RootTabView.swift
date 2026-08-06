@@ -240,7 +240,10 @@ private struct StaxyzTabBar: View {
             // Rectangle would leave that upper arc of the primary CTA silently untappable.
             .contentShape(TabHitShape(topExtension: prominent ? chipSize - iconRow : 0))
         }
-        .buttonStyle(.plain)
+        // The app's PRIMARY NAVIGATION was the only interactive surface in the product with no
+        // press response — after a whole pass on press feedback everywhere else. `.plain` is less
+        // feedback than the default: it strips even the opacity dim.
+        .buttonStyle(PressableStyle())
         .accessibilityLabel(item == .log ? "Log a dose" : label)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }

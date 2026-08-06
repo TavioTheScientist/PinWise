@@ -110,9 +110,9 @@ struct SymptomsView: View {
                         }
                         VStack(alignment: .leading, spacing: Space.xs) {
                             HStack {
-                                Text("How strong?").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                Text("How strong?").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                                 Spacer()
-                                Text("\(Int(severity)) / 10").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
+                                Text("\(Int(severity)) / 10").font(Typo.captionEmphasis).foregroundStyle(BrandColor.textPrimary)
                             }
                             // `controlOn`, not `accent`: the system draws the slider knob in white,
                             // and the chrome accent is light on dark.
@@ -185,13 +185,13 @@ struct SymptomsView: View {
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(SymptomType(rawValue: e.symptomRaw)?.displayName ?? e.symptomRaw).font(.body).foregroundStyle(BrandColor.textPrimary)
                                         if !e.notes.isEmpty {
-                                            Text(e.notes).font(.caption2).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                                            Text(e.notes).font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                                         }
                                     }
                                     Spacer()
-                                    Text("\(e.severity) / 10").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                                    Text("\(e.severity) / 10").font(Typo.captionEmphasis).foregroundStyle(BrandColor.accentText)
                                     Text(e.timestamp.relativeLabel())
-                                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                 }
                                 .contextMenu {
                                     Button(role: .destructive) { context.delete(e); try? context.save() } label: { Label("Delete", systemImage: "trash") }
@@ -200,7 +200,7 @@ struct SymptomsView: View {
                         }
                     }
                 } else {
-                    Text("No symptoms logged yet.").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    Text("No symptoms logged yet.").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
             }
             .padding(Space.lg)

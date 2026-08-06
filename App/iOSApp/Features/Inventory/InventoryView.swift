@@ -82,7 +82,7 @@ struct InventoryList: View {
                                 Label(projection.wholeDosesRemaining == 0 ? "Depleted — remove from inventory"
                                                                           : "Expired — remove from inventory",
                                       systemImage: "trash.slash")
-                                    .font(.caption.weight(.semibold))
+                                    .font(Typo.captionEmphasis)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, Space.sm)
                             }
@@ -130,7 +130,7 @@ struct InventoryList: View {
                             .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                         Text(lots.isEmpty ? "Track what was actually in the vial"
                                           : "\(lots.count) lot\(lots.count == 1 ? "" : "s") recorded")
-                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.right")
@@ -245,7 +245,7 @@ struct VialRow: View {
         }
         if let perShot = vial.perShotSummary {
             Text("Per shot: " + perShot)
-                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
         }
         // The factual timeline: only clauses the user themselves recorded. It sits ABOVE the discard
         // guideline deliberately — what you actually told us outranks a generic 28-day convention, and
@@ -253,13 +253,13 @@ struct VialRow: View {
         // nothing is recorded; the builder is where an empty record gets filled, not here.
         if let stability = ReconstitutionTimeline.sentence(for: vial.reconstitutionRecord) {
             Text(stability)
-                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
         }
         if let bud = projection.beyondUseDate {
             Text(bud < Date()
                  ? "Past its 28-day discard guideline — inspect before use."
                  : "Discard guideline: \(bud.formatted(.dateTime.month().day())) · 28-day mixed-vial window")
-                .font(.caption2)
+                .font(Typo.microCaption)
                 .foregroundStyle(bud < Date() ? BrandColor.warning : BrandColor.textSecondary)
         }
     }
@@ -495,7 +495,7 @@ struct VialBuilderView: View {
     private var blendHero: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
             HStack(spacing: Space.xs) {
-                Image(systemName: "syringe.fill").font(.caption).foregroundStyle(BrandColor.accent)
+                Image(systemName: "syringe.fill").font(Typo.caption).foregroundStyle(BrandColor.accent)
                 Text("This shot delivers").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
             }
             if let breakdown = liveBlendBreakdown {
@@ -514,17 +514,17 @@ struct VialBuilderView: View {
                 }
             } else {
                 Text("Enter each ingredient's amount and a dose to see the split.")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
             Divider().overlay(BrandColor.stroke)
             Text("Everything is mixed in one vial, so a shot always pulls this exact ratio. Choose which compound to dose by above — the rest follow.")
-                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             Label {
                 Text(separateVialsSuggestion)
             } icon: {
                 Image(systemName: isPremixed ? "info.circle" : "square.stack.3d.up")
             }
-            .font(.caption).foregroundStyle(BrandColor.accentText)
+            .font(Typo.caption).foregroundStyle(BrandColor.accentText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Space.md)
@@ -548,7 +548,7 @@ struct VialBuilderView: View {
                     }
                     .pickerStyle(.segmented)
                     Text(isPremixed ? "Ready-to-use liquid from a pharmacy — enter it the way the label reads." : "A powder you mix with water yourself.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     // Fill from a photo or by voice — available in both modes. What's read decides
@@ -558,7 +558,7 @@ struct VialBuilderView: View {
                         captureButton("Speak", icon: "mic.fill") { showVoice = true }
                     }
                     Text("Snap the label or say the details — Staxyz fills in what it can, on your device.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     Card {
@@ -567,11 +567,11 @@ struct VialBuilderView: View {
                             Text(isPremixed
                                  ? "Enter each ingredient's strength from the label. One ingredient = a single-compound vial; add more for a blend."
                                  : "One ingredient = a single-compound vial. Add more to make a blend.")
-                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
 
                             if isPremixed {
                                 HStack {
-                                    Text("Strength unit").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                    Text("Strength unit").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                                     Spacer()
                                     concentrationUnitPicker
                                 }
@@ -579,7 +579,7 @@ struct VialBuilderView: View {
 
                             if entries.count > 1 {
                                 Text("Tap a circle to choose which compound you dose by — the rest scale to it.")
-                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                             }
                             ForEach($entries) { $entry in
                                 VStack(spacing: Space.sm) {
@@ -625,7 +625,7 @@ struct VialBuilderView: View {
 
                             HStack {
                                 Button { entries.append(APIEntry(compound: CompoundCatalog.bpc157, amountText: "", unit: .milligram)) } label: {
-                                    Label("Add ingredient", systemImage: "plus").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                                    Label("Add ingredient", systemImage: "plus").font(Typo.captionEmphasis).foregroundStyle(BrandColor.accentText)
                                 }
                                 .buttonStyle(.plain)
                                 Spacer()
@@ -635,7 +635,7 @@ struct VialBuilderView: View {
                                             Button(b.name) { applyPreset(b) }
                                         }
                                     } label: {
-                                        Label("Use a blend preset", systemImage: "square.grid.2x2").font(.caption).foregroundStyle(BrandColor.accentText)
+                                        Label("Use a blend preset", systemImage: "square.grid.2x2").font(Typo.caption).foregroundStyle(BrandColor.accentText)
                                     }
                                 }
                             }
@@ -672,7 +672,7 @@ struct VialBuilderView: View {
                             VStack(alignment: .leading, spacing: Space.sm) {
                                 SectionHeader(title: "Refill")
                                 Text("Finished this vial? Start a full one with the same specs — compound, concentration, dose — no re-entering. Your logged doses are kept.")
-                                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                                 Button { refill() } label: {
                                     Label("Refill — new vial, same specs", systemImage: "arrow.triangle.2.circlepath")
                                         .font(.footnote.weight(.semibold))
@@ -700,7 +700,7 @@ struct VialBuilderView: View {
                                         DatePicker("", selection: $expiration, displayedComponents: [.date]).labelsHidden()
                                     }
                                     Text("US Pharmacopeia (USP) recommends discarding a multi-dose vial about 28 days after opening or mixing, to limit bacterial or fungal growth. Robust peptides may stay potent longer, but 28 days is the standard safe window.")
-                                        .font(.caption2)
+                                        .font(Typo.microCaption)
                                         .foregroundStyle(BrandColor.textSecondary)
                                     // One-tap window presets (28 = the USP default). Sets the discard
                                     // date to today + N days; fine-tune with the picker above.
@@ -710,14 +710,14 @@ struct VialBuilderView: View {
                                     // uses the app's existing chip rail rather than clipping. Adding a
                                     // sixth preset later now costs nothing.
                                     HStack(spacing: Space.sm) {
-                                        Text("Window").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                        Text("Window").font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                         FilterChipRail {
                                             ForEach([14, 28, 45, 60, 90], id: \.self) { d in
                                                 Button {
                                                     expiration = Calendar.current.date(byAdding: .day, value: d, to: Date()) ?? Date()
                                                 } label: {
                                                     Text("\(d)d")
-                                                        .font(.caption.weight(.semibold))
+                                                        .font(Typo.captionEmphasis)
                                                         .padding(.horizontal, Space.sm).padding(.vertical, 4)
                                                         .background(BrandColor.surfaceElevated, in: Capsule())
                                                         .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
@@ -734,13 +734,13 @@ struct VialBuilderView: View {
                                             expiration = Calendar.current.date(byAdding: .day, value: suggestedBUDDays, to: Date()) ?? Date()
                                         } label: {
                                             Label("Suggested for \(name): \(suggestedBUDDays) days", systemImage: "sparkles")
-                                                .font(.caption.weight(.semibold))
+                                                .font(Typo.captionEmphasis)
                                                 .foregroundStyle(BrandColor.accentText)
                                         }
                                         .buttonStyle(.plain)
                                         if suggestedBUDDays < BeyondUseGuidance.defaultDays {
                                             Text("\(name) is less stable once mixed — a shorter window is suggested.")
-                                                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                                .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                         }
                                     }
                                 }
@@ -1037,7 +1037,7 @@ struct VialBuilderView: View {
         ) {
             VStack(alignment: .leading, spacing: Space.lg) {
                 Text("Staxyz records this and states it back to you. It does not turn it into a potency or a shelf life — there is no measured stability data for most peptides, and a number without data behind it is a guess wearing a decimal point.")
-                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
 
                 if !isPremixed {
                     FieldRow("Diluent", hint: "Bacteriostatic water contains a preservative; plain sterile water does not.") {
@@ -1109,7 +1109,7 @@ struct VialBuilderView: View {
                         }
                         newExcursionHours = ""
                     } label: {
-                        Text("Add").font(.caption.weight(.semibold))
+                        Text("Add").font(Typo.captionEmphasis)
                     }
                     .buttonStyle(PressableStyle())
                     .disabled(Double(newExcursionHours).map { $0 <= 0 } ?? true)
@@ -1119,9 +1119,9 @@ struct VialBuilderView: View {
             ForEach(excursions) { ex in
                 HStack(spacing: Space.sm) {
                     Text("\(ex.durationPhrase) \(ex.exposedTo.excursionPhrase)")
-                        .font(Typo.caption2).foregroundStyle(BrandColor.textPrimary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textPrimary)
                     Text(ex.date.formatted(.dateTime.month(.abbreviated).day()))
-                        .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     Spacer(minLength: 0)
                     Button {
                         withAnimation(Motion.gated(Motion.disclosure, reduceMotionBuilder)) {
@@ -1129,7 +1129,7 @@ struct VialBuilderView: View {
                         }
                     } label: {
                         Image(systemName: "minus.circle")
-                            .font(.caption)
+                            .font(Typo.caption)
                             .foregroundStyle(BrandColor.textSecondary)
                     }
                     .buttonStyle(PressableStyle())
@@ -1160,7 +1160,7 @@ struct VialBuilderView: View {
         ) {
             VStack(alignment: .leading, spacing: Space.lg) {
                 Text("A lot is the batch your vial came from. Recording it is what lets a COA, and every dose you log, point at a specific batch rather than a compound in general.")
-                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
 
                 if !lotChoices.isEmpty {
                     Menu {
@@ -1182,7 +1182,7 @@ struct VialBuilderView: View {
                     } label: {
                         Label(selectedLot.map { "Lot: \($0.displaySummary)" } ?? "Choose an existing lot",
                               systemImage: "shippingbox")
-                            .font(.caption.weight(.semibold))
+                            .font(Typo.captionEmphasis)
                             .foregroundStyle(BrandColor.accentText)
                             .lineLimit(1)
                     }
@@ -1201,7 +1201,7 @@ struct VialBuilderView: View {
                 }
 
                 if let advice = lotMatchAdvice {
-                    Text(advice).font(Typo.caption2).foregroundStyle(BrandColor.warning)
+                    Text(advice).font(Typo.caption).foregroundStyle(BrandColor.warning)
                 }
             }
         }
@@ -1213,7 +1213,7 @@ struct VialBuilderView: View {
                 Text("Certificate of Analysis (COA)")
                     .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Text("A peptide vial is labeled by total powder weight — but only part of that is active peptide. The rest is salt and water left over from how peptides are made and freeze-dried, so a “10 mg” vial is often only about 7–9 mg of actual peptide. If you dose off the label, you take a little less than you intend. Your COA reports the true fraction; enter whatever it lists and Staxyz doses off the corrected amount — the most accurate way to reconstitute.")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 FieldRow("Assay %") {
                     HStack { TextField("e.g. 99.5", text: $coaAssayText).keyboardType(.decimalPad).staxyzField()
                              Text("%").foregroundStyle(BrandColor.textSecondary) }
@@ -1227,15 +1227,15 @@ struct VialBuilderView: View {
                              Text("%").foregroundStyle(BrandColor.textSecondary) }
                 }
                 Text("Enter any your COA lists. Content = how much is peptide vs. salt/water (the one that changes your dose most). Purity = the right peptide vs. related impurities. Assay = a potency check (labs define it differently).")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 if hasAnyCOAEntered {
                     Label("\(coaCorrectedReadout) Your doses are calculated from this corrected amount, not the label.",
                           systemImage: "checkmark.seal.fill")
-                        .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.success)
+                        .font(Typo.captionEmphasis).foregroundStyle(BrandColor.success)
                 } else {
                     Label("No COA entered — doses will use the full label weight. A peptide vial is typically only ~70–90% active peptide, so that likely means dosing a little low.",
                           systemImage: "info.circle.fill")
-                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 }
             }
         }
