@@ -788,6 +788,10 @@ struct AdherenceRing: View {
     @ScaledMetric(relativeTo: .caption2) private var ringLabel: CGFloat = 8.5
     let fraction: Double
     var size: CGFloat = 88
+    /// Draw the arc only. The internal "88% / ADHERENCE" is sized for a full-size ring; below roughly
+    /// 70pt the label clips ("ADHEREN/CE") and the percentage duplicates whatever text sits beside a
+    /// compact ring. A supporting-role ring is a SHAPE — the number belongs to the label next to it.
+    var showsValue: Bool = true
 
     private var clamped: Double { max(0, min(1, fraction)) }
     private var pct: Int { Int((clamped * 100).rounded()) }
@@ -820,6 +824,7 @@ struct AdherenceRing: View {
                 .trim(from: 0, to: max(0.0001, clamped))
                 .stroke(ringColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+            if showsValue {
             VStack(spacing: 0) {
                 Text("\(pct)%")
                     .font(.system(size: 20, weight: .black, design: .rounded)).monospacedDigit()
@@ -831,6 +836,7 @@ struct AdherenceRing: View {
                     // and scales; the ring is fixed, so it is capped like `MicroLabel`.
                     .font(.system(size: min(ringLabel, 13), weight: .semibold)).tracking(0.5)
                     .foregroundStyle(BrandColor.textSecondary)
+            }
             }
         }
         .frame(width: size, height: size)
