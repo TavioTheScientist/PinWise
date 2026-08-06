@@ -477,13 +477,24 @@ extension View {
     }
 }
 
+/// Bottom inset for the floating tab bar. **Scales**, because the bar itself grows: its label was
+/// frozen at 10pt and the 90pt clearance was derived from that assumption, so once the label scales
+/// the bar gets taller and a fixed 90 lets content run underneath it — which is what a section
+/// header disappearing behind the capsule at accessibility sizes actually was.
+private struct TabBarClearance: ViewModifier {
+    @ScaledMetric(relativeTo: .caption2) private var inset: CGFloat = 90
+    func body(content: Content) -> some View {
+        content.contentMargins(.bottom, inset, for: .scrollContent)
+    }
+}
+
 extension View {
     /// Bottom clearance so scrollable content always clears the floating tab bar (an overlay
     /// that reserves no layout space). 90 = bar content height 65 (top pad 12 + iconRow 30 +
     /// spacing 3 + label ≈12 + bottom pad 8) + 8 bottom float + 17 breathing gap. No-op on
     /// non-scrolling screens.
     func tabBarClearance() -> some View {
-        contentMargins(.bottom, 90, for: .scrollContent)
+        modifier(TabBarClearance())
     }
 
     /// Flat brand canvas (used by utility/detail screens).

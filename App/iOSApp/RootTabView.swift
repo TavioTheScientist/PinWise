@@ -129,6 +129,7 @@ extension View {
 /// strictly monochrome; Log is a metallic chrome disc with a near-black glyph that crests
 /// above the capsule's top edge — the single colored element in the app's chrome.
 private struct StaxyzTabBar: View {
+    @ScaledMetric(relativeTo: .caption2) private var tabLabelSize: CGFloat = 10
     @Binding var selected: AppTab
     @Environment(TabScrollCoordinator.self) private var scrollCoordinator
 
@@ -224,7 +225,13 @@ private struct StaxyzTabBar: View {
                 // top edge together with its glyph.
                 .offset(y: prominent ? -(chipSize - iconRow) / 2 : 0)
                 Text(label)
-                    .font(.system(size: 10, weight: .medium))
+                    // Scales, capped. It was frozen at 10pt, so at accessibility sizes the app's
+                    // PRIMARY NAVIGATION was the smallest text on screen by a factor of five. The cap
+                    // exists because the column is only ~67pt wide — this is the same
+                    // `@ScaledMetric` + `min()` pattern `MicroLabel` already uses.
+                    .font(.system(size: min(tabLabelSize, 13), weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .foregroundStyle(isSelected ? BrandColor.textPrimary : BrandColor.textSecondary)
             }
             .frame(maxWidth: .infinity)

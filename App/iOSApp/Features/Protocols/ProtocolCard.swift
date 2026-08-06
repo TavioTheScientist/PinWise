@@ -338,7 +338,12 @@ struct ProtocolSummary: View {
                 Text(presentation.name)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(BrandColor.textPrimary)
-                    .lineLimit(1)
+                    // Two lines and a scale floor, because a truncated compound name is worse than
+                    // a small one: "BPC-157 recovery" clipped to "BPC-15…" does not read as
+                    // truncated — it reads as a different, plausible identifier. Same reasoning as
+                    // the cadence label always naming its weekday.
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
                 Spacer(minLength: Space.sm)
                 Text(presentation.rowFact)
                     .font(Typo.caption.weight(.semibold))
@@ -394,8 +399,12 @@ private struct ProtocolStat: View {
             Text(value)
                 .font(Typo.statValue)
                 .foregroundStyle(tint)
-                .lineLimit(compresses ? 2 : nil)
-                .minimumScaleFactor(compresses ? 0.8 : 1)
+                // The non-`compresses` branch used to DISABLE both protections (`nil` / `1`), so a
+                // due date like "Tomorrow," ran to five ragged lines and still truncated mid-token
+                // in a 158pt column. Nothing in the app benefits from unlimited lines here; the
+                // flag now only chooses how AGGRESSIVELY a slot compresses, never whether it may.
+                .lineLimit(compresses ? 2 : 3)
+                .minimumScaleFactor(compresses ? 0.8 : 0.85)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -188,6 +188,13 @@ struct StatTile: View {
             Text(value)
                 .font(compact ? Typo.statValue : (emphasized ? Typo.numberLG : Typo.numberMD))
                 .foregroundStyle(emphasized ? BrandColor.accentText : BrandColor.textPrimary)
+                // A 3-up strip gives each value ~101pt, and the whole premise of these strips is
+                // that the same fact sits in the same slot on every row. A date like "Aug 12"
+                // measures ~167pt at the largest size, so without this it breaks across two lines
+                // and the slots stop aligning — which is the one thing the layout exists to do.
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

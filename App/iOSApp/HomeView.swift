@@ -227,7 +227,7 @@ struct HomeView: View {
 
         return Card(style: .hero, padding: Space.xl) {
             VStack(alignment: .leading, spacing: Space.lg) {
-                HStack(spacing: Space.lg) {
+                HStack(alignment: .top, spacing: Space.lg) {
                     VStack(spacing: Space.sm) {
                         AdherenceRing(fraction: fraction, size: Self.ringSize)
                         // Capped to the ring's own width so a long label (or a large Dynamic Type
@@ -278,6 +278,12 @@ struct HomeView: View {
                     .padding(Space.md)
                     // 0.92, not 0.6. Nothing in the physical world appears from 60% of itself —
                     // that is the `scale(0)` failure mode in a softer form. The standard is 0.9–0.97.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    // Bounded so a celebration can never cover the data it is celebrating: at large
+                    // sizes this badge measured ~280pt over a 313pt card, occluding the ring and the
+                    // next-pin row for its whole 3.5s life.
+                    .frame(maxWidth: 200)
                     .transition(reduceMotion ? .opacity : .scale(scale: 0.92).combined(with: .opacity))
             }
         }
@@ -309,43 +315,58 @@ struct HomeView: View {
     /// instead of its height) and only when it *adds* something: "BEST 12" while there is a record to
     /// chase, and "YOUR BEST" in `success` at the moment you are level with it, which is the one time
     /// the fact is worth celebrating rather than restating.
+    /// Flame + "N doses" as ONE concatenated run.
+    ///
+    /// Concatenated, not two sibling `Text`s: as siblings in a compressed HStack each wrapped
+    /// independently, so "13 doses" split into "1 dos-" / "3 es". One run means the only legal break
+    /// is the space between number and unit — and `lineLimit(1)` plus a scale floor removes even
+    /// that, so the value and its unit can never be separated. A number without its unit is not a fact.
+    @ViewBuilder private func streakValue(_ streak: StreakCalculator.Result) -> some View {
+        Image(systemName: "flame.fill")
+            .font(.caption)
+            .foregroundStyle(streak.current > 0 ? BrandColor.warning : BrandColor.textSecondary)
+            .accessibilityHidden(true)
+        (
+            Text("\(streak.current)")
+                .font(Typo.statValue)
+                .foregroundStyle(BrandColor.textPrimary)
+            + Text(" \(streak.current == 1 ? "dose" : "doses")")
+                .font(.caption)
+                .foregroundStyle(BrandColor.textSecondary)
+        )
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        .layoutPriority(1)
+    }
+
+    /// The comparison — only when it ADDS something: "BEST 12" while there is a record to chase,
+    /// "YOUR BEST" in `success` at the moment you are level with it.
+    @ViewBuilder private func streakBest(_ streak: StreakCalculator.Result, atBest: Bool) -> some View {
+        if atBest {
+            MicroLabel("Your best", color: BrandColor.success).lineLimit(1)
+        } else if streak.longest > streak.current {
+            MicroLabel("Best \(streak.longest)").lineLimit(1)
+        }
+    }
+
     private func streakStat(_ streak: StreakCalculator.Result) -> some View {
         let atBest = streak.current > 0 && streak.current == streak.longest
         return VStack(alignment: .leading, spacing: 2) {
             MicroLabel("Dose streak")
-            HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
-                Image(systemName: "flame.fill")
-                    .font(.caption)
-                    .foregroundStyle(streak.current > 0 ? BrandColor.warning : BrandColor.textSecondary)
-                    .accessibilityHidden(true)
-                // ONE concatenated text run, not two sibling Texts. As siblings in a compressed
-                // HStack each wrapped independently at accessibility sizes, so "13 doses" split
-                // into "1 dos-" / "3 es" — the number itself broken across lines and the unit
-                // hyphenated. Concatenation keeps them a single run, so the only legal break is
-                // the space between them, while each half keeps its own font and color.
-                (
-                    Text("\(streak.current)")
-                        .font(Typo.statValue)
-                        .foregroundStyle(BrandColor.textPrimary)
-                    + Text(" \(streak.current == 1 ? "dose" : "doses")")
-                        .font(.caption)
-                        .foregroundStyle(BrandColor.textSecondary)
-                )
-                // Concatenation alone was not enough at accessibility-XXXL: with the column that
-                // narrow, even "doses" exceeded the width, and a `Text` with no other legal break
-                // will split INSIDE a word — the run rendered as "6 / dos / es". Allowing it to
-                // scale down means the only thing that gives is the type size, never the word.
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
-                // The best rides the VALUE line, not the label line above it. Sharing the label's
-                // line put "DOSE STREAK" and "YOUR BEST" in ~185pt of tracked 11pt caps, which
-                // wrapped the label to two lines; and the comparison belongs beside the number it
-                // compares anyway, where a baseline-aligned micro-label reads as one instrument row.
-                Spacer(minLength: Space.sm)
-                if atBest {
-                    MicroLabel("Your best", color: BrandColor.success)
-                } else if streak.longest > streak.current {
-                    MicroLabel("Best \(streak.longest)")
+            // REFLOWS rather than compresses. Squeezing the comparison to fit beside the value
+            // truncated it to "Y…", which is strictly worse than the two-line wrap it replaced —
+            // a truncated label conveys nothing at all, where a wrapped one is merely untidy.
+            // `ViewThatFits` keeps them side by side while both fit and drops the comparison to
+            // its own line when they don't, so neither ever loses characters.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+                    streakValue(streak)
+                    Spacer(minLength: Space.sm)
+                    streakBest(streak, atBest: atBest)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: Space.xs) { streakValue(streak) }
+                    streakBest(streak, atBest: atBest)
                 }
             }
         }
@@ -495,7 +516,12 @@ struct HomeView: View {
     private func heroStat(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             MicroLabel(label)
+            // Same protection `streakStat` carries. `DoseDuePhrase` emits single words like
+            // "Tomorrow" with no break opportunity, so without a scale factor the only way to fit
+            // one in this column at large sizes is to break it mid-word.
             Text(value).font(Typo.statValue).foregroundStyle(BrandColor.textPrimary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.6)
         }
     }
 
@@ -821,6 +847,11 @@ struct HomeHealthCard: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         MicroLabel(m.label)
                                         Text(m.value).font(Typo.numberMD).foregroundStyle(BrandColor.textPrimary)
+                                            // ~158pt cells. "10,432 steps" or "182.4 lb" overflow at
+                                            // large sizes; LogView's identical stat shape already
+                                            // carries both modifiers, this one had neither.
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.6)
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 }
