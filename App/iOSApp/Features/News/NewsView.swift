@@ -30,8 +30,12 @@ private extension NewsCategory {
     var tint: Color {
         switch self {
         case .safety: return BrandColor.warning
-        case .regulatory: return BrandColor.accentText
-        case .trialResults: return BrandColor.success
+        // Taxonomy, so it must not spend the brand metal — `accentText` here made a category
+        // ribbon the most branded thing on the row.
+        case .regulatory: return BrandColor.textSecondary
+        // Was `success`. A trial result is not good news by definition — it is a KIND of story.
+        // Non-semantic rose from the categorical set instead.
+        case .trialResults: return ChartPalette.categorical[3]
         case .earlyResearch: return BrandColor.data       // distinct from trial results (has data)
         case .guidance, .general: return BrandColor.textSecondary
         }
@@ -424,10 +428,13 @@ struct NewsView: View {
 private struct NewBadge: View {
     var body: some View {
         HStack(spacing: 4) {
-            Circle().fill(BrandColor.danger).frame(width: 6, height: 6)
+            // `accent`, not `danger`. Unread is a brand-attention moment, not an alarm — and this
+            // dot sat directly beside a legitimately amber `.safety` chip, so two urgency registers
+            // competed and neither meant anything.
+            Circle().fill(BrandColor.accent).frame(width: 6, height: 6)
             Text("New")
                 .font(.caption2.weight(.semibold))
-                .foregroundStyle(BrandColor.danger)
+                .foregroundStyle(BrandColor.accentText)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("New")
@@ -468,7 +475,9 @@ struct FeaturedNewsCard: View {
                     Spacer()
                     Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
-                .foregroundStyle(BrandColor.success)
+                // Provenance, not success. The seal glyph beside it already carries the verification
+                // cue; green here claimed a story was GOOD because it had sources.
+                .foregroundStyle(BrandColor.textSecondary)
             }
         }
         .onScrollVisibilityChange(threshold: 0.6) { visible in

@@ -31,10 +31,10 @@ struct ToolItem: Identifiable {
         ToolItem(route: .rampUp, title: "Titration", subtitle: "Plan dose changes over time", systemImage: "chart.line.uptrend.xyaxis", hue: BrandColor.textSecondary),
         ToolItem(route: .compounds, title: "Compound library", subtitle: "Look up peptides & evidence", systemImage: "books.vertical.fill", hue: BrandColor.data),
         ToolItem(route: .activeLevels, title: "Active levels", subtitle: "See your stack's body load", systemImage: "waveform.path.ecg", hue: BrandColor.data),
-        ToolItem(route: .injectionMap, title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: BrandColor.success),
-        ToolItem(route: .symptoms, title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: BrandColor.warning),
+        ToolItem(route: .injectionMap, title: "Injection map", subtitle: "See where you've pinned", systemImage: "figure.stand", hue: ChartPalette.categorical[4]),
+        ToolItem(route: .symptoms, title: "How you feel", subtitle: "Track side effects", systemImage: "heart.text.square", hue: ChartPalette.categorical[2]),
         ToolItem(route: .biomarkers, title: "Labs & metrics", subtitle: "Track weight, labs, and vitals", systemImage: "chart.xyaxis.line", hue: BrandColor.data),
-        ToolItem(route: .physique, title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: BrandColor.success),
+        ToolItem(route: .physique, title: "Progress photos", subtitle: "Track your physique", systemImage: "camera.fill", hue: ChartPalette.categorical[4]),
         ToolItem(route: .reverseDose, title: "Check a dose", subtitle: "See what a draw delivers", systemImage: "arrow.uturn.backward", hue: BrandColor.textSecondary),
     ]
 
@@ -248,9 +248,16 @@ private struct ToolCard: View {
     let title: String
     let subtitle: String
     let systemImage: String
-    /// Domain hue (Oura-style color-as-information): textSecondary = dose, success = body,
-    /// warning = subjective tracking, data = objective health data. Tints the icon chip and icon
+    /// Domain hue (Oura-style color-as-information): textSecondary = dose, sage = body,
+    /// ochre = subjective tracking, data = objective health data. Tints the icon chip and icon
     /// only — text stays neutral. No default: every tool declares its domain.
+    ///
+    /// **Drawn from `ChartPalette`, not from the semantic tokens.** Body used `success` and subjective
+    /// tracking used `warning`, which meant the app's "attention" amber was permanently lit on a tile
+    /// with nothing wrong, and its "progress" green marked a domain rather than progress. A hue carries
+    /// one meaning or none. `ChartPalette` is the app's non-semantic categorical set and is now
+    /// asserted never to equal a semantic value, so domains can borrow from it safely. `data` stays —
+    /// it is a DOMAIN token (measurements) by construction, not a status.
     ///
     /// The DOSE domain is deliberately NEUTRAL rather than a hue. It used to be `accentText`,
     /// which spent the brand metal decoratively across four of ten cards — and dose is Staxyz's

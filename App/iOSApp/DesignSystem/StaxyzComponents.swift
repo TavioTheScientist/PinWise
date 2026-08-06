@@ -687,25 +687,62 @@ struct AdvisoryRow: View {
 struct EvidenceBadge: View {
     let tier: EvidenceTier
     var compact: Bool = false
-    /// A graded ladder, so unlike a taxonomy chip this one stays SOLID: the color reinforces an
-    /// ordinal rank that the label already words ("B · Moderate"). Tier B is `data` (teal), not
-    /// `accentText` — the chrome accent would spend the brand on a status AND make the middle
-    /// rung the brightest, out-ranking tier A above it. Same fix, same reason, as `AdherenceRing`.
-    private var color: Color {
+    /// **A filled badge means human evidence exists. The common grades recede.**
+    ///
+    /// This used to be a four-rung SOLID color ramp, on the reasoning that color reinforces an
+    /// ordinal rank the label already words. That reasoning is fine in isolation and wrong in
+    /// aggregate, which is the only place this badge is ever seen: it sits on EVERY row of a
+    /// 57-compound list, and the catalog is not evenly spread across the ladder —
+    /// **29 of 57 are C and 6 are D**, so 61% of the library wore a saturated `warning` amber
+    /// and 11% wore `danger` red. Three consequences, all visible in one screenshot of the library:
+    ///
+    /// 1. **A signal on 61% of rows is not a signal.** Amber was the list's default state, so the
+    ///    chip's color distinguished nothing — and it was the highest-contrast element on each row,
+    ///    out-shouting the compound NAME, which is what the user is actually scanning for.
+    /// 2. **The ramp was inverted relative to attention.** The 12 rare, well-evidenced compounds
+    ///    (A and B — the genuinely notable ones) drew the COOLEST, quietest colors, while the
+    ///    35 poorly-evidenced ones drew the loudest.
+    /// 3. **It made an evidence claim look like a safety claim.** Evidence strength and risk are
+    ///    orthogonal — a well-studied drug can be dangerous, an unstudied topical harmless. Spending
+    ///    `warning` and `danger` on how well-STUDIED something is both miscommunicates that and
+    ///    devalues those two tokens where they carry real safety meaning (`SafetyAdvisory`,
+    ///    `sideEffectsSerious`).
+    ///
+    /// So the fill now encodes the one binary that is actually informative here — **is there human
+    /// evidence at all?** A and B fill (and keep the ordinal mint → teal step); C and D recede to
+    /// neutral, differentiated from each other by weight rather than hue: C takes a filled surface,
+    /// D an outline only. Visual weight still descends monotonically A → D, so the ladder survives;
+    /// it just stops shouting on the rungs where most of the catalog sits. The letter + word carry
+    /// the meaning regardless, so nothing rides on color alone (WCAG 1.4.1) — that was already true
+    /// and is what makes recoloring safe.
+    private var fill: Color? {
         switch tier {
         case .fdaApproved: return BrandColor.mint
         case .humanTrialsUnapproved: return BrandColor.data
-        case .preclinicalOrFailed: return BrandColor.warning
-        case .precursorOffLabel: return BrandColor.danger
+        case .preclinicalOrFailed: return BrandColor.surfaceElevated
+        case .precursorOffLabel: return nil
         }
     }
+
+    /// Ink follows the fill: `onBadge` on the two saturated rungs, secondary text on the two quiet
+    /// ones — where `onBadge` (near-black on dark) would be unreadable on a neutral surface.
+    private var ink: Color {
+        switch tier {
+        case .fdaApproved, .humanTrialsUnapproved: return BrandColor.onBadge
+        case .preclinicalOrFailed, .precursorOffLabel: return BrandColor.textSecondary
+        }
+    }
+
     var body: some View {
         Text(compact ? tier.letter : "\(tier.letter) · \(tier.shortLabel)")
             .font(.caption2.weight(.bold))
             .padding(.horizontal, Space.sm)
             .padding(.vertical, Space.xs)
-            .background(color, in: Capsule())
-            .foregroundStyle(BrandColor.onBadge)
+            .background {
+                // Grade D has no fill at all — an outline is the quietest rung that is still a chip.
+                if let fill { Capsule().fill(fill) } else { Capsule().stroke(BrandColor.stroke, lineWidth: 1) }
+            }
+            .foregroundStyle(ink)
             .accessibilityLabel("Evidence grade \(tier.letter), \(tier.shortLabel)")
     }
 }
