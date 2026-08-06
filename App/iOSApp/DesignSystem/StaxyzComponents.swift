@@ -93,13 +93,25 @@ struct Card<Content: View>: View {
 struct PrimaryButton: View {
     let title: String
     var systemImage: String? = nil
+    /// Swaps the label for a spinner and refuses taps. Exists because the ONE primary CTA that does
+    /// async work — the paywall's Subscribe — hand-rolled this whole recipe to get a spinner, and in
+    /// doing so re-introduced the two defects the comments below were written about: a hard
+    /// `.frame(height: 52)` that clips at accessibility sizes, and `.buttonStyle(.plain)`, leaving the
+    /// app's loudest element on its REVENUE screen the only untappable-feeling control in the app.
+    /// A primary action that awaits something is general, so the component owns it.
+    var isLoading: Bool = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: Space.sm) {
-                if let systemImage { Image(systemName: systemImage) }
-                Text(title.uppercased()).fontWeight(.bold).tracking(0.5)
+                if isLoading {
+                    // Tinted to the ink, and sized so the pill does not resize between states.
+                    ProgressView().tint(BrandColor.onCtaFill)
+                } else {
+                    if let systemImage { Image(systemName: systemImage) }
+                    Text(title.uppercased()).fontWeight(.bold).tracking(0.5)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.lg)
@@ -116,6 +128,8 @@ struct PrimaryButton: View {
             .foregroundStyle(BrandColor.onCtaFill)
         }
         .buttonStyle(PressableStyle())
+        .disabled(isLoading)
+        .accessibilityLabel(isLoading ? "\(title), in progress" : title)
     }
 }
 
@@ -172,25 +186,29 @@ struct MicroLabel: View {
     }
 }
 
-/// A labeled figure — calculator outputs and dashboard stats. Emphasis uses the lighter
-/// `accentText` blue so it stays legible on the dark ground (WCAG). `compact` drops the
-/// value to the 17pt stat-grid register (`Typo.statValue`) for 3-up stat strips (Strava);
-/// `emphasized` still overrides the value color to `accentText` in either size.
+/// A labeled figure — calculator outputs and dashboard stats. `compact` drops the value to the
+/// 17pt stat-grid register (`Typo.statValue`) for 3-up stat strips (Strava).
+///
+/// **`emphasized` is gone.** It set the value to `Typo.numberLG` and recoloured it to `accentText`,
+/// and it was never passed `true` at a single one of the call sites — so it was two ramp entries and
+/// an accent override that only existed to be read. Worse than dead: it documented a rule the app
+/// does not follow. `accentText` on a figure would spend the brand metal on a stat, which the chrome
+/// revision retired (`accent` is for small discs, chips and selection states). A stat that needs more
+/// weight than its neighbours is not a StatTile — it is the screen's hero, and the hero has its own
+/// register (`Typo.numberHero`).
 struct StatTile: View {
     let label: String
     let value: String
-    var emphasized: Bool = false
     var compact: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             MicroLabel(label)
             Text(value)
-                .font(compact ? Typo.statValue : (emphasized ? Typo.numberLG : Typo.numberMD))
-                // 21 of 22 display-type sites in the app apply this; StatTile was the one miss, so
-                // every emphasized 30pt stat rendered at body tracking.
+                .font(compact ? Typo.statValue : Typo.numberMD)
+                // 21 of 22 display-type sites in the app apply this; StatTile was the one miss.
                 .displayTracking()
-                .foregroundStyle(emphasized ? BrandColor.accentText : BrandColor.textPrimary)
+                .foregroundStyle(BrandColor.textPrimary)
                 // A 3-up strip gives each value ~101pt, and the whole premise of these strips is
                 // that the same fact sits in the same slot on every row. A date like "Aug 12"
                 // measures ~167pt at the largest size, so without this it breaks across two lines
@@ -609,6 +627,13 @@ struct AppliedFilterHeader: View {
 /// The one empty / unavailable state: a muted SF Symbol, a title, and an optional line of
 /// guidance, centered. Replaces the ad-hoc `Card`+`Text` and `ContentUnavailableView` forks so
 /// every "nothing here yet" reads the same. Drop it inside a `Card` (or bare) as the caller needs.
+///
+/// **Deliberately no action slot.** One was written and then removed: every empty state in the app
+/// either sits directly beneath its own CTA (Your vials, Lots, Physique, Stack) or its action lives
+/// on another screen entirely (dose history → the Log tab, Tools → Edit). So the parameter would have
+/// been dead at all six call sites, and a component that carries an unused affordance documents a
+/// rule the app does not follow — the same reason `StatTile.emphasized` was deleted. If a future
+/// empty state genuinely owns its action, add it back WITH that call site, not before it.
 struct ThemedEmptyState: View {
     let icon: String
     let title: String

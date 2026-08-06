@@ -14,9 +14,12 @@ struct DoseHistoryView: View {
     var body: some View {
         Group {
             if doses.isEmpty {
-                ContentUnavailableView("No doses logged yet",
-                                       systemImage: "clock.arrow.circlepath",
-                                       description: Text("Doses you record in the Log tab show up here."))
+                // `ContentUnavailableView` draws in the SYSTEM's typography and secondary colour,
+                // so it ignored the app's ramp and tokens entirely — the one screen where "nothing
+                // here yet" looked like a different app.
+                ThemedEmptyState(icon: "clock.arrow.circlepath",
+                                 title: "No doses logged yet",
+                                 message: "Doses you record in the Log tab show up here.")
             } else {
                 List {
                     ForEach(doses) { entry in
