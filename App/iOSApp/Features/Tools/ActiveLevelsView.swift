@@ -63,7 +63,14 @@ struct ActiveLevelsView: View {
     /// One plotted point (carries its compound name so Charts keeps series separate, plus the
     /// compound's dash pattern so the stroke style travels with the series).
     private struct PlotPoint: Identifiable {
-        let id = UUID(); let name: String; let time: Date; let percent: Double; let dash: [CGFloat]
+        let name: String; let time: Date; let percent: Double; let dash: [CGFloat]
+        /// **Series + timestamp, not a fresh `UUID`.** These points are rebuilt on every render (the
+        /// whole model graph is derived inside `body`), so a per-instance UUID handed `ForEach` a
+        /// completely new identity set each pass and Charts could never match a point to its previous
+        /// self. Every range change and visibility toggle became a full teardown instead of an
+        /// interpolated update. `name` alone is not unique — one compound contributes ~150 points — so
+        /// the id is the pair that actually identifies a sample.
+        var id: String { "\(name)@\(time.timeIntervalSinceReferenceDate)" }
     }
 
     /// A compound aggregate, independent of the selected range. Range-specific curves are derived on the fly.
@@ -182,7 +189,15 @@ struct ActiveLevelsView: View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
                 SectionHeader(title: "Right now")
-                Text("Where each compound sits between its own trough and peak this moment.")
+                // Names the reference point on purpose. This gauge divides by the peak of the compound's
+                // OWN natural window (~4 half-lives), while the Timeline below divides by the peak inside
+                // whatever range is selected — deliberately, so the gauge doesn't jump when you zoom. But
+                // that means both can render "fraction of peak" and disagree: a full gauge can sit above a
+                // curve drawn low, when the selected range happens to contain a larger older dose.
+                // Unifying them would cost more than it fixes (either the gauge rescales on zoom, or old
+                // peaks clip past the axis), so the honest fix is to stop the two from silently claiming
+                // the same measurement.
+                Text("Where each compound sits between its own trough and peak this moment — measured over its own half-life, so this doesn't shift when you change the Timeline range.")
                     .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 ForEach(models) { gaugeRow($0).transition(.opacity) }
             }
@@ -422,8 +437,33 @@ struct ActiveLevelsView: View {
             }
         }
         if let a = start, let b = last { runs.append((a, b)) }
-        // Guarantee a visible width for single-sample spikes.
-        return runs.map { (s, e) in e.timeIntervalSince(s) < minWidth ? (s, s.addingTimeInterval(minWidth)) : (s, e) }
+        return Self.floored(runs, floor: minWidth, within: ws...we)
+    }
+
+    /// Widens spans narrower than `floor` so they stay visible, **centered on the true span**.
+    ///
+    /// Split out of `activeWindows` and made non-private for one reason: it is a behavioural rule in a
+    /// pharmacokinetic display, and it was wrong in a way nothing would have caught. It used to extend
+    /// the END forward (`s + floor`), and `floor` is 1/120th of the visible range — 6 hours at the 30-day
+    /// zoom. So a compound that crossed the threshold for a single sample was drawn as active for six
+    /// hours AFTER the model says it fell below, a bar up to ~18x its real duration. This chart's caption
+    /// promises "shape and timing", and in a dose tracker that error runs the dangerous direction: it
+    /// overstates drug on board, at the end of the window, which is exactly where someone deciding
+    /// whether to dose again would look.
+    ///
+    /// Centering keeps the span's MIDPOINT exact and splits the padding symmetrically, so the bar no
+    /// longer implies the drug persisted past the point it cleared. Clamped to `bounds` so the floor
+    /// can't push a bar outside the axis it is drawn against — which also means a span pinned against
+    /// an edge stays shorter than `floor` rather than escaping the plot.
+    static func floored(_ runs: [(Date, Date)], floor: TimeInterval,
+                        within bounds: ClosedRange<Date>) -> [(start: Date, end: Date)] {
+        runs.map { (s, e) -> (Date, Date) in
+            let span = e.timeIntervalSince(s)
+            guard span < floor else { return (s, e) }
+            let pad = (floor - span) / 2
+            return (max(bounds.lowerBound, s.addingTimeInterval(-pad)),
+                    min(bounds.upperBound, e.addingTimeInterval(pad)))
+        }
     }
 
     // MARK: - Model build
@@ -633,7 +673,9 @@ struct ActiveLevelsView: View {
             }
         }
 
-        private struct P: Identifiable { let id = UUID(); let time: Date; let value: Double }
+        /// `time` is the identity — same reasoning as `PlotPoint.id`: rebuilt per render, so a fresh
+        /// UUID would defeat Charts' diffing. A single compound's curve has one sample per timestamp.
+        private struct P: Identifiable { let time: Date; let value: Double; var id: Date { time } }
 
         /// Absolute amount on board over [ws, we], converted to the compound's display unit.
         private func absoluteSamples(from ws: Date, to we: Date, now: Date) -> (points: [P], markers: [P]) {
