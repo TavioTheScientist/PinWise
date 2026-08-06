@@ -1,0 +1,4 @@
+v1/ (parent dir) = first-pass candidates, superseded.
+v2/ = the metallic direction presented on the Figma page "Staxyz - Identity v2".
+Honest status: the COUNTER knockout reads as a text-align/list icon once the
+chrome is stripped for the Tinted appearance. Concept work is NOT finished.
