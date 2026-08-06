@@ -7,8 +7,25 @@ import PeptideKit   // TrialWindow.trialDays — the trial length is stated once
 /// inline pickers and toggles. Presented as a sheet from the side menu.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    /// Read so the Membership row can state the REAL entitlement. It previously hardcoded
+    /// "Free trial", which meant a paying subscriber opened Settings and was told they were on a
+    /// trial — a billing surface asserting something false about the user's own account, and the
+    /// one place they would go to check. `MembershipView` behind it always read this correctly;
+    /// only the row lied.
+    @State private var subsState = SubscriptionManager.shared
 
     // Complex, self-contained flows stay modal sheets; simple option screens push as subpages.
+    /// The Membership row's trailing value. Derived from the same `entitlement` the sheet switches
+    /// on, so the row and the screen it opens can never disagree. Day count included on the trial
+    /// branch because "14 days left" answers the question the row is asked; a bare "Trial" does not.
+    private var membershipRowValue: String {
+        switch subsState.entitlement {
+        case .pro: return "Member"
+        case .trial(let days): return days == 1 ? "1 day left" : "\(days) days left"
+        case .expired: return "Expired"
+        }
+    }
+
     @State private var showMembership = false
     @State private var showConnections = false
     @State private var showLegal = false
@@ -27,7 +44,8 @@ struct SettingsView: View {
                     // `tint:` survives so a genuinely semantic row (a destructive "Delete
                     // account") can still carry `danger` — it is not a decorative slot.
                     section("Account") {
-                        sheetRow("Membership", icon: "creditcard.fill", tint: BrandColor.textSecondary, value: "Free trial") { showMembership = true }
+                        sheetRow("Membership", icon: "creditcard.fill", tint: BrandColor.textSecondary,
+                                 value: membershipRowValue) { showMembership = true }
                     }
 
                     section("Preferences") {
