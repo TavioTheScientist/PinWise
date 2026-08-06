@@ -287,12 +287,30 @@ enum Typo {
     static let microCaption = Font.system(.caption2)
     /// The semibold caption, hand-spelled 45 times before this existed.
     static let captionEmphasis = Font.system(.caption, weight: .semibold)
-    // Rounded design for vital numbers — the Apple Health/Fitness signature; reads as a
-    // considered product choice rather than default system type.
-    static let numberXL = Font.system(size: 40, weight: .black, design: .rounded).monospacedDigit()
-    static let numberLG = Font.system(size: 30, weight: .black, design: .rounded).monospacedDigit()
+    // ── The numeric ramp is SF Pro, NOT SF Rounded. ──────────────────────────────────────────
+    // These were `design: .rounded, weight: .black`, justified as "the Apple Health/Fitness
+    // signature — a considered product choice rather than default system type." Two things were
+    // wrong with that:
+    //
+    // 1. **Fitness uses rounded for EVERYTHING**, labels included, so nothing there mixes families.
+    //    Here rounded was applied only to NUMBERS, so every card composed two typefaces: Home's
+    //    hero read "Sat" in rounded-black directly above "Semaglutide" and "23% adherence" in
+    //    SF Pro, and the Weight screen put a rounded-black "210.1" above a history list of SF Pro
+    //    "210.1 lb". The flaw was never rounded-vs-not; it was two families in one composition,
+    //    with the softer face on the loudest element.
+    // 2. **`.black` is the register the brief rejects.** Of the four named references — Apple
+    //    Fitness, Oura, Function Health, Levels — three set numbers in a grotesque, and none set
+    //    them at the heaviest weight. Rounded + black reads friendly and chunky; the product is
+    //    meant to read as an instrument. Light-on-dark type also blooms optically, so on a pure
+    //    black ground a given weight already looks heavier than it measures.
+    //
+    // `.monospacedDigit()` stays — a figure that updates must not reflow, and tabular numerals are
+    // themselves a data-display signal. Sizes are unchanged (see `statValue` below for why the
+    // large ones are deliberately fixed rather than text-style-backed).
+    static let numberXL = Font.system(size: 40, weight: .bold).monospacedDigit()
+    static let numberLG = Font.system(size: 30, weight: .bold).monospacedDigit()
     /// `.title2` is exactly 22pt, so this is visually identical to the old fixed size but scales.
-    static let numberMD = Font.system(.title2, design: .rounded).weight(.bold).monospacedDigit()
+    static let numberMD = Font.system(.title2).weight(.bold).monospacedDigit()
     // Instrument data voice — uppercase micro-labels over tabular values (Whoop/Strava/Oura).
     static let microLabel = Font.system(.caption2, weight: .semibold)
     static let microTracking: CGFloat = 1.1          // pair with .tracking() at call sites
@@ -339,14 +357,14 @@ enum Typo {
     /// visible downgrade to Home's headline figure. The accessibility cost of not scaling them is
     /// small because they are already 30–48pt, i.e. larger than body text even at accessibility
     /// sizes. The 17pt `statValue` was the one that genuinely needed to grow, and it now does.
-    static let statValue = Font.system(.body, design: .rounded).weight(.bold).monospacedDigit()
+    static let statValue = Font.system(.body).weight(.semibold).monospacedDigit()
     /// The SECONDARY numeric register — a figure that belongs on the card but must not compete with
-    /// its hero. `.subheadline` is 15pt to `statValue`'s 17, same rounded/tabular treatment, so the
+    /// its hero. `.subheadline` is 15pt to `statValue`'s 17, same tabular treatment, so the
     /// difference reads as rank rather than as a different kind of number. Added because Home showed
     /// three figures at one weight and therefore had no hero at all.
-    static let numberSM = Font.system(.subheadline, design: .rounded).weight(.bold).monospacedDigit()
+    static let numberSM = Font.system(.subheadline).weight(.semibold).monospacedDigit()
     /// "The number is the headline" hero figure (Home activity hero).
-    static let numberHero = Font.system(size: 48, weight: .black, design: .rounded).monospacedDigit()
+    static let numberHero = Font.system(size: 48, weight: .bold).monospacedDigit()
 }
 
 enum Space {

@@ -295,7 +295,7 @@ struct HomeView: View {
                 // app's signature instrument and a percentage alone reads as a spreadsheet — but it
                 // is now context for the hero rather than a second hero.
                 HStack(alignment: .center, spacing: Space.md) {
-                    AdherenceRing(fraction: fraction, size: Self.ringSizeCompact, showsValue: false)
+                    AdherenceRing(fraction: fraction, size: Self.ringSizeCompact)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 1) {
                         Text("\(Int((fraction * 100).rounded()))% adherence")
