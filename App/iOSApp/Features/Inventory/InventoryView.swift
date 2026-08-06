@@ -184,10 +184,20 @@ struct VialRow: View {
             // room for "EXPIRED" shouting at 3× their size. Total hierarchy inversion on the
             // identity row of a dosing record, and on exactly the vial you most need to identify.
             // The badges stop growing past xxxLarge; the name keeps scaling.
+            // ONE urgency chip, by precedence — expired > expiring > low.
+            //
+            // A vial that was low AND expiring rendered a red bar, a red LOW chip, a red EXPIRED chip
+            // and two amber footnotes: five simultaneous alarms, at which point none of them reads as
+            // the alarm. `ProtocolCard` states the rule this card was missing — "urgency is carried
+            // EXACTLY ONCE per card" — and the supply bar already carries state by colour, so the chip
+            // only has to name the single most serious thing.
             Group {
-                if projection.needsReorder { TagChip(text: "Low", style: .danger) }
-                if let e = vial.expiryState, (e.isWarning || e.isError) {
-                    TagChip(text: e.isError ? "Expired" : "Expiring", style: e.isError ? .danger : .warning)
+                if let e = vial.expiryState, e.isError {
+                    TagChip(text: "Expired", style: .danger)
+                } else if let e = vial.expiryState, e.isWarning {
+                    TagChip(text: "Expiring", style: .warning)
+                } else if projection.needsReorder {
+                    TagChip(text: "Low", style: .danger)
                 }
             }
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
@@ -236,31 +246,33 @@ struct VialRow: View {
 
     // MARK: Advisory footnotes (only when relevant; below the fixed stats so they never shift them)
 
+    /// ONE footnote, by precedence.
+    ///
+    /// Four could stack: a usable-doses warning, the per-shot breakdown, the stability timeline and
+    /// the discard guideline — on a six-vial list, up to 24 lines of grey micro-text under cards
+    /// whose fixed 3-slot stat strip is the best-composed thing in the app. A card that ends in four
+    /// footnotes is a database row.
+    ///
+    /// Precedence follows consequence: something that shortens usable supply, then a discard date
+    /// that has passed, then what the user recorded about the vial, then the routine future date.
+    /// `perShotSummary` moved OUT entirely — it is a derived convenience, and it lives in the vial
+    /// editor one tap away, where it can actually be acted on.
     @ViewBuilder private var footnotes: some View {
         if projection.limitingFactor == .expiration, projection.usableWholeDoses > 0 {
             Label("Only \(projection.usableWholeDoses) dose\(projection.usableWholeDoses == 1 ? "" : "s") usable before it expires",
                   systemImage: "exclamationmark.circle")
-                .font(.caption2.weight(.medium))
+                .font(Typo.microCaption.weight(.medium))
                 .foregroundStyle(BrandColor.warning)
-        }
-        if let perShot = vial.perShotSummary {
-            Text("Per shot: " + perShot)
-                .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
-        }
-        // The factual timeline: only clauses the user themselves recorded. It sits ABOVE the discard
-        // guideline deliberately — what you actually told us outranks a generic 28-day convention, and
-        // reading them in that order is the difference between provenance and folklore. Absent when
-        // nothing is recorded; the builder is where an empty record gets filled, not here.
-        if let stability = ReconstitutionTimeline.sentence(for: vial.reconstitutionRecord) {
+        } else if let bud = projection.beyondUseDate, bud < Date() {
+            Text("Past its 28-day discard guideline — inspect before use.")
+                .font(Typo.microCaption).foregroundStyle(BrandColor.warning)
+        } else if let stability = ReconstitutionTimeline.sentence(for: vial.reconstitutionRecord) {
+            // What the user recorded outranks a generic convention — provenance over folklore.
             Text(stability)
                 .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
-        }
-        if let bud = projection.beyondUseDate {
-            Text(bud < Date()
-                 ? "Past its 28-day discard guideline — inspect before use."
-                 : "Discard guideline: \(bud.formatted(.dateTime.month().day())) · 28-day mixed-vial window")
-                .font(Typo.microCaption)
-                .foregroundStyle(bud < Date() ? BrandColor.warning : BrandColor.textSecondary)
+        } else if let bud = projection.beyondUseDate {
+            Text("Discard guideline: \(bud.formatted(.dateTime.month().day())) · 28-day mixed-vial window")
+                .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
         }
     }
 }

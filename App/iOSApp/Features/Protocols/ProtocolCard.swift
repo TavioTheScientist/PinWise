@@ -419,8 +419,12 @@ private struct ProtocolStat: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             MicroLabel(label)
+            // `numberSM`, not `statValue`. At 17pt bold rounded the stat values sat a hair under the
+            // protocol NAME (20pt semibold) — so a cadence string ranked almost as loud as the
+            // identity of the thing it describes, and the card had no focal point. Same diagnosis and
+            // same fix as Home's hero.
             Text(value)
-                .font(Typo.statValue)
+                .font(Typo.numberSM)
                 .foregroundStyle(tint)
                 // The non-`compresses` branch used to DISABLE both protections (`nil` / `1`), so a
                 // due date like "Tomorrow," ran to five ragged lines and still truncated mid-token
