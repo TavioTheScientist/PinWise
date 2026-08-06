@@ -80,22 +80,34 @@ struct WelcomeView: View {
                             .font(.system(size: 19, weight: .semibold))
                             .foregroundStyle(BrandColor.textPrimary)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            // A FLOOR, not a fixed height — a hard 52 clips these labels at
+                            // accessibility text sizes. The sentence case IS deliberate (see above);
+                            // the clipping was not.
+                            .frame(minHeight: 52)
                             .background(BrandColor.surfaceElevated, in: Capsule())
                             .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
+                    // The fill lives inside the label, so the scale lands on the capsule. Without
+                    // this the very FIRST screen of the app had two controls that did not
+                    // acknowledge a finger, while every card deeper in the app does.
+                    .buttonStyle(PressableStyle())
 
                     Button { auth.continueAsGuest() } label: {
                         Text("Continue as guest")
                             .font(.system(size: 19, weight: .semibold))
                             .foregroundStyle(BrandColor.textPrimary)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            // A FLOOR, not a fixed height — a hard 52 clips these labels at
+                            // accessibility text sizes. The sentence case IS deliberate (see above);
+                            // the clipping was not.
+                            .frame(minHeight: 52)
                             .background(BrandColor.surfaceElevated, in: Capsule())
                             .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
+                    // The fill lives inside the label, so the scale lands on the capsule. Without
+                    // this the very FIRST screen of the app had two controls that did not
+                    // acknowledge a finger, while every card deeper in the app does.
+                    .buttonStyle(PressableStyle())
 
                     // Sign-in wrap: continuing with any option above accepts the Terms + 18+.
                     // Conspicuous, immediately adjacent to the buttons; tapping opens the docs.

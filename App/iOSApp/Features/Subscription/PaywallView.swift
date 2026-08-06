@@ -219,27 +219,13 @@ struct PaywallView: View {
         .buttonStyle(PressableStyle())
     }
 
-    @ViewBuilder private var buyButton: some View {
+    private var buyButton: some View {
         let product = subs.products.first { $0.id == selected }
-        Button {
+        return PrimaryButton(title: "Subscribe", isLoading: subs.isWorking) {
             guard let product else { return }
             Task { await subs.purchase(product) }
-        } label: {
-            ZStack {
-                if subs.isWorking {
-                    ProgressView().tint(BrandColor.onCtaFill)
-                } else {
-                    Text("Subscribe")
-                        .font(.system(size: 19, weight: .semibold))
-                        .foregroundStyle(BrandColor.onCtaFill)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(BrandColor.ctaFill, in: Capsule())
         }
-        .buttonStyle(.plain)
-        .disabled(product == nil || subs.isWorking)
+        .disabled(product == nil)
         .opacity(product == nil ? 0.5 : 1)
     }
 

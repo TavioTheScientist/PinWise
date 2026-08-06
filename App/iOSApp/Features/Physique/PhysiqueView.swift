@@ -28,10 +28,10 @@ struct PhysiqueView: View {
                 if selecting { selectionBar } else { addBar }
 
                 if photos.isEmpty {
-                    ContentUnavailableView("No progress photos yet",
-                                           systemImage: "figure.arms.open",
-                                           description: Text("Take or add a photo to start tracking your physique."))
-                        .padding(.top, Space.xl)
+                    // Was `ContentUnavailableView` — system typography, not the app's. See DoseHistoryView.
+                    ThemedEmptyState(icon: "figure.arms.open",
+                                     title: "No progress photos yet",
+                                     message: "Take or add a photo to start tracking your physique.")
                 } else {
                     LazyVGrid(columns: columns, spacing: Space.md) {
                         ForEach(photos) { photo in

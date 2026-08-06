@@ -200,7 +200,12 @@ struct SymptomsView: View {
                         }
                     }
                 } else {
-                    Text("No symptoms logged yet.").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    // A 12pt grey sentence was the weakest of the app's five empty states — every
+                    // other surface answers "nothing here yet" with an icon and a headline, so this
+                    // one read as a footnote about missing data rather than a state of the screen.
+                    ThemedEmptyState(icon: "heart.text.square",
+                                     title: "No symptoms logged yet",
+                                     message: "Log how you feel to see patterns next to your doses.")
                 }
             }
             .padding(Space.lg)
