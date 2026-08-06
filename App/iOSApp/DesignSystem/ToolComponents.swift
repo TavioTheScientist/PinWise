@@ -132,16 +132,34 @@ struct SyringeGauge: View {
 }
 
 /// Segmented mcg/mg unit control shared by the dose calculators — the promoted form of
-/// ToolsView's file-private `unitPicker` (identical behavior: fixed 120pt width so it
-/// pairs with a flexible text field).
+/// The app's ONE mass-unit picker. Use this rather than hand-rolling a segmented Picker.
+///
+/// **It must never truncate, and a fixed width could not guarantee that.** This was
+/// `.frame(width: 120)`, and a segmented control shortens its titles rather than growing — so once
+/// the segment font passes roughly 16pt (reachable from Display & Brightness, without ever opening
+/// Accessibility) `mcg` and `mg` degrade toward `mc…` / `m…`. Those two differ by 1000×, on the
+/// control that decides what a dose means.
+///
+/// `ViewThatFits` takes the segmented form at its natural width when it fits, and falls back to a
+/// `.menu` Picker when it doesn't. A menu shows the full label at any text size, so the unit is
+/// always legible — the control changes shape rather than the text losing information.
 struct MassUnitPicker: View {
     @Binding var selection: MassUnit
 
     var body: some View {
-        Picker("", selection: $selection) {
-            ForEach(MassUnit.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+        ViewThatFits(in: .horizontal) {
+            Picker("", selection: $selection) {
+                ForEach(MassUnit.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .fixedSize()
+
+            Picker("", selection: $selection) {
+                ForEach(MassUnit.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.menu)
+            .tint(BrandColor.accentText)
         }
-        .pickerStyle(.segmented).frame(width: 120)
     }
 }
 

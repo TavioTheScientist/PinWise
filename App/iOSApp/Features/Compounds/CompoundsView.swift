@@ -176,6 +176,7 @@ struct CompoundsView: View {
 
 /// Explains the evidence tiers, the WADA label, and half-life — reachable from the "?" button.
 struct CompoundLegendView: View {
+    @ScaledMetric(relativeTo: .caption2) private var badgeCol: CGFloat = 104
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -235,7 +236,10 @@ struct CompoundLegendView: View {
             // Fixed-width badge column so every description starts at the same x — the badges
             // vary in width ("A · Strong" vs "B · Moderate"), which otherwise ragged the text.
             EvidenceBadge(tier: tier)
-                .frame(width: 104, alignment: .leading)
+                // Scales with the badge's own text. At a hard 104pt the badge simply DRAWS OVER the
+                // description beside it at large sizes — `.frame(width:)` does not clip — which is the
+                // one true overlap in this audit rather than a truncation.
+                .frame(width: badgeCol, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
                 Text(tier.label).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                 Text(desc).font(.caption2).foregroundStyle(BrandColor.textSecondary)

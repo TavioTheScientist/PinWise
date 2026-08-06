@@ -689,10 +689,9 @@ struct LogView: View {
                 FieldRow("How much?", hint: "The dose you took this time.") {
                     HStack {
                         TextField("e.g. 2.5", text: $doseText).keyboardType(.decimalPad).staxyzField()
-                        Picker("", selection: $doseUnit) {
-                            ForEach(MassUnit.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                        }
-                        .pickerStyle(.segmented).frame(width: 120)
+                        // The shared picker, not a hand-rolled one — it is the component that
+                        // guarantees `mcg`/`mg` never truncate. See MassUnitPicker.
+                        MassUnitPicker(selection: $doseUnit)
                     }
                 }
             }

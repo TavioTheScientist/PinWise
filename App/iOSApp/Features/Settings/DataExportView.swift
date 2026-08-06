@@ -63,7 +63,9 @@ struct DataExportView: View {
                                                : "Export CSV + \(documentURLs.count) document\(documentURLs.count == 1 ? "" : "s")",
                           systemImage: "square.and.arrow.up")
                         .font(.body.weight(.semibold))
-                        .frame(maxWidth: .infinity).frame(height: 52)
+                        // A FLOOR, not a fixed height — the label scales and a hard 52 clips it, exactly as
+                        // PrimaryButton documents.
+                        .frame(maxWidth: .infinity).frame(minHeight: 52)
                         // This screen's one primary action → inverse-ink CTA, matching
                         // `PrimaryButton`'s 52pt pill rather than spending the brand metal.
                         .background(BrandColor.ctaFill, in: Capsule())

@@ -700,19 +700,27 @@ private struct RampBuilderSheet: View {
                         .labelsHidden().tint(BrandColor.accentText)
                 }
                 Divider().overlay(BrandColor.stroke)
+                // REFLOWS rather than crams. As one row this demanded ~355pt of a 329pt card on a
+                // 393pt phone — over budget at the DEFAULT text size, and 45pt over on a 375pt
+                // phone. The unit picker could not compress, so the two text fields absorbed the
+                // whole deficit: the weeks field was left about 20pt for its digits. `ViewThatFits`
+                // keeps the compact single row where it genuinely fits and splits dose from
+                // duration where it does not, so no field is ever squeezed below its content.
                 ForEach($phases) { $phase in
-                    HStack(spacing: Space.sm) {
-                        TextField("dose", text: $phase.doseText).keyboardType(.decimalPad).staxyzField().frame(maxWidth: 84)
-                        MassUnitPicker(selection: $phase.unit)
-                        Text("for").font(.caption).foregroundStyle(BrandColor.textSecondary)
-                        TextField("4", text: $phase.weeksText).keyboardType(.numberPad).staxyzField().frame(maxWidth: 44)
-                        Text("wks").font(.caption).foregroundStyle(BrandColor.textSecondary)
-                        Spacer(minLength: 0)
-                        if phases.count > 1 {
-                            Button { phases.removeAll { $0.id == phase.id } } label: {
-                                Image(systemName: "minus.circle.fill").foregroundStyle(BrandColor.textSecondary)
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: Space.sm) {
+                            phaseDose($phase)
+                            phaseDuration($phase)
+                            Spacer(minLength: Space.sm)
+                            phaseRemove(phase)
+                        }
+                        VStack(alignment: .leading, spacing: Space.sm) {
+                            HStack(spacing: Space.sm) {
+                                phaseDose($phase)
+                                Spacer(minLength: Space.sm)
+                                phaseRemove(phase)
                             }
-                            .buttonStyle(PressableStyle())   // inline minus-circle — the glyph IS the target
+                            phaseDuration($phase)
                         }
                     }
                 }
@@ -756,6 +764,37 @@ private struct RampBuilderSheet: View {
     }
 
     private func unit(for p: SavedProtocol) -> MassUnit { p.primaryItem?.doseUnit ?? .milligram }
+
+    /// Dose amount + unit. `layoutPriority` so, when the row is short of space, everything else
+    /// gives way before the number the user is typing does.
+    @ViewBuilder private func phaseDose(_ phase: Binding<EditablePhase>) -> some View {
+        TextField("dose", text: phase.doseText)
+            .keyboardType(.decimalPad).staxyzField()
+            .frame(minWidth: 72)
+            .layoutPriority(1)
+        MassUnitPicker(selection: phase.unit)
+    }
+
+    /// "for N wks". The two literals are `fixedSize` so they can never be the thing that truncates —
+    /// a chopped "wk" would leave the number unitless.
+    @ViewBuilder private func phaseDuration(_ phase: Binding<EditablePhase>) -> some View {
+        HStack(spacing: Space.sm) {
+            Text("for").font(.caption).foregroundStyle(BrandColor.textSecondary).fixedSize()
+            TextField("4", text: phase.weeksText)
+                .keyboardType(.numberPad).staxyzField()
+                .frame(minWidth: 44)
+            Text("wks").font(.caption).foregroundStyle(BrandColor.textSecondary).fixedSize()
+        }
+    }
+
+    @ViewBuilder private func phaseRemove(_ phase: EditablePhase) -> some View {
+        if phases.count > 1 {
+            Button { phases.removeAll { $0.id == phase.id } } label: {
+                Image(systemName: "minus.circle.fill").foregroundStyle(BrandColor.textSecondary)
+            }
+            .buttonStyle(PressableStyle())   // inline minus-circle — the glyph IS the target
+        }
+    }
 
     private func addPhase() {
         let last = phases.last

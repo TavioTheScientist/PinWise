@@ -544,6 +544,10 @@ struct SearchField: View {
 
 /// The standard reveal toggle: a circular magnifier that flips to an ✕ while the filter panel is open.
 struct SearchToggleButton: View {
+    // Circle and glyph scale together — a `.headline` symbol reaches ~53pt, which would escape a
+    // hard 40pt circle and its hairline rim. This is the shared filter trigger on News and
+    // Compounds, so the break would be visible on two screens.
+    @ScaledMetric(relativeTo: .headline) private var disc: CGFloat = 40
     let isActive: Bool
     let action: () -> Void
     var body: some View {
@@ -554,7 +558,7 @@ struct SearchToggleButton: View {
                 .contentTransition(.symbolEffect(.replace))
                 .font(.headline.weight(.semibold))
                 .foregroundStyle(BrandColor.textPrimary)
-                .frame(width: 40, height: 40)
+                .frame(width: disc, height: disc)
                 .background(BrandColor.surfaceElevated, in: Circle())
                 .overlay(Circle().strokeBorder(BrandColor.stroke, lineWidth: 1))
         }

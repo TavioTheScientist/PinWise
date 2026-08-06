@@ -112,6 +112,10 @@ struct SettingsView: View {
 /// One settings row: a colored icon tile + label + optional value + chevron. The tile register
 /// matches the Tools cards and iOS Settings, so the list reads as considered, not utilitarian.
 private struct SettingsRow: View {
+    // The tile is a CONTAINER for a scaling glyph, so it has to scale too. A `.callout` symbol
+    // reaches ~51pt at the largest accessibility size; in a hard 30pt frame it simply draws
+    // outside it (frames do not clip), colliding with the title beside it.
+    @ScaledMetric(relativeTo: .callout) private var iconTile: CGFloat = 30
     let title: String
     let icon: String
     var tint: Color = BrandColor.accentText
@@ -122,7 +126,7 @@ private struct SettingsRow: View {
             Image(systemName: icon)
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(tint)
-                .frame(width: 30, height: 30)
+                .frame(width: iconTile, height: iconTile)
                 .background(tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
             Spacer(minLength: Space.sm)

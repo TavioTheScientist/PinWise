@@ -153,10 +153,8 @@ struct ProtocolBuilderView: View {
                                         // For a blend the typed value sets the PRIMARY; name it so the
                                         // single field isn't read as "the dose of all compounds".
                                         TextField("Dose of \(item.compound.name)", text: $item.doseText).keyboardType(.decimalPad).staxyzField()
-                                        Picker("", selection: $item.doseUnit) {
-                                            ForEach(MassUnit.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                                        }
-                                        .pickerStyle(.segmented).frame(width: 120)
+                                        // Shared picker — see MassUnitPicker on why a fixed width was unsafe here.
+                                        MassUnitPicker(selection: $item.doseUnit)
                                     }
                                     // For a blend, break out what each compound delivers per shot — the
                                     // dose above sets the primary; the rest scale by their vial mass ratio.

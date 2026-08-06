@@ -4,6 +4,9 @@ import SwiftUI
 /// pans in from the left to ~85% width over a dimmed page. Hosts the account/config
 /// destinations that don't belong in the tab bar. Rendered at the root, above the tab bar.
 struct SideMenuDrawer: View {
+    // Icon column scales with its `.title3` glyph (20 → ~55pt). A hard 26pt column let the
+    // symbol overrun into the row label beside it.
+    @ScaledMetric(relativeTo: .title3) private var iconCol: CGFloat = 26
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isOpen: Bool
     @State private var route: MenuRoute?
@@ -149,7 +152,7 @@ struct SideMenuDrawer: View {
     private func actionRow(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: Space.lg) {
-                Image(systemName: icon).font(.title3).frame(width: 26).foregroundStyle(BrandColor.textSecondary)
+                Image(systemName: icon).font(.title3).frame(width: iconCol).foregroundStyle(BrandColor.textSecondary)
                 Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Spacer()
             }
@@ -212,7 +215,7 @@ struct SideMenuDrawer: View {
             HStack(spacing: Space.lg) {
                 Image(systemName: icon)
                     .font(.title3)
-                    .frame(width: 26)
+                    .frame(width: iconCol)
                     .foregroundStyle(BrandColor.accentText)
                 Text(title)
                     .font(Typo.headline)
@@ -263,6 +266,8 @@ struct MenuSheet<Content: View>: View {
 }
 
 struct HealthConnectionsView: View {
+    // Same reason as SideMenuDrawer's column: the glyph scales, so its column must.
+    @ScaledMetric(relativeTo: .title3) private var iconCol: CGFloat = 26
     @State private var health = HealthManager.shared
     // Mirror of HomeView's gate — the source of truth is the "hideHomeHealthCard" default.
     @AppStorage("hideHomeHealthCard") private var hideHomeHealthCard = false
@@ -306,7 +311,7 @@ struct HealthConnectionsView: View {
 
     private func sourceRow(_ name: String, _ icon: String, _ note: String, on: Bool = false) -> some View {
         HStack(alignment: .top, spacing: Space.md) {
-            Image(systemName: icon).font(.title3).frame(width: 26).foregroundStyle(BrandColor.accentText)
+            Image(systemName: icon).font(.title3).frame(width: iconCol).foregroundStyle(BrandColor.accentText)
             VStack(alignment: .leading, spacing: 2) {
                 Text(name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Text(note).font(.caption2).foregroundStyle(BrandColor.textSecondary)
