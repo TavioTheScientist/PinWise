@@ -109,7 +109,7 @@ struct ActiveLevelsView: View {
                     if !result.omitted.isEmpty {
                         let names = result.omitted.joined(separator: ", ")
                         Text("\(names) \(result.omitted.count == 1 ? "isn't" : "aren't") modeled — no reliable half-life data yet.")
-                            .font(.caption2).foregroundStyle(BrandColor.textSecondary).padding(.horizontal, Space.xs)
+                            .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary).padding(.horizontal, Space.xs)
                     }
                     DisclaimerBanner(text: "An estimated relative level from a simple half-life model — not a plasma concentration, and not medical or dosing advice. Talk to a clinician about your protocol.")
                 }
@@ -183,7 +183,7 @@ struct ActiveLevelsView: View {
             VStack(alignment: .leading, spacing: Space.md) {
                 SectionHeader(title: "Right now")
                 Text("Where each compound sits between its own trough and peak this moment.")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 ForEach(models) { gaugeRow($0).transition(.opacity) }
             }
             // Logging a dose (or a compound clearing) fades the row in/out rather than hard-cutting.
@@ -202,8 +202,12 @@ struct ActiveLevelsView: View {
                     Text(m.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary)
                         .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
                     Spacer(minLength: Space.sm)
-                    Text(m.status.label).font(.caption.weight(.semibold))
-                        .foregroundStyle(m.status.isElevated ? m.color : BrandColor.textSecondary)
+                    Text(m.status.label).font(Typo.captionEmphasis)
+                        // Ink, not the compound's hue. A series colour identifies WHICH compound;
+                        // using it on the status word made "Near peak" on an amber-class compound
+                        // read as a warning about nothing. Elevation is carried by weight and by the
+                        // gauge fill beside it, both of which already say it.
+                        .foregroundStyle(m.status.isElevated ? BrandColor.textPrimary : BrandColor.textSecondary)
                         .lineLimit(1)
                     Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
@@ -216,7 +220,7 @@ struct ActiveLevelsView: View {
                 }
                 .frame(height: 6)
                 if !m.implication.isEmpty {
-                    Text(m.implication).font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    Text(m.implication).font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 }
             }
             .contentShape(Rectangle())
@@ -242,18 +246,18 @@ struct ActiveLevelsView: View {
                 .pickerStyle(.segmented)
 
                 Text("Each curve is scaled to its own peak — shape and timing, not exact amount. Tap a compound for numbers.")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
 
                 if hasLong {
                     Text("Long-acting")
-                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     lineChart(longs, ws: ws, we: we, now: now, height: 200, labeled: true)
                 }
 
                 if hasShort {
                     Divider().overlay(BrandColor.stroke)
                     Text(range == .day ? "Short-acting · over the day" : "Short-acting · when each was active")
-                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     // Label "Now" only on the first chart shown, so the tag isn't repeated down the stack.
                     if range == .day {
                         lineChart(shorts, ws: ws, we: we, now: now, height: 120, labeled: !hasLong)
@@ -356,14 +360,14 @@ struct ActiveLevelsView: View {
             VStack(alignment: .leading, spacing: Space.sm) {
                 SectionHeader(title: "Compounds")
                 Text("Tap to show or hide a compound on the chart.")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: Space.sm)], alignment: .leading, spacing: Space.xs) {
                     ForEach(models) { m in
                         let isHidden = hidden.contains(m.name)
                         Button { if isHidden { hidden.remove(m.name) } else { hidden.insert(m.name) } } label: {
                             HStack(spacing: 6) {
                                 legendSwatch(m, isHidden: isHidden)
-                                Text(m.name).font(.caption).lineLimit(1)
+                                Text(m.name).font(Typo.caption).lineLimit(1)
                                     .foregroundStyle(isHidden ? BrandColor.textSecondary.opacity(0.5) : BrandColor.textSecondary)
                                     .strikethrough(isHidden, color: BrandColor.textSecondary.opacity(0.5))
                             }
@@ -585,7 +589,7 @@ struct ActiveLevelsView: View {
             let ws = now.addingTimeInterval(-futureH * 1.5 * 3_600)
             let we = now.addingTimeInterval(futureH * 3_600)
             let spanHours = futureH * 2.5
-            let curve = absoluteSamples(from: ws, to: we)     // amounts already in display units
+            let curve = absoluteSamples(from: ws, to: we, now: now)   // amounts already in display units
             let onBoardNow = amount(Pharmacokinetics.level(at: now, doses: series.doses, halfLifeHours: series.halfLifeHours))
             let peakInWindow = curve.points.map(\.value).max() ?? 0
 
@@ -603,16 +607,16 @@ struct ActiveLevelsView: View {
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(series.color)
                         }
                         Text(series.isLong ? "Long-acting compound." : "Short-acting compound.")
-                            .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
                 Card {
                     VStack(alignment: .leading, spacing: Space.sm) {
                         Text("Amount on board · \(unitLabel) · \(spanLabel(spanHours)) window")
-                            .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         detailChart(curve: curve.points, markers: curve.markers, domain: ws...we, spanHours: spanHours, now: now)
-                        Text("Actual estimated amount in your body — a dose increase shows as a taller curve. Dots mark each dose; dashed line is now.")
-                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        Text("Estimated amount in your body. Dots mark logged doses; past the dashed line the curve is projected from your schedule.")
+                            .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
                 Card {
@@ -625,14 +629,14 @@ struct ActiveLevelsView: View {
                     }
                 }
                 Text("Estimated from a simple half-life model — not a plasma concentration, and not medical or dosing advice.")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
             }
         }
 
         private struct P: Identifiable { let id = UUID(); let time: Date; let value: Double }
 
         /// Absolute amount on board over [ws, we], converted to the compound's display unit.
-        private func absoluteSamples(from ws: Date, to we: Date) -> (points: [P], markers: [P]) {
+        private func absoluteSamples(from ws: Date, to we: Date, now: Date) -> (points: [P], markers: [P]) {
             let step = max(300, we.timeIntervalSince(ws) / 160)
             var times = Set<Date>()
             var t = ws
@@ -641,7 +645,11 @@ struct ActiveLevelsView: View {
             let sorted = times.sorted()
             let points = sorted.map { P(time: $0, value: amount(Pharmacokinetics.level(at: $0, doses: series.doses, halfLifeHours: series.halfLifeHours))) }
             let byTime = Dictionary(uniqueKeysWithValues: zip(sorted, points.map(\.value)))
-            let markers = series.doses.filter { $0.time >= ws && $0.time <= we }.compactMap { ev -> P? in
+            // `<= now`: these dots are captioned as marking each DOSE, and a scheduled future dose is
+            // a plan, not a dose. Drawing the two identically made roughly a third of every timeline a
+            // prediction rendered with the same confidence as measurement — on an app whose whole
+            // position is that its figures are checkable. Same objection as a backdated make-up dose.
+            let markers = series.doses.filter { $0.time >= ws && $0.time <= we && $0.time <= now }.compactMap { ev -> P? in
                 byTime[ev.time].map { P(time: ev.time, value: $0) }
             }
             return (points, markers)
@@ -651,10 +659,21 @@ struct ActiveLevelsView: View {
         private func detailChart(curve: [P], markers: [P], domain: ClosedRange<Date>, spanHours: Double, now: Date) -> some View {
             Chart {
                 ForEach(curve) { p in
+                    // Gradient to zero, not a flat 0.16 slab: the fill dies away instead of
+                    // terminating in a hard edge that competes with the line it sits under. Home's
+                    // sparkline already does this and is the house reference.
                     AreaMark(x: .value("Date", p.time), y: .value("Amount", p.value))
-                        .foregroundStyle(series.color.opacity(0.16)).interpolationMethod(.monotone)
+                        .foregroundStyle(LinearGradient(colors: [series.color.opacity(0.18),
+                                                                 series.color.opacity(0)],
+                                                        startPoint: .top, endPoint: .bottom))
+                        .interpolationMethod(.monotone)
+                    // PAST `now` THE CURVE IS A PROJECTION, and it must not be drawn with the
+                    // confidence of a measurement. Same line, same hue — but translucent, so the
+                    // moment the data stops being history is visible without a legend.
                     LineMark(x: .value("Date", p.time), y: .value("Amount", p.value))
-                        .foregroundStyle(series.color).lineStyle(StrokeStyle(lineWidth: 2)).interpolationMethod(.monotone)
+                        .foregroundStyle(series.color)
+                        .opacity(p.time <= now ? 1 : 0.45)
+                        .lineStyle(StrokeStyle(lineWidth: 2)).interpolationMethod(.monotone)
                 }
                 ForEach(markers) { d in
                     PointMark(x: .value("Date", d.time), y: .value("Amount", d.value))

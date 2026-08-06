@@ -449,7 +449,7 @@ struct FeaturedNewsCard: View {
                     Spacer()
                     if isRecentNews(item.publishedAt) && seenStore.isUnreadToday(item.id) { NewBadge() }
                     Text(newsRelativeDate(item.publishedAt))
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
                 Text(item.headline)
                     .font(Typo.title).displayTracking()
@@ -462,9 +462,9 @@ struct FeaturedNewsCard: View {
                     .foregroundStyle(BrandColor.textSecondary)
                     .lineLimit(3)
                 HStack(spacing: Space.xs) {
-                    Image(systemName: "checkmark.seal.fill").font(.caption2)
+                    Image(systemName: "checkmark.seal.fill").font(Typo.microCaption)
                     Text("\(item.sources.count) source\(item.sources.count == 1 ? "" : "s")")
-                        .font(.caption.weight(.semibold))
+                        .font(Typo.captionEmphasis)
                     Spacer()
                     Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
@@ -495,7 +495,7 @@ struct NewsRow: View {
                         Spacer()
                         if isRecentNews(item.publishedAt) && seenStore.isUnreadToday(item.id) { NewBadge() }
                         Text(newsRelativeDate(item.publishedAt))
-                            .font(.caption)
+                            .font(Typo.caption)
                             .foregroundStyle(BrandColor.textSecondary)
                     }
                     Text(item.headline)
@@ -505,11 +505,11 @@ struct NewsRow: View {
                         .lineLimit(2)
                         .minimumScaleFactor(0.85)
                     Text(item.listText)
-                        .font(.caption)
+                        .font(Typo.caption)
                         .foregroundStyle(BrandColor.textSecondary)
                         .lineLimit(3)
                     Text("\(item.sources.count) source\(item.sources.count == 1 ? "" : "s")")
-                        .font(.caption)
+                        .font(Typo.caption)
                         .foregroundStyle(BrandColor.success)
                 }
             }
@@ -541,7 +541,7 @@ struct NewsDetailView: View {
                 // 1 — Title
                 VStack(alignment: .leading, spacing: Space.sm) {
                     Text(newsDisplayDate(item.publishedAt))
-                        .font(.caption)
+                        .font(Typo.caption)
                         .foregroundStyle(BrandColor.textSecondary)
                     Text(item.headline)
                         .font(Typo.title).displayTracking()
@@ -584,7 +584,7 @@ struct NewsDetailView: View {
                                     Image(systemName: "link").foregroundStyle(BrandColor.accentText)
                                     Text(source.name).foregroundStyle(BrandColor.accentText)
                                     Spacer()
-                                    Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                    Image(systemName: "arrow.up.right").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                                 }
                                 .contentShape(Rectangle())
                             }
@@ -595,7 +595,7 @@ struct NewsDetailView: View {
 
                 if !item.disclaimer.isEmpty {
                     Text(item.disclaimer)
-                        .font(.caption2)
+                        .font(Typo.microCaption)
                         .foregroundStyle(BrandColor.textSecondary)
                 }
             }

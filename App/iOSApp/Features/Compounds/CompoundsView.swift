@@ -160,7 +160,7 @@ struct CompoundsView: View {
                 Image(systemName: "plus.circle.fill").foregroundStyle(BrandColor.accentText)
                 Text("Add your own compound").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Spacer()
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                Image(systemName: "chevron.right").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
             .padding(Space.lg)
             .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
@@ -187,7 +187,7 @@ struct CompoundLegendView: View {
                         VStack(alignment: .leading, spacing: Space.md) {
                             SectionHeader(title: "Evidence grades")
                             Text("The grade rates how much you can trust that a compound works and is safe in people — the strength of the research, not how big the effect is or whether you should take it. Strong evidence can back a small effect, and a high grade is never a recommendation.")
-                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                             tierRow(.fdaApproved, "Approved by the FDA for use in people — the strongest evidence.")
                             tierRow(.humanTrialsUnapproved, "Studied in human trials, but not FDA-approved.")
                             tierRow(.preclinicalOrFailed, "Mostly animal or lab data (or trials that didn't pan out) — little human evidence.")
@@ -201,7 +201,7 @@ struct CompoundLegendView: View {
                             HStack(alignment: .top, spacing: Space.md) {
                                 TagChip(text: "WADA", style: .warning)
                                 Text("On the World Anti-Doping Agency prohibited list — banned for drug-tested athletes.")
-                                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                 Spacer(minLength: 0)
                             }
                         }
@@ -213,12 +213,12 @@ struct CompoundLegendView: View {
                             // t½ symbol into "T½". Half-life is conventionally lowercase-t, so the
                             // header keeps that while matching the section-header type treatment.
                             Text("HALF-LIFE (t½)")
-                                .font(Typo.caption)
+                                .font(Typo.footnote)
                                 .fontWeight(.semibold)
                                 .tracking(1.2)
                                 .foregroundStyle(BrandColor.textSecondary)
                             Text("The time it takes for half of a dose to clear your body. A short t½ (minutes or hours) means it acts and leaves quickly; a long t½ (days) means it lingers and can build up with repeat doses. It's a rough guide to how often something is typically taken — not a dose recommendation.")
-                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         }
                     }
                 }
@@ -241,8 +241,8 @@ struct CompoundLegendView: View {
                 // one true overlap in this audit rather than a truncation.
                 .frame(width: badgeCol, alignment: .leading)
             VStack(alignment: .leading, spacing: Space.xxs) {
-                Text(tier.label).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
-                Text(desc).font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                Text(tier.label).font(Typo.captionEmphasis).foregroundStyle(BrandColor.textPrimary)
+                Text(desc).font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
             }
             Spacer(minLength: 0)
         }
@@ -269,12 +269,12 @@ struct CompoundRow: View {
                         Text(compound.name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         if isCustom { TagChip(text: "Custom") }
                     }
-                    Text(descriptor).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    Text(descriptor).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: Space.sm)
                 if !isCustom { EvidenceBadge(tier: compound.evidenceTier) }
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                Image(systemName: "chevron.right").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
     }
@@ -350,7 +350,7 @@ struct CompoundDetailView: View {
             Text(compound.name).font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
             if !compound.aliases.isEmpty {
                 Text(compound.aliases.joined(separator: " · "))
-                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.footnote).foregroundStyle(BrandColor.textSecondary)
             }
             HStack(spacing: Space.sm) {
                 if isCustom {
@@ -411,7 +411,7 @@ struct CompoundDetailView: View {
     private func safetyStrip(_ text: String) -> some View {
         HStack(alignment: .top, spacing: Space.sm) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(BrandColor.warning)
-            Text(text).font(Typo.caption).foregroundStyle(BrandColor.textPrimary)
+            Text(text).font(Typo.footnote).foregroundStyle(BrandColor.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -490,7 +490,7 @@ struct CompoundDetailView: View {
                             // Stated, not implied. A registry entry is a PLAN and a preprint is
                             // unreviewed; neither should read like a published result.
                             Text(c.kind == .trial ? "registry entry" : "not peer reviewed")
-                                .font(Typo.caption2)
+                                .font(Typo.caption)
                                 .foregroundStyle(BrandColor.textSecondary)
                         }
                         Spacer(minLength: 0)
@@ -505,11 +505,11 @@ struct CompoundDetailView: View {
                         .foregroundStyle(BrandColor.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("\(c.source) · \(String(c.year)) · \(c.identifier)")
-                        .font(Typo.caption2)
+                        .font(Typo.caption)
                         .foregroundStyle(BrandColor.textSecondary)
                     if let f = c.finding {
                         Text(f)
-                            .font(Typo.caption)
+                            .font(Typo.footnote)
                             .foregroundStyle(BrandColor.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 2)
@@ -522,7 +522,7 @@ struct CompoundDetailView: View {
                 .accessibilityAddTraits(c.url != nil ? .isLink : [])
             }
             Text("References are retrieved records, not summaries written from memory. Open one and read it — a citation is only useful if you can check it.")
-                .font(Typo.caption2)
+                .font(Typo.caption)
                 .foregroundStyle(BrandColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -535,10 +535,10 @@ struct CompoundDetailView: View {
             proseText("Units measure volume, not dose — how much you draw depends on the vial's concentration. The calculator converts a target dose into syringe units for a specific vial.", secondary: true)
             Button { showCalculator = true } label: {
                 Label("Open dose calculator", systemImage: "syringe.fill")
-                    .font(Typo.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                    .font(Typo.footnote.weight(.semibold)).foregroundStyle(BrandColor.accentText)
             }
             Text("Reported ranges, not a recommendation. Dose decisions belong with a clinician.")
-                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -550,7 +550,7 @@ struct CompoundDetailView: View {
             proseText(text)
             Button { showLegend = true } label: {
                 Label("What the grades mean", systemImage: "info.circle")
-                    .font(Typo.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                    .font(Typo.footnote.weight(.semibold)).foregroundStyle(BrandColor.accentText)
             }
         }
     }
@@ -560,7 +560,7 @@ struct CompoundDetailView: View {
             ForEach(Array(p.misconceptions.enumerated()), id: \.offset) { _, m in
                 HStack(alignment: .top, spacing: Space.sm) {
                     Image(systemName: "checkmark.seal.fill")
-                        .font(.caption).foregroundStyle(BrandColor.mint).padding(.top, Space.xs)
+                        .font(Typo.caption).foregroundStyle(BrandColor.mint).padding(.top, Space.xs)
                     Text(m).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -596,7 +596,7 @@ struct CompoundDetailView: View {
             MicroLabel(label)
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                 HStack(alignment: .top, spacing: Space.sm) {
-                    Image(systemName: icon).font(.caption2).foregroundStyle(tint).padding(.top, 3)
+                    Image(systemName: icon).font(Typo.microCaption).foregroundStyle(tint).padding(.top, 3)
                     Text(item).font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -629,11 +629,11 @@ struct CompoundDetailView: View {
                                 VStack(alignment: .leading, spacing: Space.xs) {
                                     Text(c.name).font(Typo.body.weight(.medium)).foregroundStyle(BrandColor.textPrimary)
                                     if let t = CompoundProfiles.profile(for: c)?.tagline {
-                                        Text(t).font(Typo.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                                        Text(t).font(Typo.footnote).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                                     }
                                 }
                                 Spacer(minLength: Space.sm)
-                                Image(systemName: "chevron.right").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                Image(systemName: "chevron.right").font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                             }
                             .padding(.vertical, Space.sm)
                             .contentShape(.rect)
@@ -651,7 +651,7 @@ struct CompoundDetailView: View {
             DisclaimerBanner(text: "Staxyz is a tracking tool, not medical advice. This page is educational reference — it does not tell you whether, or how much, to use anything. Talk to a licensed clinician before you start, change, or stop any compound.")
             if let p = profile {
                 Text("Last reviewed \(p.lastReviewed) · Staxyz editorial")
-                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
     }
@@ -679,7 +679,7 @@ struct CompoundDetailView: View {
 
     private func proseText(_ t: String, secondary: Bool = false) -> some View {
         Text(t)
-            .font(secondary ? Typo.caption : Typo.body)
+            .font(secondary ? Typo.footnote : Typo.body)
             .foregroundStyle(secondary ? BrandColor.textSecondary : BrandColor.textPrimary)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -700,7 +700,7 @@ struct CompoundDetailView: View {
     }
     private func detailRow(_ key: String, _ value: String) -> some View {
         HStack(alignment: .top) {
-            Text(key).font(.caption).foregroundStyle(BrandColor.textSecondary)
+            Text(key).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             Spacer()
             Text(value).font(Typo.body).foregroundStyle(BrandColor.textPrimary).multilineTextAlignment(.trailing)
         }
@@ -717,7 +717,7 @@ struct GoalPill: View {
     let goal: CompoundGoal
     var body: some View {
         Label(goal.displayName, systemImage: goalIcon(goal))
-            .font(.caption.weight(.semibold))
+            .font(Typo.captionEmphasis)
             .padding(.horizontal, Space.md)
             .padding(.vertical, Space.xs)
             .foregroundStyle(BrandColor.textPrimary)
@@ -772,7 +772,7 @@ struct AddCustomCompoundView: View {
                             }
                             if isDuplicate {
                                 Text("Already in the library — search for it instead.")
-                                    .font(.caption).foregroundStyle(BrandColor.warning)
+                                    .font(Typo.caption).foregroundStyle(BrandColor.warning)
                             }
                             FieldRow("Category") {
                                 Picker("", selection: $category) {

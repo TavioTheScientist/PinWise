@@ -71,7 +71,7 @@ private struct LotRow: View {
                         .font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
                 if !lot.vendor.isEmpty {
-                    Text(lot.vendor).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    Text(lot.vendor).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
                 Divider().overlay(BrandColor.stroke)
                 // `—` placeholders so nothing shifts between rows.

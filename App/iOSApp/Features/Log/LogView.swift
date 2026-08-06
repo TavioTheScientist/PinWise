@@ -332,7 +332,7 @@ struct LogView: View {
                         Text("\(day)'s dose was never logged")
                             .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         Text(slot.formatted(.dateTime.month(.abbreviated).day()))
-                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                     attributionOption(.today, "This is today's dose",
                                       "\(day)'s stays unlogged.")
@@ -357,7 +357,7 @@ struct LogView: View {
                     .foregroundStyle(attribution == value ? BrandColor.accent : BrandColor.textSecondary)
                 VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(title).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
-                    Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    Text(detail).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
                 Spacer(minLength: 0)
             }
@@ -398,7 +398,7 @@ struct LogView: View {
                     // The timing now sits right-aligned in the row's own fact slot, so state the sort
                     // once, quietly — a hint under the prompt, not a heading.
                     if !dueRows.isEmpty {
-                        Text("Soonest first").font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                        Text("Soonest first").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
                 // A vertical list of full-width rows — every protocol visible at a glance, soonest-due
@@ -446,9 +446,9 @@ struct LogView: View {
                                     Text("Each shot delivers").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                                     ForEach(deliver, id: \.name) { line in
                                         HStack {
-                                            Text(line.name).font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                                            Text(line.name).font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                                             Spacer()
-                                            Text(line.dose.displayString(in: unit)).font(.caption2).foregroundStyle(BrandColor.textPrimary)
+                                            Text(line.dose.displayString(in: unit)).font(Typo.microCaption).foregroundStyle(BrandColor.textPrimary)
                                         }
                                     }
                                 }
@@ -459,7 +459,7 @@ struct LogView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     Text(drawHint(for: p))
-                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 }
             }
         }
@@ -674,7 +674,7 @@ struct LogView: View {
                             Image(systemName: "cross.vial.fill")
                             Text(selectedVialName ?? "Log from one of your vials").fontWeight(.semibold)
                             Spacer()
-                            Image(systemName: "chevron.up.chevron.down").font(.caption)
+                            Image(systemName: "chevron.up.chevron.down").font(Typo.caption)
                         }
                         .foregroundStyle(BrandColor.accentText)
                         .padding(.vertical, Space.sm).padding(.horizontal, Space.md)
@@ -713,7 +713,7 @@ struct LogView: View {
                 if let suggested = suggestedSite, suggested != site {
                     Button { site = suggested; showBack = suggested.isBack } label: {
                         Label("Recommended: \(suggested.displayName)", systemImage: "sparkles")
-                            .font(.caption).foregroundStyle(BrandColor.accentText)
+                            .font(Typo.caption).foregroundStyle(BrandColor.accentText)
                     }
                 }
                 // Two clearly-scoped footnotes: one names the compound (specific), one is flagged general.
@@ -721,17 +721,17 @@ struct LogView: View {
                     Text(compoundSiteNote)
                     Text(generalSiteNote)
                 }
-                .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 // Collapsible "When" — defaults to now, so it stays collapsed; the header shows the
                 // chosen time so it's never ambiguous. Expand only to log an earlier dose.
                 VStack(alignment: .leading, spacing: Space.xs) {
                     Button { withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { showWhen.toggle() } } label: {
                         HStack(spacing: Space.sm) {
                             Text("When").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                            Text(whenLabel).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            Text(whenLabel).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                             Spacer()
                             Image(systemName: showWhen ? "chevron.up" : "chevron.down")
-                                .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                                .font(Typo.captionEmphasis).foregroundStyle(BrandColor.textSecondary)
                         }
                         .contentShape(Rectangle())
                     }

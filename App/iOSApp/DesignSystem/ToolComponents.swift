@@ -107,7 +107,7 @@ struct SyringeGauge: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                     Text("More than one full syringe — split into two draws.")
                 }
-                .font(.caption)
+                .font(Typo.caption)
                 .foregroundStyle(BrandColor.danger)
             }
         }
@@ -176,9 +176,9 @@ struct SyringeAdvancedCard: View {
                 }
                 .pickerStyle(.segmented)
                 Text("Most insulin syringes are U-100. Only change this if yours says otherwise.")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary).padding(.top, Space.xs)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary).padding(.top, Space.xs)
             } label: {
-                Text("Advanced — syringe type").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                Text("Advanced — syringe type").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
             .tint(BrandColor.accentText)
         }

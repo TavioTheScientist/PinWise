@@ -275,7 +275,7 @@ struct LabelScannerView: View {
                     }
 
                     if isWorking {
-                        HStack(spacing: Space.sm) { ProgressView(); Text("Reading label…").font(.caption).foregroundStyle(BrandColor.textSecondary) }
+                        HStack(spacing: Space.sm) { ProgressView(); Text("Reading label…").font(Typo.caption).foregroundStyle(BrandColor.textSecondary) }
                     }
 
                     if let error {
@@ -319,7 +319,7 @@ struct LabelScannerView: View {
                 row("Expires", r.expiration.map { $0.formatted(.dateTime.month().day().year()) } ?? "—")
                 if r.isEmpty {
                     Text("Couldn't read the label. Try a closer, straighter photo, or enter the details by hand.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 } else {
                     PrimaryButton(title: "Use these details", systemImage: "checkmark") {
                         onApply(r); dismiss()
@@ -341,7 +341,7 @@ struct LabelScannerView: View {
 
     private func row(_ key: String, _ value: String) -> some View {
         HStack {
-            Text(key).font(.caption).foregroundStyle(BrandColor.textSecondary)
+            Text(key).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             Spacer()
             Text(value).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
         }

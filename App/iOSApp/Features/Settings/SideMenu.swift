@@ -99,12 +99,12 @@ struct SideMenuDrawer: View {
                             .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                             .lineLimit(1)
                         Text(auth.accountSubtitle)
-                            .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                             .lineLimit(1)
                     }
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
+                        .font(Typo.captionEmphasis)
                         .foregroundStyle(BrandColor.textSecondary)
                 }
                 .contentShape(Rectangle())
@@ -170,7 +170,7 @@ struct SideMenuDrawer: View {
         VStack(alignment: .leading, spacing: Space.sm) {
             Divider().overlay(BrandColor.stroke)
             Text("Follow along")
-                .font(Typo.caption).fontWeight(.semibold).tracking(1.2)
+                .font(Typo.footnote).fontWeight(.semibold).tracking(1.2)
                 .foregroundStyle(BrandColor.textSecondary)
             socialLink("SocialX", "@PinWiseApp", "https://x.com/PinWiseApp")
             socialLink("SocialInstagram", "@PinWiseApp", "https://instagram.com/PinWiseApp")
@@ -282,7 +282,7 @@ struct HealthConnectionsView: View {
                     VStack(alignment: .leading, spacing: Space.xxs) {
                         Text("Show on Home").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         Text("Keep the health card at the top of your Home tab.")
-                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
                 // `controlOn`, not `accent`: the system draws the toggle knob in white, and the
@@ -314,7 +314,7 @@ struct HealthConnectionsView: View {
             Image(systemName: icon).font(.title3).frame(width: iconCol).foregroundStyle(BrandColor.accentText)
             VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                Text(note).font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                Text(note).font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
             }
             Spacer(minLength: 0)
             if on { Image(systemName: "checkmark.circle.fill").foregroundStyle(BrandColor.success) }
@@ -337,11 +337,11 @@ struct AboutView: View {
                 VStack(alignment: .leading, spacing: Space.sm) {
                     Text("Staxyz").font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     Text("The source of truth for peptides and dose tracking — transparent about where the evidence stands.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     HStack {
                         Text("Version").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                         Spacer()
-                        Text(appVersion).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        Text(appVersion).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                     .padding(.top, Space.sm)
                 }
@@ -350,7 +350,7 @@ struct AboutView: View {
                 VStack(alignment: .leading, spacing: Space.sm) {
                     SectionHeader(title: "Important")
                     Text("Staxyz is for tracking and education. It doesn't provide medical advice, diagnosis, or treatment. Talk to a licensed clinician about your health decisions.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
             }
             Button { showTerms = true } label: {
@@ -358,7 +358,7 @@ struct AboutView: View {
                     Image(systemName: "doc.text").foregroundStyle(BrandColor.accentText)
                     Text("Terms of Service & Privacy Policy").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                     Spacer()
-                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    Image(systemName: "chevron.right").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
                 .padding(Space.lg)
                 .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))

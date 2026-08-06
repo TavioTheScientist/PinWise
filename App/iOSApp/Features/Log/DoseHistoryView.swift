@@ -63,14 +63,14 @@ struct DoseHistoryView: View {
                     Text(entry.dose.displayString(in: unit)
                          + (entry.site.map { " · \($0.displayName)" } ?? "")
                          + (entry.lotNumber.isEmpty ? "" : " · LOT \(entry.lotNumber)"))
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     if let blend {
-                        Text("Delivers \(blend)").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        Text("Delivers \(blend)").font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
                 Spacer()
                 Text(entry.timestamp.relativeLabel())
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
         .accessibilityElement(children: .combine)

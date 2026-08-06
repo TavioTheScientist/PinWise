@@ -25,14 +25,14 @@ struct InjectionMapInfoView: View {
                         VStack(alignment: .leading, spacing: Space.sm) {
                             SectionHeader(title: "Why — the research")
                             Text("Injection-technique guidance is to keep injections about a finger-width (≥1 cm) apart and let a spot rest ~2–3 weeks before reusing it. Poor rotation is the biggest risk for lipohypertrophy — firm, fatty lumps that can change how a dose absorbs. A region warms toward red as you use it more often than that spacing and rest allow (around daily use of one area).")
-                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         }
                     }
                     Card {
                         VStack(alignment: .leading, spacing: Space.sm) {
                             SectionHeader(title: "The time window")
                             Text("The map counts injections from the last 4 weeks, so sites you've let recover cool back down — older injections don't linger on the map. Four weeks fits the ~2–3-week rest most guidance recommends before reusing a spot. We track broad regions, so it shows how you're spreading load across the body, not exact spots.")
-                                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         }
                     }
                 }
@@ -48,7 +48,7 @@ struct InjectionMapInfoView: View {
     private func colorRow(_ c: Color, _ text: String) -> some View {
         HStack(alignment: .top, spacing: Space.md) {
             Circle().fill(c).frame(width: 12, height: 12).padding(.top, 3)
-            Text(text).font(.caption).foregroundStyle(BrandColor.textPrimary)
+            Text(text).font(Typo.caption).foregroundStyle(BrandColor.textPrimary)
             Spacer(minLength: 0)
         }
     }
@@ -249,7 +249,7 @@ struct BodyMapView: View {
                         legend
 
                         Text("Counting the \(HeatWindow.label) — \(totalPlaced) injection\(totalPlaced == 1 ? "" : "s").")
-                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
 
@@ -258,7 +258,7 @@ struct BodyMapView: View {
                         HStack(spacing: Space.md) {
                             Image(systemName: "arrow.triangle.2.circlepath").font(.title3).foregroundStyle(BrandColor.success)
                             VStack(alignment: .leading, spacing: Space.xxs) {
-                                Text("Suggested next site").font(.caption).foregroundStyle(BrandColor.textSecondary)
+                                Text("Suggested next site").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                                 Text(s.displayName).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                             }
                             Spacer()
@@ -275,9 +275,9 @@ struct BodyMapView: View {
                                 Circle().fill(c > 0 ? heatColor(intensity(c)) : BrandColor.surfaceElevated)
                                     .frame(width: 11, height: 11)
                                     .overlay(Circle().strokeBorder(BrandColor.stroke, lineWidth: 0.5))
-                                Text(site.displayName).font(.caption).foregroundStyle(BrandColor.textPrimary)
+                                Text(site.displayName).font(Typo.caption).foregroundStyle(BrandColor.textPrimary)
                                 Spacer()
-                                Text("\(c)").font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                                Text("\(c)").font(Typo.captionEmphasis).foregroundStyle(BrandColor.textSecondary)
                             }
                         }
                     }
@@ -285,11 +285,11 @@ struct BodyMapView: View {
 
                 if totalPlaced == 0 {
                     Text("No injections logged with a site in this window. Log a dose with a site to build the map.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
 
                 Text("Why the colors: injection-technique guidance is to keep shots about a finger-width (≥1 cm) apart and let a spot rest ~2–3 weeks before reusing it. A region warms toward red as you rely on it more heavily than that allows.")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
             }
             .padding(Space.lg)
         }
@@ -308,11 +308,11 @@ struct BodyMapView: View {
 
     private var legend: some View {
         HStack(spacing: Space.sm) {
-            Text("Light use").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+            Text("Light use").font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
             Capsule()
                 .fill(LinearGradient(colors: HeatRamp.colors, startPoint: .leading, endPoint: .trailing))
                 .frame(height: 6)
-            Text("Heavy").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+            Text("Heavy").font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
         }
     }
 

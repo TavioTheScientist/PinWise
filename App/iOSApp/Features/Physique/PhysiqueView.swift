@@ -23,7 +23,7 @@ struct PhysiqueView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.lg) {
                 Text("Snap a progress photo on the same day you dose, in similar lighting and pose, to see real change over time. Photos stay on this device.")
-                    .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
 
                 if selecting { selectionBar } else { addBar }
 
@@ -119,7 +119,7 @@ struct PhysiqueView: View {
             }
             .font(.subheadline.weight(.semibold)).foregroundStyle(BrandColor.accentText)
             Spacer()
-            Text("\(selection.count) selected").font(.caption).foregroundStyle(BrandColor.textSecondary)
+            Text("\(selection.count) selected").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             Spacer()
             Button(role: .destructive) { showBulkDeleteConfirm = true } label: {
                 Label("Delete", systemImage: "trash").font(.subheadline.weight(.semibold))

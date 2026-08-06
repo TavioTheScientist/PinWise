@@ -306,7 +306,7 @@ struct HomeView: View {
                         // denominator is a number you have to take on faith, and this app's whole
                         // position is that it does not ask for faith. It is quiet now, not gone.
                         Text(judged > 0 ? "Last \(judged) doses" : "No doses due yet")
-                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                             .lineLimit(1).minimumScaleFactor(0.8)
                     }
                     Spacer(minLength: Space.sm)
@@ -317,7 +317,7 @@ struct HomeView: View {
                     if run.current > 0 {
                         HStack(spacing: 4) {
                             Image(systemName: "flame.fill")
-                                .font(.caption2)
+                                .font(Typo.microCaption)
                                 .foregroundStyle(BrandColor.warning)
                             Text("\(run.current)")
                                 .font(Typo.numberSM)
@@ -386,7 +386,7 @@ struct HomeView: View {
     /// that, so the value and its unit can never be separated. A number without its unit is not a fact.
     @ViewBuilder private func streakValue(_ streak: StreakCalculator.Result) -> some View {
         Image(systemName: "flame.fill")
-            .font(.caption)
+            .font(Typo.caption)
             .foregroundStyle(streak.current > 0 ? BrandColor.warning : BrandColor.textSecondary)
             .accessibilityHidden(true)
         (
@@ -397,7 +397,7 @@ struct HomeView: View {
                 .font(Typo.numberSM)
                 .foregroundStyle(BrandColor.textPrimary)
             + Text(" \(streak.current == 1 ? "dose" : "doses")")
-                .font(.caption)
+                .font(Typo.caption)
                 .foregroundStyle(BrandColor.textSecondary)
         )
         .lineLimit(1)
@@ -632,7 +632,7 @@ struct HomeView: View {
             }
             if due.count > 1 {
                 Text("\(due.count) protocols are due — this opens the soonest.")
-                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
     }
@@ -661,7 +661,7 @@ struct HomeView: View {
                         ProtocolSummary(presentation: row.presentation, layout: .row)
                     }
                     if activeProtocols.count > 4 {
-                        Text("+\(activeProtocols.count - 4) more").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        Text("+\(activeProtocols.count - 4) more").font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
             }
@@ -800,7 +800,7 @@ struct HomeHealthCard: View {
                 Text(String(format: pounds ? "%.0f" : "%.1f", latest))
                     .font(Typo.statValue).foregroundStyle(BrandColor.textPrimary)
                 Text(pounds ? "lb" : "kg")
-                    .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 if let delta {
                     HStack(spacing: Space.xxs) {
                         Image(systemName: delta < 0 ? "arrow.down" : "arrow.up")
@@ -854,7 +854,7 @@ struct HomeHealthCard: View {
 
                 if metrics.isEmpty {
                     Text("Connect Apple Health to see your weight, resting heart rate, HRV, sleep, and steps here — including anything Oura, Whoop, or Apple Fitness write to Health.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     HStack(spacing: Space.md) {
                         if health.isAvailable && !health.authorized {
@@ -862,7 +862,7 @@ struct HomeHealthCard: View {
                                 Task { requesting = true; await health.requestAuthorization(); requesting = false }
                             } label: {
                                 Label(requesting ? "Connecting…" : "Connect Apple Health", systemImage: "heart.text.square")
-                                    .font(.caption.weight(.semibold))
+                                    .font(Typo.captionEmphasis)
                                     // The SECONDARY register, not `ctaFill`. This is a
                                     // caption-sized invitation INSIDE a card, sitting beside a
                                     // "Log a metric" text link — a white pill here would be a
@@ -880,7 +880,7 @@ struct HomeHealthCard: View {
                                 Text("Log a metric")
                                 Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
                             }
-                            .font(.caption.weight(.semibold))
+                            .font(Typo.captionEmphasis)
                             .foregroundStyle(BrandColor.accentText)
                         }
                         .buttonStyle(.plain)
@@ -913,7 +913,7 @@ struct HomeHealthCard: View {
                                 Text("View all metrics")
                                 Image(systemName: "chevron.right").font(.caption2.weight(.bold))
                             }
-                            .font(.caption.weight(.semibold))
+                            .font(Typo.captionEmphasis)
                             .foregroundStyle(BrandColor.accentText)
                         }
                     }

@@ -148,7 +148,7 @@ struct PaywallView: View {
                 .frame(width: 22)
             VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
-                Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                Text(detail).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             }
         }
     }
@@ -164,7 +164,7 @@ struct PaywallView: View {
                     Text("Plans unavailable").font(Typo.headline)
                         .foregroundStyle(BrandColor.textPrimary)
                     Text("We couldn't reach the App Store. Check your connection and reopen this screen.")
-                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.footnote).foregroundStyle(BrandColor.textSecondary)
                 }
             }
         } else {
@@ -199,7 +199,7 @@ struct PaywallView: View {
                         .lineLimit(1).minimumScaleFactor(0.8)
                     if let badge { TagChip(text: badge) }
                     if let sub {
-                        Text(sub).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                        Text(sub).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                             .lineLimit(2)
                     }
                 }
@@ -248,7 +248,7 @@ struct PaywallView: View {
     private var disclosure: some View {
         Text("Subscriptions renew automatically until cancelled. Cancel any time in the App Store "
              + "at least 24 hours before the period ends. Payment is charged to your Apple ID.")
-            .font(.caption2)
+            .font(Typo.microCaption)
             .multilineTextAlignment(.center)
             .foregroundStyle(BrandColor.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -258,7 +258,7 @@ struct PaywallView: View {
         HStack(spacing: Space.lg) {
             Button { Task { await subs.restore() } } label: {
                 Text("Restore purchases")
-                    .font(.caption.weight(.semibold))
+                    .font(Typo.captionEmphasis)
                     .foregroundStyle(BrandColor.accentText)
             }
             .buttonStyle(.plain)
@@ -266,7 +266,7 @@ struct PaywallView: View {
 
             Button { showLegal = true } label: {
                 Text("Terms & Privacy")
-                    .font(.caption.weight(.semibold))
+                    .font(Typo.captionEmphasis)
                     .foregroundStyle(BrandColor.accentText)
             }
             .buttonStyle(.plain)

@@ -251,7 +251,7 @@ struct AssistantView: View {
                     Label("Natt", systemImage: "sparkles")
                         .font(.system(size: 22, weight: .bold)).foregroundStyle(BrandColor.textPrimary)
                     Text("Staxyz's AI assistant")
-                        .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Natt, Staxyz's AI assistant")
@@ -272,7 +272,7 @@ struct AssistantView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.md) {
                         Text("Informational only — never dosing or medical advice.")
-                            .font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
 
                         if engine.messages.isEmpty {
                             starterCard
@@ -280,7 +280,7 @@ struct AssistantView: View {
                         } else {
                             ForEach(engine.messages) { bubble($0) }
                             if engine.isThinking {
-                                HStack(spacing: Space.sm) { ProgressView(); Text("Thinking…").font(.caption).foregroundStyle(BrandColor.textSecondary) }
+                                HStack(spacing: Space.sm) { ProgressView(); Text("Thinking…").font(Typo.caption).foregroundStyle(BrandColor.textSecondary) }
                             }
                         }
                     }
@@ -344,7 +344,7 @@ struct AssistantView: View {
                         gatePoint("Your responsibility", "You use Natt at your own risk. Staxyz isn't liable for actions taken on its answers.")
                     }
                     Text("Tap Accept & continue to agree to the points above.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
                 .padding(Space.lg)
             }
@@ -374,13 +374,13 @@ struct AssistantView: View {
     private var starterCard: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
             Text("Ask about peptides, the science, or your own data. Try:")
-                .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
             ForEach(starters, id: \.self) { s in
                 Button { Task { await ask(s) } } label: {
                     HStack {
                         Text(s).font(.body).foregroundStyle(BrandColor.textPrimary)
                         Spacer()
-                        Image(systemName: "arrow.up.right").font(.caption2).foregroundStyle(BrandColor.textSecondary)
+                        Image(systemName: "arrow.up.right").font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
                     }
                     .padding(Space.md)
                     .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))

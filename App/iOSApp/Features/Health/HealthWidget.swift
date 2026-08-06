@@ -25,10 +25,10 @@ struct HealthWidget: View {
 
                 if !health.isAvailable {
                     Text("Health data isn't available on this device.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 } else if health.authorized {
                     Text("Signals worth watching alongside your doses — including anything Oura, Whoop, or Apple Fitness write to Health.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: Space.md) {
                         metric("Weight (\(weightInPounds ? "lb" : "kg"))", weightText, "scalemass")
                         metric("Resting HR", hrText, "heart")
@@ -38,12 +38,12 @@ struct HealthWidget: View {
                     }
                 } else {
                     Text("Connect Apple Health to see weight, resting heart rate, HRV, sleep, and activity next to your logs. Data from Oura, Whoop, Apple Fitness, and similar shows up here too.")
-                        .font(.caption).foregroundStyle(BrandColor.textSecondary)
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     Button {
                         Task { requesting = true; await health.requestAuthorization(); requesting = false }
                     } label: {
                         Label(requesting ? "Connecting…" : "Connect Apple Health", systemImage: "heart.text.square")
-                            .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
+                            .font(Typo.captionEmphasis).foregroundStyle(BrandColor.accentText)
                     }
                     .buttonStyle(.plain).disabled(requesting)
                 }

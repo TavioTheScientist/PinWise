@@ -96,7 +96,7 @@ struct LotDetailView: View {
                     Spacer(minLength: 0)
                 }
                 if !lot.vendor.isEmpty {
-                    Text(lot.vendor).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                    Text(lot.vendor).font(Typo.footnote).foregroundStyle(BrandColor.textSecondary)
                 }
                 Divider().overlay(BrandColor.stroke)
                 HStack(alignment: .top, spacing: Space.md) {
@@ -105,7 +105,7 @@ struct LotDetailView: View {
                     StatTile(label: "Mixed", value: dateText(lot.dateReconstituted), compact: true)
                 }
                 if !lot.notes.isEmpty {
-                    Text(lot.notes).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    Text(lot.notes).font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 }
             }
         }
@@ -158,7 +158,7 @@ struct LotDetailView: View {
             // sync today, and SwiftData+CloudKit would sync the STORE, not files in Application
             // Support. Naming the escape hatch in the same breath keeps it useful rather than scary.
             Text("COA documents are stored on this device only — they aren't backed up or synced. Use Share on a document, or Settings → Export data, to keep a copy elsewhere.")
-                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
         }
         ForEach(attachments) { doc in
             COADocumentCard(doc: doc,
@@ -190,7 +190,7 @@ struct LotDetailView: View {
                     }
                     if !linkedDoses.isEmpty {
                         Text("Doses keep this lot number even if the vial or the lot is later removed.")
-                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                 }
             }
@@ -204,7 +204,7 @@ struct LotDetailView: View {
             VStack(alignment: .leading, spacing: Space.md) {
                 SectionHeader(title: "Independent testing")
                 Text("Want this batch tested by a lab rather than trusting the COA that came with it? Register interest and Staxyz will use it to prioritise testing partnerships.")
-                    .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                 SecondaryButton(title: "Request testing", systemImage: "flask") { showTestingRequest = true }
             }
         }
@@ -218,7 +218,7 @@ struct LotDetailView: View {
             // Reuses the copy already authored for the compound library rather than writing a second
             // version of the same guidance.
             Text(CompoundDetailView.coaLiteracy)
-                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
         }
     }
     private static let literacyKey = UUID()
@@ -304,11 +304,11 @@ private struct COADocumentCard: View {
                             Text(doc.originalFilename.isEmpty ? "COA document" : doc.originalFilename)
                                 .font(Typo.body).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
                             Text(doc.reportedSummary)
-                                .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary).lineLimit(2)
+                                .font(Typo.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(2)
                         }
                         Spacer(minLength: 0)
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.captionEmphasis).foregroundStyle(BrandColor.textSecondary)
                     }
                     .contentShape(Rectangle())
                 }
@@ -317,7 +317,7 @@ private struct COADocumentCard: View {
                 if isExpanded {
                     VStack(alignment: .leading, spacing: Space.lg) {
                         Text("What this document reports — as printed on it. These are separate from the numbers your vial doses by.")
-                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                         percentRow("Purity %", text: $purity) { doc.purityPercent = $0 }
                         percentRow("Assay %", text: $assay) { doc.assayPercent = $0 }
                         percentRow("Peptide content %", text: $content) { doc.contentPercent = $0 }
@@ -354,7 +354,7 @@ private struct COADocumentCard: View {
                         if let url = fileURL {
                             ShareLink(item: url) {
                                 Label("Share document", systemImage: "square.and.arrow.up")
-                                    .font(.caption.weight(.semibold))
+                                    .font(Typo.captionEmphasis)
                                     .frame(maxWidth: .infinity).padding(.vertical, Space.md)
                                     .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
                                     .overlay(RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(BrandColor.stroke, lineWidth: 1))
@@ -364,7 +364,7 @@ private struct COADocumentCard: View {
                         }
                         Button(role: .destructive, action: onDelete) {
                             Label("Remove document", systemImage: "trash")
-                                .font(.caption.weight(.semibold))
+                                .font(Typo.captionEmphasis)
                         }
                     }
                 }
