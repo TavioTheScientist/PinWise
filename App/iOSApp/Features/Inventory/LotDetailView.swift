@@ -300,7 +300,7 @@ private struct COADocumentCard: View {
                 Button(action: toggle) {
                     HStack(spacing: Space.md) {
                         thumbnail
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: Space.xxs) {
                             Text(doc.originalFilename.isEmpty ? "COA document" : doc.originalFilename)
                                 .font(Typo.body).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
                             Text(doc.reportedSummary)

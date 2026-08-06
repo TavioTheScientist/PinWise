@@ -53,7 +53,7 @@ struct HealthWidget: View {
     }
 
     private func metric(_ label: String, _ value: String, _ icon: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.xxs) {
             MicroLabel(label)
                 .lineLimit(1).minimumScaleFactor(0.7)
             Text(value).font(Typo.numberMD).foregroundStyle(BrandColor.textPrimary)

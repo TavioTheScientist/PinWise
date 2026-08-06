@@ -102,7 +102,7 @@ struct PaywallView: View {
     private var header: some View {
         VStack(spacing: 10) {
             Text("Staxyz")
-                .font(.system(size: 35.6, weight: .bold))
+                .font(Typo.gateWordmark)
                 .foregroundStyle(.white)
             Text(trialCopy)
                 .font(.system(size: 15))
@@ -146,7 +146,7 @@ struct PaywallView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(BrandColor.accentText)
                 .frame(width: 22)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                 Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
             }

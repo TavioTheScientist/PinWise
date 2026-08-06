@@ -170,7 +170,7 @@ private struct NotificationsSettingsView: View {
                         }
                         Divider().overlay(BrandColor.stroke)
                         Toggle(isOn: $showCompoundNames) {
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: Space.xxs) {
                                 Text("Show compound names").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                 Text("Off keeps doses private — reminders just say “Dose due now.”")
                                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
@@ -249,7 +249,7 @@ private struct PrivacySecuritySettingsView: View {
                     VStack(alignment: .leading, spacing: Space.md) {
                         if BiometricLock.isAvailable {
                             Toggle(isOn: faceIDBinding) {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text("Unlock with \(BiometricLock.biometryName)")
                                         .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                     Text("Require \(BiometricLock.biometryName) each time you open Staxyz. Off by default.")
@@ -261,7 +261,7 @@ private struct PrivacySecuritySettingsView: View {
                             Divider().overlay(BrandColor.stroke)
                         }
                         Toggle(isOn: $shareHealthWithNatt) {
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: Space.xxs) {
                                 Text("Share Apple Health with Natt")
                                     .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                 Text("Let Natt use your Apple Health metrics — weight, heart rate, HRV, sleep, steps — to personalize answers. You agree to this when you start using Natt; turn it off anytime.")
@@ -419,7 +419,7 @@ struct MembershipView: View {
                 // billing countdown would say something about the user that isn't true.
                 TrialWindowStrip(daysLeft: daysLeft)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(daysLeft == 0
                          ? "Your free trial has ended."
                          : "\(daysLeft) \(daysLeft == 1 ? "day" : "days") left in your free trial")

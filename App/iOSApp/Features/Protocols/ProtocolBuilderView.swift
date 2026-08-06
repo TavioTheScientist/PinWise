@@ -132,7 +132,7 @@ struct ProtocolBuilderView: View {
                             ForEach($items) { $item in
                                 VStack(alignment: .leading, spacing: Space.sm) {
                                     HStack(alignment: .firstTextBaseline) {
-                                        VStack(alignment: .leading, spacing: 2) {
+                                        VStack(alignment: .leading, spacing: Space.xxs) {
                                             // Full scope: a blend vial shows every compound it holds,
                                             // not just the primary.
                                             Text(lineTitle(for: item))
@@ -159,7 +159,7 @@ struct ProtocolBuilderView: View {
                                     // For a blend, break out what each compound delivers per shot — the
                                     // dose above sets the primary; the rest scale by their vial mass ratio.
                                     if let breakdown = blendBreakdown(for: item) {
-                                        VStack(alignment: .leading, spacing: 2) {
+                                        VStack(alignment: .leading, spacing: Space.xxs) {
                                             Text("Each shot delivers")
                                                 .font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                                             ForEach(breakdown) { line in

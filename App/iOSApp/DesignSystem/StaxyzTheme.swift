@@ -299,6 +299,15 @@ enum Typo {
     /// points stay fixed while the font grows, the ratio silently loosens exactly as the type gets
     /// large enough for tightening to matter. Leaving this constant would have re-introduced, at
     /// accessibility sizes, the same "one value for all sizes" fault it was added to fix.
+    /// The 20pt rung, which had no tracking at all. `microTracking` covers the small end and
+    /// `displayTracking` the large; `headline` sat between them at exactly zero, so the one register
+    /// the app uses for section and card titles was the one with no optical adjustment. −0.2pt at
+    /// 20pt is ≈ −0.010em: half the display adjustment, which is what a mid-size rung wants.
+    /// The gate wordmark (sign-in and paywall). Was `Font.system(size: 35.6)` duplicated in both
+    /// files — a mockup measurement nobody could defend, frozen, on the two screens a new user meets
+    /// first. `.largeTitle` is 34pt: a 1.6pt change no one will see, and it scales.
+    static let gateWordmark = Font.system(.largeTitle, weight: .bold)
+    static let headlineTracking: CGFloat = -0.2
     static let displayTracking: CGFloat = -0.7
     /// 3-up stat-grid value register (Strava: 11pt caps label over 17/700 tabular value).
     ///
@@ -322,6 +331,11 @@ enum Typo {
 }
 
 enum Space {
+    /// The label-over-value gap. It existed as a bare `2` at 32 call sites — alongside `1` and
+    /// `Space.xs` for the SAME "title above subtitle inside a row" pattern, sometimes in one file.
+    /// Craft means every spacing value is a choice you can defend; three undocumented values for one
+    /// relationship is the opposite. Named so it is chosen once.
+    static let xxs: CGFloat = 2
     static let xs: CGFloat = 4
     static let sm: CGFloat = 8
     static let md: CGFloat = 12

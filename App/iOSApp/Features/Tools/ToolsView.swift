@@ -417,7 +417,7 @@ struct TitrationPreviewView: View {
                         SectionHeader(title: "Example ladder")
                         ForEach(phases) { phase in
                             HStack(alignment: .firstTextBaseline) {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text(phase.dose.displayString).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                                     Text("\(phase.startDate.formatted(.dateTime.month().day())) – \(phase.endDate.formatted(.dateTime.month().day())) · \(weeks(phase.durationDays)) wks")
                                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
@@ -554,7 +554,7 @@ struct RampUpPlannerView: View {
                     ForEach(plannedProtocols) { p in
                         Button { builderTarget = RampBuilderTarget(protocolID: p.id) } label: {
                             HStack(spacing: Space.sm) {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
                                     Text(planSummary(p)).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                                 }

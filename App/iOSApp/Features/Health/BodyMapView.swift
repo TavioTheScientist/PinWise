@@ -257,7 +257,7 @@ struct BodyMapView: View {
                     Card {
                         HStack(spacing: Space.md) {
                             Image(systemName: "arrow.triangle.2.circlepath").font(.title3).foregroundStyle(BrandColor.success)
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: Space.xxs) {
                                 Text("Suggested next site").font(.caption).foregroundStyle(BrandColor.textSecondary)
                                 Text(s.displayName).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                             }

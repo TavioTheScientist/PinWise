@@ -332,7 +332,7 @@ struct ProtocolSummary: View {
     /// either: `contents` names every compound, which is strictly more informative than a
     /// five-character "Blend" badge and costs no badge budget at all.
     private var rowBody: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.xxs) {
             HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
                 StatusDot(color: presentation.statusColor, glows: presentation.dotGlows)
                 Text(presentation.name)

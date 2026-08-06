@@ -785,6 +785,7 @@ struct DisclosureSection<Content: View>: View {
 /// together (~900ms). The hue IS the read — amber behind, blue on pace, green ahead — over
 /// an own-color track. Accessible (label + value); Reduce Motion skips the sweep entirely.
 struct AdherenceRing: View {
+    @ScaledMetric(relativeTo: .caption2) private var ringLabel: CGFloat = 8.5
     let fraction: Double
     var size: CGFloat = 88
 
@@ -825,7 +826,10 @@ struct AdherenceRing: View {
                     .contentTransition(.numericText(value: clamped))
                     .foregroundStyle(BrandColor.textPrimary)
                 Text("ADHERENCE")
-                    .font(.system(size: 8.5, weight: .semibold)).tracking(0.5)
+                    // Was a frozen 8.5pt — below Apple's 11pt floor and unreachable by anyone who
+                    // enlarges text, on the label of the app's hero instrument. `.caption2` is 11pt
+                    // and scales; the ring is fixed, so it is capped like `MicroLabel`.
+                    .font(.system(size: min(ringLabel, 13), weight: .semibold)).tracking(0.5)
                     .foregroundStyle(BrandColor.textSecondary)
             }
         }
@@ -872,6 +876,28 @@ struct GlassMaterial: View {
     }
 }
 
+/// Reference-sheet chrome. A modifier rather than a plain `func` because the tint must read
+/// `colorScheme`, and an `extension View` method cannot hold `@Environment`.
+private struct GlassSheet: ViewModifier {
+    let detents: Set<PresentationDetent>
+    @Environment(\.colorScheme) private var scheme
+
+    func body(content: Content) -> some View {
+        content
+            .presentationBackground {
+                // Scheme-split, matching the side-menu drawer — the only place in the app that
+                // actually MEASURED this. Its note: light mode needs 0.92, because there the black
+                // scrim works AGAINST a bright panel and no ultraThin tint below ~0.9 holds
+                // `textSecondary` at 4.5:1 over dark content behind it. This sheet shipped 0.5 and
+                // renders 12pt secondary prose on it, so the two disagreed and the drawer was right.
+                BrandColor.background.opacity(scheme == .dark ? 0.7 : 0.92)
+                    .background { GlassMaterial() }
+            }
+            .presentationDetents(detents)
+            .presentationDragIndicator(.visible)
+    }
+}
+
 extension View {
     /// The app's REFERENCE-sheet chrome: a glass canvas that lets the page beneath show through, with
     /// a drag indicator and medium/large detents.
@@ -887,12 +913,7 @@ extension View {
     /// `.large`: a form wants a stable, undistracting canvas, and a half-height detent invites a
     /// dismissal mid-entry.
     func glassSheet(detents: Set<PresentationDetent> = [.medium, .large]) -> some View {
-        self
-            .presentationBackground {
-                BrandColor.background.opacity(0.5).background { GlassMaterial() }
-            }
-            .presentationDetents(detents)
-            .presentationDragIndicator(.visible)
+        modifier(GlassSheet(detents: detents))
     }
 }
 

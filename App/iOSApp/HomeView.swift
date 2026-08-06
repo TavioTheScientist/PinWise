@@ -351,7 +351,7 @@ struct HomeView: View {
 
     private func streakStat(_ streak: StreakCalculator.Result) -> some View {
         let atBest = streak.current > 0 && streak.current == streak.longest
-        return VStack(alignment: .leading, spacing: 2) {
+        return VStack(alignment: .leading, spacing: Space.xxs) {
             MicroLabel("Dose streak")
             // REFLOWS rather than compresses. Squeezing the comparison to fit beside the value
             // truncated it to "Y…", which is strictly worse than the two-line wrap it replaced —
@@ -364,7 +364,7 @@ struct HomeView: View {
                     Spacer(minLength: Space.sm)
                     streakBest(streak, atBest: atBest)
                 }
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     HStack(alignment: .firstTextBaseline, spacing: Space.xs) { streakValue(streak) }
                     streakBest(streak, atBest: atBest)
                 }
@@ -514,7 +514,7 @@ struct HomeView: View {
     }
 
     private func heroStat(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.xxs) {
             MicroLabel(label)
             // Same protection `streakStat` carries. `DoseDuePhrase` emits single words like
             // "Tomorrow" with no break opportunity, so without a scale factor the only way to fit
@@ -752,7 +752,7 @@ struct HomeHealthCard: View {
                 Text(pounds ? "lb" : "kg")
                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                 if let delta {
-                    HStack(spacing: 2) {
+                    HStack(spacing: Space.xxs) {
                         Image(systemName: delta < 0 ? "arrow.down" : "arrow.up")
                             .font(.system(size: 8, weight: .bold))
                         Text(String(format: pounds ? "%.0f" : "%.1f", abs(delta)))
@@ -844,7 +844,7 @@ struct HomeHealthCard: View {
 
                             LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.md), GridItem(.flexible(), spacing: Space.md)], spacing: Space.md) {
                                 ForEach(metrics) { m in
-                                    VStack(alignment: .leading, spacing: 2) {
+                                    VStack(alignment: .leading, spacing: Space.xxs) {
                                         MicroLabel(m.label)
                                         Text(m.value).font(Typo.numberMD).foregroundStyle(BrandColor.textPrimary)
                                             // ~158pt cells. "10,432 steps" or "182.4 lb" overflow at

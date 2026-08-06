@@ -364,7 +364,7 @@ struct AssistantView: View {
     private func gatePoint(_ title: String, _ body: String) -> some View {
         HStack(alignment: .top, spacing: Space.sm) {
             Image(systemName: "checkmark.shield").font(.body).foregroundStyle(BrandColor.warning).padding(.top, 2)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(title).font(.callout.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                 Text(body).font(.callout).foregroundStyle(BrandColor.textSecondary)
             }

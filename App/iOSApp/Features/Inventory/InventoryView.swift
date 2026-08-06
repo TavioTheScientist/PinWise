@@ -125,7 +125,7 @@ struct InventoryList: View {
                     Image(systemName: "shippingbox")
                         .font(.title3).foregroundStyle(BrandColor.textSecondary)
                         .frame(width: 32)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
                         Text("Lots & COA documents")
                             .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                         Text(lots.isEmpty ? "Track what was actually in the vial"

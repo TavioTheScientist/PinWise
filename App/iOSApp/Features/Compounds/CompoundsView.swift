@@ -240,7 +240,7 @@ struct CompoundLegendView: View {
                 // description beside it at large sizes — `.frame(width:)` does not clip — which is the
                 // one true overlap in this audit rather than a truncation.
                 .frame(width: badgeCol, alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(tier.label).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                 Text(desc).font(.caption2).foregroundStyle(BrandColor.textSecondary)
             }

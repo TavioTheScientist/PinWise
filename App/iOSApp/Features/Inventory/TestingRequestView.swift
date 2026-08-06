@@ -66,7 +66,7 @@ struct TestingRequestView: View {
                                 .contentTransition(.symbolEffect(.replace.offUp))
                                 .font(.title3)
                                 .foregroundStyle(kinds.contains(kind) ? BrandColor.accent : BrandColor.textSecondary)
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: Space.xxs) {
                                 Text(kind.label).font(.body.weight(.semibold))
                                     .foregroundStyle(BrandColor.textPrimary)
                                 Text(kind.blurb).font(Typo.caption2)

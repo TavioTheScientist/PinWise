@@ -328,7 +328,7 @@ struct LogView: View {
             let day = slot.formatted(.dateTime.weekday(.wide))
             Card {
                 VStack(alignment: .leading, spacing: Space.md) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
                         Text("\(day)'s dose was never logged")
                             .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         Text(slot.formatted(.dateTime.month(.abbreviated).day()))
@@ -355,7 +355,7 @@ struct LogView: View {
                 Image(systemName: attribution == value ? "largecircle.fill.circle" : "circle")
                     .font(.title3)
                     .foregroundStyle(attribution == value ? BrandColor.accent : BrandColor.textSecondary)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(title).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                     Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
                 }
@@ -388,7 +388,7 @@ struct LogView: View {
     private var protocolCard: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     // With nothing due, the card STATES that rather than asking a question it then
                     // answers with "nothing". The prompt only earns the top line when there is
                     // something to pick.
@@ -442,7 +442,7 @@ struct LogView: View {
                             // A blend is one injection at a fixed mass ratio — show every compound
                             // that single shot delivers (the primary's dose fixes them all).
                             if let deliver {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text("Each shot delivers").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                                     ForEach(deliver, id: \.name) { line in
                                         HStack {
@@ -594,7 +594,7 @@ struct LogView: View {
     }
 
     private func doseMetric(_ label: String, _ value: String, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.xxs) {
             MicroLabel(label)
             Text(value).font(Typo.numberMD).foregroundStyle(color)
                 // Two lines and a deeper floor. At one line with a 0.7 floor the value CLAMPS and

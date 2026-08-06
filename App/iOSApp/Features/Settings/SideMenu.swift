@@ -94,7 +94,7 @@ struct SideMenuDrawer: View {
             } label: {
                 HStack(spacing: Space.md) {
                     ProfileAvatar(name: headerName, size: 44, photo: photos.image)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
                         Text(headerName.isEmpty ? "Set up your profile" : headerName)
                             .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                             .lineLimit(1)
@@ -279,7 +279,7 @@ struct HealthConnectionsView: View {
             HealthWidget()
             Card {
                 Toggle(isOn: Binding(get: { !hideHomeHealthCard }, set: { hideHomeHealthCard = !$0 })) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
                         Text("Show on Home").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         Text("Keep the health card at the top of your Home tab.")
                             .font(.caption2).foregroundStyle(BrandColor.textSecondary)
@@ -312,7 +312,7 @@ struct HealthConnectionsView: View {
     private func sourceRow(_ name: String, _ icon: String, _ note: String, on: Bool = false) -> some View {
         HStack(alignment: .top, spacing: Space.md) {
             Image(systemName: icon).font(.title3).frame(width: iconCol).foregroundStyle(BrandColor.accentText)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Text(note).font(.caption2).foregroundStyle(BrandColor.textSecondary)
             }

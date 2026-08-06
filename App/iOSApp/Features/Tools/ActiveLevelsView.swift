@@ -129,7 +129,7 @@ struct ActiveLevelsView: View {
         Card {
             HStack(alignment: .top, spacing: Space.sm) {
                 Image(systemName: "waveform.path.ecg").font(.title3).foregroundStyle(BrandColor.accentText)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     MicroLabel("What's next")
                     Text(briefing(models, now: now))
                         .font(.title3.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)

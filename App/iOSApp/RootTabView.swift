@@ -258,28 +258,3 @@ private struct TabHitShape: Shape {
     }
 }
 
-/// Themed placeholder for sections not yet built out.
-struct PlaceholderScreen: View {
-    let title: String
-    let systemImage: String
-    let subtitle: String
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: Space.md) {
-                Image(systemName: systemImage)
-                    .font(.largeTitle)
-                    .foregroundStyle(BrandColor.accentText)
-                Text(title).font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
-                Text(subtitle)
-                    .font(Typo.body)
-                    .foregroundStyle(BrandColor.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(Space.xl)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .heroScreen()
-            .navigationTitle(title)
-        }
-    }
-}
