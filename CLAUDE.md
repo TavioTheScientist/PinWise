@@ -65,12 +65,12 @@ is not an oversight:
 
 | Command | Expected output |
 |---|---|
-| `cd App && swift run pk-verify` | `✅ PASS — 273/273 checks passed` |
-| `cd App && swift test` | `Test run with 85 tests in 18 suites passed` |
-| `cd AndroidApp/peptide_kit && dart run tool/pk_verify.dart` | `273 checks, 0 failure(s)` |
-| `cd AndroidApp/peptide_kit && dart test` | `+192: All tests passed!` |
+| `cd App && swift run pk-verify` | `✅ PASS — 284/284 checks passed` |
+| `cd App && swift test` | `Test run with 86 tests in 18 suites passed` |
+| `cd AndroidApp/peptide_kit && dart run tool/pk_verify.dart` | `284 checks, 0 failure(s)` |
+| `cd AndroidApp/peptide_kit && dart test` | `+193: All tests passed!` |
 | `cd App && xcodebuild -project Staxyz.xcodeproj -scheme Staxyz -destination 'platform=iOS Simulator,id=4F42A9A1-94AA-4794-919B-8E5DA84EAB8F' -derivedDataPath <scratch>/dd build` | `BUILD SUCCEEDED` |
-| iOS host tests (below) | `Executed 16 tests, with 7 tests skipped and 0 failures` |
+| iOS host tests (below) | `Executed 30 tests, with 7 tests skipped and 0 failures` |
 
 ```bash
 cd App && xcodebuild test -project Staxyz.xcodeproj -scheme Staxyz \
@@ -179,6 +179,42 @@ expected to be superseded by the agency deliverable (§6)** — but while code u
    once per screen.
 5. **The only sanctioned glow is `StatusDot`** (own status color, radius 6). A glow means "live", never
    decorative. Neutral-black structural shadows are not glows.
+
+### 4.5b Colour marks what is RARE (#145) — the rule token audits keep missing
+A hue carries **one** meaning or none. Two systems broke this by borrowing *semantic* tokens for
+*taxonomy*, and the flaw is invisible per-component — it only shows in aggregate:
+- **`EvidenceBadge` fills only A and B.** It used to be a four-rung solid ramp, defended in its own doc
+  comment as "colour reinforces an ordinal rank." Sound in isolation, wrong where it is actually
+  seen — every row of a 57-item list, and the catalog is **29 C / 16 B / 6 D / 6 A**. So 61% of the
+  library wore saturated `warning` amber: a signal on 61% of rows is not a signal, it out-shouted the
+  compound NAME, and the ramp was inverted (the 12 rare well-evidenced compounds drew the *quietest*
+  colours). It also made an evidence claim look like a safety claim — evidence strength and risk are
+  orthogonal, and spending `warning`/`danger` there devalues them where `SafetyAdvisory` needs them.
+  The fill now encodes "is there human evidence at all?"; C recedes to a neutral surface, D to an
+  outline. **Before recolouring anything by rank, check the distribution across the ramp.**
+- **Domain hues come from `ChartPalette`, never from semantic tokens.** Tools' "How you feel" tile used
+  `warning`, so the attention amber was permanently lit on a tile with nothing wrong. `data` is exempt —
+  it is a domain token (measurements) by construction. `ChartPalette` is asserted non-semantic.
+
+### 4.5c Two things that look like inconsistencies and are NOT — do not "finish the job"
+Both were examined with evidence during the #144–#148 audit and deliberately left divergent. Each has
+been flagged once already; re-unifying them would destroy a real distinction.
+1. **The two inline carets on Home** (`Log a metric ›`, `View all metrics ›`) are not
+   `DisclosureChevron`. Their chevron sits inside a coloured text run and inherits its colour and
+   weight — punctuation in a sentence, not a row's trailing accessory. The other 15 row carets ARE the
+   atom (they were five different registers across 17 sites).
+2. **`SideMenu`'s row and `SettingsView`'s row must not merge into one `NavRow`.** A ~6-destination
+   drawer reads at `Typo.headline` with a bare accent glyph and no chevron; a ~9-row settings sheet
+   reads at `Typo.body` with tinted icon tiles, trailing values and a chevron. One register would make
+   the menu cramped or Settings bloated. The other four `private func row(...)` are not nav rows at all
+   — two are key/value readouts, one a tool tile, one a log entry. They share a NAME, not a shape.
+3. **`ThemedEmptyState` has no action slot, on purpose.** One was written and removed in the same
+   commit: all six empty states either sit directly beneath their own CTA or their action lives on
+   another screen, so it would have been dead at every call site — the same flaw as the deleted
+   `StatTile.emphasized`. Add it back *with* a call site, never before one.
+4. **Secondary-screen nav chrome was investigated and is NOT a defect.** An audit claimed 34 screens
+   read as "scaffolding" for want of `UINavigationBarAppearance`. Captured on device: the toolbar
+   already tints to the brand rose and the platform default holds up. Don't spend a sweep on it.
 
 ### 4.6 Motion — `Motion` enum in `StaxyzTheme.swift`, `EntranceLedger` in `StaxyzComponents.swift`
 - **Bounce is earned only by a gesture that carried momentum** (flick, drag). A tap carries none, so
@@ -392,7 +428,7 @@ Plus `com.pinwise.app` as the **Debug** bundle id, which is intentional and temp
 ```
 App/Sources/PeptideKit/     pure-Swift domain core — Foundation only, Linux-verifiable
 App/Sources/pk-verify/      the assertion harness (273 checks, 26 sections)
-App/Tests/PeptideKitTests/  swift-testing (85 tests / 18 suites)
+App/Tests/PeptideKitTests/  swift-testing (86 tests / 18 suites)
 App/iOSApp/                 SwiftUI app, 87 files, ~19.2k lines (+4.8k vendored MuscleMap)
 App/iOSApp/DesignSystem/    StaxyzTheme.swift (tokens + Motion), StaxyzComponents.swift, ToolComponents.swift
 App/iOSAppTests/            XCTest host-app target `StaxyzTests` — local only
