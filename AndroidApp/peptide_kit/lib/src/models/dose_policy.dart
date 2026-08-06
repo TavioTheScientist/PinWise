@@ -117,13 +117,28 @@ enum DoseLateness {
   /// still "this dose, late".
   late,
 
-  /// Past the nudge window. Stop pushing — show it in-app and let the user log or skip it.
-  missed;
+  /// Past the nudge window but still inside the 18-hour actionable window: show it in-app, let the
+  /// user log it late, but stop pushing notifications.
+  missed,
+
+  /// **Past the 18-hour window — the dose has lapsed.** No alert on the protocol card, no nudge, no
+  /// decision to make. It remains in history and remains loggable from there.
+  lapsed;
 
   /// Minutes after the scheduled time during which the dose reads simply as `due` rather than
   /// `late`. Matches the ballpark of Apple Health's follow-up reminder (~30 min) — long enough
   /// that someone dosing on schedule is never told they are behind.
   static const int dueWindowMinutes = 60;
+
+  /// **How long a missed dose stays actionable: 18 hours past its scheduled time.**
+  ///
+  /// Flat, not cadence-derived: the window answers a question about the USER — how long is it still
+  /// reasonable to ask them to act — and that does not change with the compound.
+  ///
+  /// **NOT the adherence rule.** `attributionGraceDays` decides CREDIT and stays per-cadence, so a
+  /// lapsed dose logged from history can still count. Collapsing the two would silently cost users
+  /// adherence for a dose the app had merely stopped asking about.
+  static const int overdueWindowHours = 18;
 
   static DoseLateness state({
     required DateTime scheduledAt,
@@ -139,8 +154,17 @@ enum DoseLateness {
     // keep the window boundaries exact.
     final elapsed = now.difference(scheduledAt).inMicroseconds / 1e6;
     if (elapsed < 0) return upcoming;
+    // THE 18-HOUR CEILING IS CHECKED FIRST, and the ordering is the rule. A weekly protocol's
+    // `lateWindowHours` is 36 — longer than the window — so tested after the late branch an
+    // 18.1-hour-old weekly dose returns `late` and never lapses, which is the cadence the window
+    // matters most for. (The Swift implementation shipped that bug for one commit; its pk-verify
+    // check caught it.) Evaluated first, 18h is a ceiling no cadence can extend.
+    if (elapsed >= overdueWindowHours * 3600) return lapsed;
     if (elapsed < dueWindowMinutes * 60) return due;
     if (elapsed < policy.lateWindowHours * 3600) return late;
     return missed;
   }
+
+  /// True while the dose is still worth putting in front of the user — `due`, `late` or `missed`.
+  bool get isActionable => this == due || this == late || this == missed;
 }

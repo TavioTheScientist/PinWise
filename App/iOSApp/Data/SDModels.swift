@@ -337,9 +337,29 @@ extension SavedProtocol {
         // the next one belongs to the next day. A weekly GLP-1 gets the published 2-day catch-up.
         let grace = graceDays ?? dosePolicy.attributionGraceDays
         let resolved = ownedLogDates(in: logs) + ownedSkipSlots(in: skips)
-        return AdherenceCalculator.lastOverdue(schedule: schedule, start: startDate, asOf: now,
-                                               logDates: resolved,
-                                               graceDays: grace, calendar: calendar)
+        guard let missed = AdherenceCalculator.lastOverdue(schedule: schedule, start: startDate, asOf: now,
+                                                           logDates: resolved,
+                                                           graceDays: grace, calendar: calendar)
+        else { return nil }
+
+        // **THE 18-HOUR WINDOW.** A missed slot is only reported as OVERDUE while it is still
+        // actionable. Past 18 hours from its scheduled time the dose has LAPSED: the card drops the
+        // alert entirely and the slot survives as history. Without this the app kept a red warning
+        // up indefinitely — a permanent alarm, which is how a user learns to ignore alarms.
+        //
+        // Measured from the slot's scheduled TIME, not the start of its day, so "18 hours" means
+        // what it says. When reminders are off the app has no user-stated time of day, so it falls
+        // back to the stored reminder hour (default 09:00) — a default, not an assertion, and noted
+        // here because it is the one place this derivation is softer than it looks.
+        guard let slotTime = scheduledTime(on: missed, calendar: calendar) else { return missed }
+        return now.timeIntervalSince(slotTime) < Double(DoseLateness.overdueWindowHours) * 3600
+            ? missed : nil
+    }
+
+    /// The scheduled instant of a dose slot: the slot's DAY at the protocol's reminder time.
+    func scheduledTime(on day: Date, calendar: Calendar = .current) -> Date? {
+        calendar.date(bySettingHour: reminderHour, minute: reminderMinute, second: 0,
+                      of: calendar.startOfDay(for: day))
     }
 
     /// The live lateness of TODAY's scheduled dose — the state a card or nudge acts on.

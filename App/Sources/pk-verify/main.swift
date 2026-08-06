@@ -977,6 +977,45 @@ do {
           "ReconstitutionRecord round-trips through Codable")
 }
 
+// MARK: - The 18-hour overdue window
+section("Overdue window (18h, then lapsed)")
+do {
+    let weekly = DosePolicy.long          // lateWindowHours 36, attributionGraceDays 2
+    let daily = DosePolicy.short          // lateWindowHours 6,  attributionGraceDays 0
+    let slot = Date(timeIntervalSince1970: 1_800_000_000)
+    func at(_ hours: Double) -> Date { slot.addingTimeInterval(hours * 3600) }
+
+    check(DoseLateness.overdueWindowHours == 18, "the window is 18 hours, stated once")
+
+    check(DoseLateness.state(scheduledAt: slot, now: at(-1), policy: weekly) == .upcoming,
+          "before the slot ⇒ upcoming")
+    check(DoseLateness.state(scheduledAt: slot, now: at(0.5), policy: weekly) == .due,
+          "inside the 60-minute due window ⇒ due, never 'behind'")
+    check(DoseLateness.state(scheduledAt: slot, now: at(5), policy: weekly) == .late,
+          "past due, inside the nudge window ⇒ late")
+
+    // THE RULE: actionable up to 18h, lapsed after — for every cadence, including the weekly
+    // protocol whose own nudge window (36h) is LONGER than 18. The flat window wins.
+    check(DoseLateness.state(scheduledAt: slot, now: at(17.9), policy: weekly).isActionable,
+          "17.9h after a WEEKLY slot ⇒ still actionable (log-late is still offered)")
+    check(DoseLateness.state(scheduledAt: slot, now: at(18.1), policy: weekly) == .lapsed,
+          "18.1h after a weekly slot ⇒ lapsed, even though lateWindowHours is 36")
+    check(DoseLateness.state(scheduledAt: slot, now: at(17.9), policy: daily).isActionable,
+          "17.9h after a DAILY slot ⇒ still actionable")
+    check(DoseLateness.state(scheduledAt: slot, now: at(18.1), policy: daily) == .lapsed,
+          "18.1h after a daily slot ⇒ lapsed")
+
+    check(!DoseLateness.lapsed.isActionable && !DoseLateness.upcoming.isActionable,
+          "only due/late/missed are actionable — lapsed and upcoming are not")
+
+    // The window governs NAGGING, not CREDIT. If these ever became one number, a user would
+    // silently lose adherence for logging a dose the app had merely stopped asking about.
+    check(DosePolicy.long.attributionGraceDays == 2 && DosePolicy.short.attributionGraceDays == 0,
+          "attribution grace stays PER-CADENCE and is untouched by the 18h window")
+    check(DosePolicy.asNeeded.lateWindowHours == 0,
+          "as-needed has no slot, so it can never lapse")
+}
+
 // MARK: - Summary
 print("\n\(failures == 0 ? "✅ PASS" : "❌ FAIL") — \(checks - failures)/\(checks) checks passed")
 exit(failures == 0 ? 0 : 1)

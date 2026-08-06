@@ -337,7 +337,7 @@ struct LogView: View {
                     attributionOption(.today, "This is today's dose",
                                       "\(day)'s stays unlogged.")
                     attributionOption(.missedSlot, "This was \(day)'s dose",
-                                      "Records it at \(day)'s scheduled time — for when you took it and forgot to log.")
+                                      "Counts toward \(day) and logs the time you actually took it.")
                     attributionOption(.skipMissed, "Skip \(day)'s, log today's",
                                       "Marks \(day) deliberately skipped so it stops resurfacing.")
                 }
@@ -815,7 +815,14 @@ struct LogView: View {
         // insert — writing the dose changes what `lastOverdueDose` returns.
         let slot = overdueSlot
         let choice = slot == nil || showWhen ? .today : attribution
-        let stamp = choice == .missedSlot ? (slot.flatMap { scheduledTime(of: $0, for: p) } ?? timestamp) : timestamp
+        // ALWAYS the real time the dose was taken. `.missedSlot` used to backdate the log to the
+        // slot's scheduled time, which fabricated a record: it asserted the user injected at 9:00 on
+        // Saturday when they actually injected at 14:20 on Monday. History has to be what happened.
+        //
+        // Attribution does not need the lie. `AdherenceCalculator`'s second pass already credits a
+        // real-timestamped log to an earlier slot within `attributionGraceDays`, so choosing
+        // "this was Saturday's" still resolves Saturday — it just stops rewriting when it happened.
+        let stamp = timestamp
 
         // Draw down each DISTINCT vial once per session, even when several stack items resolve
         // to the same blend vial (one physical injection) — prevents double-counting.
