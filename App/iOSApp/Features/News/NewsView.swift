@@ -473,7 +473,7 @@ struct FeaturedNewsCard: View {
                     Text("\(item.sources.count) source\(item.sources.count == 1 ? "" : "s")")
                         .font(Typo.captionEmphasis)
                     Spacer()
-                    Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                    DisclosureChevron()
                 }
                 // Provenance, not success. The seal glyph beside it already carries the verification
                 // cue; green here claimed a story was GOOD because it had sources.

@@ -260,9 +260,7 @@ struct ProtocolSummary: View {
 
     @ViewBuilder private var chevron: some View {
         if accessory == .chevron {
-            Image(systemName: "chevron.right")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(BrandColor.textSecondary)
+            DisclosureChevron()
         }
     }
 

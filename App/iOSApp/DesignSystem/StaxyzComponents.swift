@@ -624,6 +624,26 @@ struct AppliedFilterHeader: View {
     }
 }
 
+/// The trailing caret on a row that pushes a screen. **One register, everywhere.**
+///
+/// There were five. Across 17 sites the chevron was drawn at `.caption2.weight(.semibold)` (11),
+/// `Typo.caption` (3), `Typo.microCaption`, `Typo.captionEmphasis` and `.caption2.weight(.bold)` —
+/// differing in both size and stroke weight, so the same affordance carried a different visual
+/// promise depending on which screen you were on. No call site had a reason; they were each written
+/// from scratch.
+///
+/// **This is only the row-disclosure caret.** The two "Log a metric ›" / "View all metrics ›" links
+/// on Home are deliberately NOT this: their chevron sits inside a coloured text run, inherits that
+/// run's colour and weight, and is punctuation in a sentence rather than a row's trailing
+/// accessory. A shared atom would flatten a real distinction, so they keep their own treatment.
+struct DisclosureChevron: View {
+    var body: some View {
+        Image(systemName: "chevron.right")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(BrandColor.textSecondary)
+    }
+}
+
 /// The one empty / unavailable state: a muted SF Symbol, a title, and an optional line of
 /// guidance, centered. Replaces the ad-hoc `Card`+`Text` and `ContentUnavailableView` forks so
 /// every "nothing here yet" reads the same. Drop it inside a `Card` (or bare) as the caller needs.

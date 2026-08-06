@@ -566,7 +566,7 @@ struct RampUpPlannerView: View {
                                     Text(planSummary(p)).font(Typo.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                                 }
                                 Spacer(minLength: Space.sm)
-                                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                                DisclosureChevron()
                             }
                         }
                         .buttonStyle(PressableRowStyle())   // full-width plan row with a chevron

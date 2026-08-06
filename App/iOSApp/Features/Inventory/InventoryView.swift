@@ -133,8 +133,7 @@ struct InventoryList: View {
                             .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
                     }
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                    DisclosureChevron()
                 }
             }
         }
@@ -201,7 +200,7 @@ struct VialRow: View {
                 }
             }
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-            Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+            DisclosureChevron()
         }
     }
 

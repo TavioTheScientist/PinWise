@@ -160,7 +160,7 @@ struct CompoundsView: View {
                 Image(systemName: "plus.circle.fill").foregroundStyle(BrandColor.accentText)
                 Text("Add your own compound").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Spacer()
-                Image(systemName: "chevron.right").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                DisclosureChevron()
             }
             .padding(Space.lg)
             .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
@@ -274,7 +274,7 @@ struct CompoundRow: View {
                 }
                 Spacer(minLength: Space.sm)
                 if !isCustom { EvidenceBadge(tier: compound.evidenceTier) }
-                Image(systemName: "chevron.right").font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                DisclosureChevron()
             }
         }
     }
@@ -633,7 +633,7 @@ struct CompoundDetailView: View {
                                     }
                                 }
                                 Spacer(minLength: Space.sm)
-                                Image(systemName: "chevron.right").font(Typo.microCaption).foregroundStyle(BrandColor.textSecondary)
+                                DisclosureChevron()
                             }
                             .padding(.vertical, Space.sm)
                             .contentShape(.rect)

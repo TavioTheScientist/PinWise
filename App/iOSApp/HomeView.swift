@@ -648,7 +648,7 @@ struct HomeView: View {
                     HStack {
                         SectionHeader(title: "Your protocols")
                         Spacer()
-                        Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
+                        DisclosureChevron()
                     }
                     ForEach(Array(stackRows.enumerated()), id: \.element.id) { i, row in
                         if i > 0 { Divider().overlay(BrandColor.stroke) }
@@ -911,7 +911,10 @@ struct HomeHealthCard: View {
                             HStack(spacing: 4) {
                                 Spacer()
                                 Text("View all metrics")
-                                Image(systemName: "chevron.right").font(.caption2.weight(.bold))
+                                // `.semibold`, matching the "Log a metric" caret above. These two are
+                                // the same affordance one section apart and were drawn at different
+                                // weights; an inline caret is punctuation, so it follows its run.
+                                Image(systemName: "chevron.right").font(.caption2.weight(.semibold))
                             }
                             .font(Typo.captionEmphasis)
                             .foregroundStyle(BrandColor.accentText)
