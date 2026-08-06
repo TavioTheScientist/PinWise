@@ -50,6 +50,9 @@ struct HomeView: View {
     /// The hero ring's diameter, shared with the window label beneath it so the caption is bounded by
     /// the ring rather than free to widen the column.
     private static let ringSize: CGFloat = 112
+    /// The supporting-role ring. Small enough to read as context for the hero rather than as a
+    /// second hero competing with it.
+    private static let ringSizeCompact: CGFloat = 52
 
     /// Every past-due scheduled dose across all active protocols, tagged taken/missed with the
     /// grace rule, sorted chronologically. The one basis both the streak and the adherence %
@@ -142,8 +145,11 @@ struct HomeView: View {
                     // Extra breathing room where "your dosing" ends and reference sections begin
                     // (the root VStack already contributes Space.xl of the Space.xxxl gap).
                     if !hideHealthCard {
+                        // No extra top padding any more. It was pushing the health module away from
+                        // the composition to mark "reference sections begin here", which is exactly
+                        // what made the lower screen read as leftover space rather than a deliberate
+                        // second tier. The section rhythm (Space.xxl) already separates them.
                         HomeHealthCard()
-                            .padding(.top, Space.xxxl - Space.xl)
                             .entrance(4, group: "home")
                     }
                 }
@@ -259,52 +265,70 @@ struct HomeView: View {
         let judged = min(events.count, Self.adherenceWindow)
 
         return Card(style: .hero, padding: Space.xl) {
+            // ONE dominant fact, then one quiet supporting line. Nothing else.
+            //
+            // This card previously carried adherence, next pin, streak, "your best", the judged
+            // denominator and a milestone bar — six signals at similar weight, which is not a
+            // hierarchy, it is a list. Apple's Deference principle is the relevant one: the interface
+            // should serve the content rather than compete with it, and six competing modules make
+            // the card itself the loudest thing on screen.
+            //
+            // The question Home answers is "when is my next dose, and am I on track". So: WHEN is the
+            // hero, ON TRACK is the supporting line, and everything else moved or left.
             VStack(alignment: .leading, spacing: Space.lg) {
-                HStack(alignment: .top, spacing: Space.lg) {
-                    VStack(spacing: Space.sm) {
-                        AdherenceRing(fraction: fraction, size: Self.ringSize)
-                        // Capped to the ring's own width so a long label (or a large Dynamic Type
-                        // size) wraps rather than widening this column and squeezing the stats.
-                        MicroLabel(judged > 0 ? "Last \(judged) doses" : "No doses due yet")
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: Self.ringSize)
+                VStack(alignment: .leading, spacing: Space.xxs) {
+                    MicroLabel("Next pin")
+                    Text(nextDoseText(nextDoseDate))
+                        .font(Typo.numberHero).displayTracking()
+                        .foregroundStyle(BrandColor.textPrimary)
+                        .lineLimit(2).minimumScaleFactor(0.5)
+                    if let sub = nextDoseSubtitle {
+                        Text(sub)
+                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
                     }
-                    // ONE element, so VoiceOver reads the percentage together with the window it was
-                    // measured over, instead of announcing a ring and a stray caption as two
-                    // unrelated facts. Same reason the window is visible at all.
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Adherence")
-                    .accessibilityValue(judged > 0
-                        ? "\(Int((fraction * 100).rounded())) percent of your last \(judged) scheduled doses taken"
-                        : "No scheduled doses have come due yet")
+                }
 
-                    VStack(alignment: .leading, spacing: Space.md) {
-                        heroStat("Next pin", nextDoseText(nextDoseDate))
-                        Divider().overlay(BrandColor.stroke)
-                        streakStat(run)
+                Divider().overlay(BrandColor.stroke)
+
+                // The supporting line. The ring survives at a fraction of its size because it is the
+                // app's signature instrument and a percentage alone reads as a spreadsheet — but it
+                // is now context for the hero rather than a second hero.
+                HStack(alignment: .center, spacing: Space.md) {
+                    AdherenceRing(fraction: fraction, size: Self.ringSizeCompact, showsValue: false)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("\(Int((fraction * 100).rounded()))% adherence")
+                            .font(Typo.caption.weight(.semibold))
+                            .foregroundStyle(BrandColor.textPrimary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                        // The denominator DEMOTED rather than deleted. A percentage with no visible
+                        // denominator is a number you have to take on faith, and this app's whole
+                        // position is that it does not ask for faith. It is quiet now, not gone.
+                        Text(judged > 0 ? "Last \(judged) doses" : "No doses due yet")
+                            .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
                     }
-                    // Fills the remaining width (where a trailing Spacer used to just absorb it), so
-                    // the hairline spans the panel and the trailing micro-labels have an edge to sit on.
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Spacer(minLength: Space.sm)
+                    // ONE supporting progress signal, not two. The streak stays because it answers
+                    // "am I on track" directly; the milestone bar was progress toward a reward, which
+                    // is a different and lesser question for a daily surface. "Your best" left with
+                    // it — a comparison against your own record is tertiary at a glance.
+                    if run.current > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "flame.fill")
+                                .font(.caption2)
+                                .foregroundStyle(BrandColor.warning)
+                            Text("\(run.current)")
+                                .font(Typo.numberSM)
+                                .foregroundStyle(BrandColor.textPrimary)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Dose streak")
+                        .accessibilityValue("\(run.current) in a row")
+                    }
                 }
-                // Self-hiding, the same way the strip that used to live here was: with nothing
-                // scheduled (an as-needed-only stack), the streak can never move, and a progress bar
-                // that is structurally frozen at zero is worse than no progress bar.
-                // The milestone bar stays, the grading sentence does not.
-                //
-                // "Counts a dose logged up to 2 days late — your protocol's catch-up window" is true,
-                // and it is documentation. On the surface you open to answer "where am I right now",
-                // a paragraph explaining the scoring rule is the app talking about itself. It reads
-                // as system text on a screen that should feel calm.
-                //
-                // The rule is not lost — it belongs where someone goes to ask about it (protocol
-                // detail), not where everyone lands every day. The number's credibility comes from
-                // the denominator under the ring ("Last 17 doses"), which is the honest part and
-                // stays.
-                if !events.isEmpty {
-                    Divider().overlay(BrandColor.stroke)
-                    milestoneProgress(run)
-                }
+                .accessibilityElement(children: .contain)
             }
         }
         // A crossed milestone celebrates once (per run): a solid flame chip springs in, a
@@ -677,6 +701,18 @@ struct HomeView: View {
     ///
     /// Takes the date rather than reading `nextDoseDate` itself, so the hero resolves that (a
     /// per-protocol schedule walk) once and shares it with the week strip's open cell.
+    /// What the next pin actually IS — compound and dose — under the day it falls on.
+    ///
+    /// Added as the hero grew: "Saturday" alone answers when but not what, and the card is now the
+    /// only place on Home that answers either. Single protocol only; with several active, naming one
+    /// would be arbitrary and the protocols list below already names them all.
+    private var nextDoseSubtitle: String? {
+        let due = activeProtocols.filter { $0.nextDose() != nil }
+        guard due.count == 1, let p = due.first else { return nil }
+        let names = p.compoundNames.joined(separator: " + ")
+        return names.isEmpty ? nil : names
+    }
+
     private func nextDoseText(_ date: Date?) -> String { DoseDuePhrase.phrase(for: date) }
 }
 
