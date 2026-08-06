@@ -867,13 +867,19 @@ struct DisclosureSection<Content: View>: View {
 /// together (~900ms). The hue IS the read — amber behind, blue on pace, green ahead — over
 /// an own-color track. Accessible (label + value); Reduce Motion skips the sweep entirely.
 struct AdherenceRing: View {
-    @ScaledMetric(relativeTo: .caption2) private var ringLabel: CGFloat = 8.5
     let fraction: Double
     var size: CGFloat = 88
     /// Draw the arc only. The internal "88% / ADHERENCE" is sized for a full-size ring; below roughly
     /// 70pt the label clips ("ADHEREN/CE") and the percentage duplicates whatever text sits beside a
     /// compact ring. A supporting-role ring is a SHAPE — the number belongs to the label next to it.
-    var showsValue: Bool = true
+    ///
+    /// **The inner value is gone, along with the `showsValue` flag.** The ring has exactly one call
+    /// site — Home's hero, which passed `showsValue: false` — so the `true` branch (a 20pt figure over
+    /// an "ADHERENCE" micro-label) was the component's DEFAULT with zero users. It was also the one
+    /// place a percentage was drawn inside the ring while the same percentage was already spelled out
+    /// in the row beside it, which is why the call site opted out. Same standard applied to
+    /// `StatTile.emphasized` and `ThemedEmptyState`'s action slot: add it back with a call site, never
+    /// before one. The figure remains available to the accessibility value below.
 
     private var clamped: Double { max(0, min(1, fraction)) }
     private var pct: Int { Int((clamped * 100).rounded()) }
@@ -906,20 +912,6 @@ struct AdherenceRing: View {
                 .trim(from: 0, to: max(0.0001, clamped))
                 .stroke(ringColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            if showsValue {
-            VStack(spacing: 0) {
-                Text("\(pct)%")
-                    .font(.system(size: 20, weight: .black, design: .rounded)).monospacedDigit()
-                    .contentTransition(.numericText(value: clamped))
-                    .foregroundStyle(BrandColor.textPrimary)
-                Text("ADHERENCE")
-                    // Was a frozen 8.5pt — below Apple's 11pt floor and unreachable by anyone who
-                    // enlarges text, on the label of the app's hero instrument. `.caption2` is 11pt
-                    // and scales; the ring is fixed, so it is capped like `MicroLabel`.
-                    .font(.system(size: min(ringLabel, 13), weight: .semibold)).tracking(0.5)
-                    .foregroundStyle(BrandColor.textSecondary)
-            }
-            }
         }
         .frame(width: size, height: size)
         .accessibilityElement(children: .ignore)

@@ -90,7 +90,10 @@ struct ProfileAvatar: View {
                         .foregroundStyle(BrandColor.onAccent.opacity(0.9))
                 } else {
                     Text(initials)
-                        .font(.system(size: size * 0.36, weight: .black, design: .rounded))
+                        // Matches the `person.fill` placeholder that occupies this exact slot, which
+                        // is already `.semibold` — the two states of one avatar were two weights and
+                        // two families.
+                        .font(.system(size: size * 0.36, weight: .semibold))
                         .foregroundStyle(BrandColor.onAccent)
                 }
             }

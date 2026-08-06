@@ -177,7 +177,17 @@ expected to be superseded by the agency deliverable (§6)** — but while code u
    swipeAction labels white and won't let you override it.
 4. **`TagChip` is neutral by default.** Taxonomy → `.neutral`; urgency → `.solid(_)`; `.brand` at most
    once per screen.
-5. **The only sanctioned glow is `StatusDot`** (own status color, radius 6). A glow means "live", never
+5. **The numeric ramp is SF Pro, NOT SF Rounded** (#150). Every `number*` / `statValue` token was
+   `design: .rounded, weight: .black`, defended as "the Apple Health/Fitness signature." But Fitness
+   uses rounded for *everything*, so nothing there mixes families — here it was applied only to
+   NUMBERS, so every card composed two typefaces: Home's hero read "Sat" in rounded-black directly
+   above "Semaglutide" in SF Pro, and Weight put a rounded-black "210.1" above a history list of SF
+   Pro "210.1 lb". **The flaw was never rounded-vs-not; it was two families in one composition, with
+   the softer face on the loudest element.** `.black` is also the register the brief rejects — of the
+   four named references, three set numbers in a grotesque and none at the heaviest weight. Light-on-
+   dark blooms optically, so on pure black a weight already looks heavier than it measures.
+   `.monospacedDigit()` stays; sizes are unchanged.
+6. **The only sanctioned glow is `StatusDot`** (own status color, radius 6). A glow means "live", never
    decorative. Neutral-black structural shadows are not glows.
 
 ### 4.5b Colour marks what is RARE (#145) — the rule token audits keep missing
