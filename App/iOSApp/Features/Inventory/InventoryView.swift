@@ -987,7 +987,7 @@ struct VialBuilderView: View {
             scent: ReconstitutionTimeline.sentence(for: draftRecord)
                 ?? "Optional — how it was mixed and kept",
             isExpanded: expandStability,
-            toggle: { withAnimation(.easeInOut(duration: 0.2)) { expandStability.toggle() } }
+            toggle: { expandStability.toggle() }   // DisclosureSection owns the animation
         ) {
             VStack(alignment: .leading, spacing: Space.lg) {
                 Text("Staxyz records this and states it back to you. It does not turn it into a potency or a shelf life — there is no measured stability data for most peptides, and a number without data behind it is a guess wearing a decimal point.")
@@ -1046,7 +1046,7 @@ struct VialBuilderView: View {
             title: "Lot & vendor",
             scent: selectedLot?.displaySummary ?? (lotNumberText.isEmpty ? "Optional — track what was in the vial" : lotNumberText),
             isExpanded: expandLot,
-            toggle: { withAnimation(.easeInOut(duration: 0.2)) { expandLot.toggle() } }
+            toggle: { expandLot.toggle() }   // DisclosureSection owns the animation
         ) {
             VStack(alignment: .leading, spacing: Space.lg) {
                 Text("A lot is the batch your vial came from. Recording it is what lets a COA, and every dose you log, point at a specific batch rather than a compound in general.")

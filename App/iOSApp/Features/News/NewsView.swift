@@ -134,15 +134,29 @@ struct NewsView: View {
     @Query private var protocols: [SavedProtocol]
     @Query private var vials: [StoredVial]
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var logs: [LoggedDose]
+    /// Cache for `rebuildUserCompounds()` — see the note there for why this is not a computed
+    /// property. Rebuilt on the COUNTS rather than on the arrays: `@Query` republishes a new array
+    /// identity on every store change, so keying on the arrays themselves would rebuild as often as
+    /// the computed property did.
+    @State private var userCompounds: Set<String> = []
     private var feed: NewsFeed { loader.feed }
 
     /// Every compound the user is currently on — from active protocols, inventory, and recent logs.
-    private var userCompounds: Set<String> {
+    ///
+    /// **CACHED, and that is a performance fix rather than a style preference.** As a computed
+    /// property this rebuilt the whole `Set` on every read: it walks every active protocol, every
+    /// vial's `apiNames`, and 80 logs. `matchesStack` read it TWICE — once for the empty guard and
+    /// once *inside* a closure evaluated per compound on the item — and `results`, `featured` and
+    /// `featuredIsPersonalized` each call `matchesStack` on every render, even when not filtering. At
+    /// ~60 items × ~2 compounds that is on the order of 180 full rebuilds per render pass. Toggling
+    /// the filter ran that inside an animated transaction, so the frames dropped and the result was
+    /// perceived as a bad animation. It was not an animation; it was a stutter.
+    private func rebuildUserCompounds() {
         var s = Set<String>()
         for p in protocols where p.isActive { for n in p.compoundNames { s.insert(n.lowercased()) } }
         for v in vials { for n in v.apiNames { s.insert(n.lowercased()) } }
         for l in logs.prefix(80) { s.insert(l.compoundName.lowercased()) }
-        return s
+        userCompounds = s
     }
     private func matchesStack(_ item: NewsItem) -> Bool {
         guard !userCompounds.isEmpty else { return false }
@@ -212,6 +226,12 @@ struct NewsView: View {
             .scrollsToTopOnReselect(.news)
             .toolbar(.hidden, for: .navigationBar)
             .task { await loader.load() }
+            // Seed the cache, then refresh it only when the underlying data actually changes.
+            // Counts, not arrays — see `userCompounds`.
+            .onAppear { rebuildUserCompounds() }
+            .onChange(of: protocols.count) { rebuildUserCompounds() }
+            .onChange(of: vials.count) { rebuildUserCompounds() }
+            .onChange(of: logs.count) { rebuildUserCompounds() }
             .navigationDestination(for: NewsItem.self) { NewsDetailView(item: $0) }
         }
         // Re-tapping the News tab pops back to the feed (in addition to the top-left back arrow).
@@ -265,11 +285,14 @@ struct NewsView: View {
                            systemImage: myStack ? "checkmark.circle.fill" : "circle") {
                 myStack.toggle()
             }
-            // Two symbols with identical metrics, so the glyph swap can't jitter the chip's width.
-            // Scoped here rather than around the toggle: an `.animation` on the chip animates the
-            // chip, where a `withAnimation` would animate every layout the flag feeds — the feed
-            // included, which is exactly the jump being fixed.
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: myStack)
+            // NO `.animation` on the chip, deliberately. `SelectableChip` INVERTS polarity when
+            // selected — fill `surfaceElevated` → `accent`, ink `textPrimary` → `onAccent` — so
+            // interpolating it drives both through a mid-gray where the label sits near 1:1 contrast
+            // and momentarily dissolves. That cannot be made to look good, only fast. Worse, the
+            // checkmark is a discrete content change that does NOT participate in the interpolation,
+            // so the glyph carrying the meaning arrived instantly while the decoration took 160ms —
+            // one control changing on two clocks. The state is already stated by a checkmark and an
+            // inverted fill; it does not need a transition as well.
             Spacer(minLength: 0)
         }
         .sensoryFeedback(.selection, trigger: myStack)
@@ -361,11 +384,15 @@ struct NewsView: View {
     /// A list-row link with the shared scroll-edge treatment (rows only — the featured card
     /// stays static). Scale is ternaried out under Reduce Motion; the fade stays.
     private func rowLink(_ item: NewsItem) -> some View {
-        newsLink(item) { NewsRow(item: item, seenStore: seenStore) }
+        // `reduceMotion` is read into a local FIRST: `scrollTransition`'s closure is `Sendable`, and
+        // touching a MainActor-isolated property from inside it warns (pre-existing, fixed here since
+        // the file was already open). The captured `Bool` is a value, so there is nothing to isolate.
+        let flattenScale = reduceMotion
+        return newsLink(item) { NewsRow(item: item, seenStore: seenStore) }
             .scrollTransition(axis: .vertical) { content, phase in
                 content
                     .opacity(phase.isIdentity ? 1 : 0.8)
-                    .scaleEffect(reduceMotion ? 1 : (phase.isIdentity ? 1 : 0.98))
+                    .scaleEffect(flattenScale ? 1 : (phase.isIdentity ? 1 : 0.98))
             }
     }
 

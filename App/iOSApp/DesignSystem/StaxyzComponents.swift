@@ -107,9 +107,15 @@ struct PrimaryButton: View {
             // default text size, and must stay free to grow with Dynamic Type. A hard
             // `.frame(height: 52)` would clip the label at accessibility sizes across 16 sites.
             .frame(minHeight: 52)
+            // Fill and ink live INSIDE the label, so `PressableStyle`'s scale applies to the pill
+            // itself. Applied outside the Button (as they were) the capsule sits in a parent the
+            // style cannot reach, so the app's single loudest element — on 21 screens — gave no
+            // response at all to the finger on it, while every tappable CARD did. The hierarchy was
+            // inverted: the more important the target, the less it acknowledged you.
+            .background(BrandColor.ctaFill, in: Capsule())
+            .foregroundStyle(BrandColor.onCtaFill)
         }
-        .background(BrandColor.ctaFill, in: Capsule())
-        .foregroundStyle(BrandColor.onCtaFill)
+        .buttonStyle(PressableStyle())
     }
 }
 
@@ -130,10 +136,12 @@ struct SecondaryButton: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.lg)
             .frame(minHeight: 52)
+            // Inside the label for the same reason as PrimaryButton — see the note there.
+            .background(BrandColor.surfaceElevated, in: Capsule())
+            .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
+            .foregroundStyle(BrandColor.textPrimary)
         }
-        .background(BrandColor.surfaceElevated, in: Capsule())
-        .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
-        .foregroundStyle(BrandColor.textPrimary)
+        .buttonStyle(PressableStyle())
     }
 }
 
@@ -219,11 +227,12 @@ struct CollapsibleNoteField: View {
     var title: String = "Note"
     var hint: String? = "Optional."
     var placeholder: String = "Anything worth remembering"
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+                withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { expanded.toggle() }
             } label: {
                 HStack(spacing: Space.sm) {
                     Text(text.isEmpty ? "Add a note" : title)
@@ -284,7 +293,7 @@ struct DisclosureRow<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
             Button {
-                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { toggle() }
+                withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { toggle() }
             } label: {
                 HStack(spacing: Space.sm) {
                     Text(title)
@@ -482,7 +491,11 @@ struct SelectableChip: View {
                 .frame(minHeight: 44)
                 .contentShape(.rect)
         }
-        .buttonStyle(.plain)
+        // Was `.plain`, which is LESS feedback than the default — it strips even the opacity dim.
+        // This is the app's one chip recipe (Log protocol picker, site picker, weekday builder, News
+        // filters, Profile sex chips), so a tap that deselects, or one that lands on the rail instead
+        // of a chip, previously gave the user nothing at all.
+        .buttonStyle(PressableStyle())
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
@@ -542,7 +555,8 @@ struct SearchToggleButton: View {
                 .background(BrandColor.surfaceElevated, in: Circle())
                 .overlay(Circle().strokeBorder(BrandColor.stroke, lineWidth: 1))
         }
-        .buttonStyle(.plain)
+        // The shared filter trigger. Same reasoning as SelectableChip above.
+        .buttonStyle(PressableStyle())
         .accessibilityLabel(isActive ? "Close search and filters" : "Search and filter")
     }
 }
@@ -695,6 +709,7 @@ struct DisclosureSection<Content: View>: View {
     /// same Card + `Typo.headline` register as the accordions, so every section reads as a peer.
     var collapsible: Bool = true
     @ViewBuilder var content: () -> Content
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var showsContent: Bool { isExpanded || !collapsible }
 
@@ -706,7 +721,11 @@ struct DisclosureSection<Content: View>: View {
                     content().frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .animation(.easeInOut(duration: 0.22), value: isExpanded)
+            // The component owns BOTH the timing and the reduce-motion gate, so no caller has to
+            // remember either. It previously animated at 0.22 while its three callers each wrapped
+            // the toggle in `withAnimation(.easeInOut(duration: 0.2))` — and the inner animation
+            // WINS, so the duration written at the call site was never the duration that played.
+            .animation(Motion.gated(Motion.disclosure, reduceMotion), value: isExpanded)
         }
     }
 
@@ -741,8 +760,10 @@ struct DisclosureSection<Content: View>: View {
     }
 }
 
-/// An Apple-health-style circular adherence ring with an Oura-style coupled reveal: one
-/// `Motion.reveal` drives the arc sweep and the rolling center count-up so they land
+/// An Apple-health-style circular adherence ring. **It does NOT sweep in** — see the note on
+/// `progress` below; this comment used to describe a `Motion.reveal`-driven arc sweep and count-up
+/// that the code deliberately removed, and the token itself has now been deleted rather than left
+/// as an invitation to re-add a 900ms animation over data the user is reading. What survives is
 /// together (~900ms). The hue IS the read — amber behind, blue on pace, green ahead — over
 /// an own-color track. Accessible (label + value); Reduce Motion skips the sweep entirely.
 struct AdherenceRing: View {

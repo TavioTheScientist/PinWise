@@ -13,6 +13,7 @@ import UniformTypeIdentifiers
 /// showing both is what makes this a record rather than a form. "Apply to vials on this lot" is the
 /// one explicit, consequence-shown way to reconcile them — never a silent write-through.
 struct LotDetailView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var context
     let lot: StoredLot
 
@@ -170,7 +171,7 @@ struct LotDetailView: View {
     }
 
     private func toggle(_ id: UUID) {
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) {
             if expanded.contains(id) { expanded.remove(id) } else { expanded.insert(id) }
         }
     }

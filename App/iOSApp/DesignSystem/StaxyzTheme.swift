@@ -298,15 +298,60 @@ enum Radius {
     static let pill: CGFloat = 999
 }
 
-/// Named motion — one vocabulary for the whole app. Every USE must be gated on
-/// `@Environment(\.accessibilityReduceMotion)` (fall back to opacity-only or nil).
+/// Named motion — one vocabulary for the whole app.
+///
+/// **Spelled with the modern `spring(duration:bounce:)` API, and mixing the two spellings is
+/// forbidden.** The legacy `spring(response:dampingFraction:)` hides the one property that most needs
+/// reviewing: `bounce = 1 - dampingFraction`. That is not academic — `press` shipped at
+/// `dampingFraction: 0.7`, i.e. **bounce 0.30**, so every tappable card in the app overshot on
+/// release for months without anyone writing the word "bounce" anywhere. Spelling it out makes it
+/// auditable at the call site.
+///
+/// **Bounce is earned only by a gesture that carried momentum** (a flick, a drag). A tap carries
+/// none, so press and state-change tokens are critically damped (`bounce: 0`). `celebrate` is the one
+/// exception and is quarantined by name for that reason — see its note.
+///
+/// Every USE must be gated on `@Environment(\.accessibilityReduceMotion)` (fall back to opacity-only
+/// or nil). `gated(_:_:)` exists so that gate cannot be forgotten.
 enum Motion {
-    static let press = Animation.spring(response: 0.3, dampingFraction: 0.7)      // existing PressableStyle value
-    static let emphasis = Animation.spring(response: 0.45, dampingFraction: 0.8)  // card/sheet arrivals
-    static let reveal = Animation.easeOut(duration: 0.9)                          // ring sweep + count-up (Oura ~900ms)
+    /// Press-down feedback. 160ms and critically damped: a press carries no momentum, so it earns no
+    /// overshoot, and the perceptual budget for "the interface heard me" is 100–160ms. Was
+    /// `spring(response: 0.3, dampingFraction: 0.7)` — 300ms with bounce 0.30, which read as rubbery
+    /// rather than machined on every card in the app.
+    static let press = Animation.spring(duration: 0.16, bounce: 0)
+
+    /// A state change worth noticing but not celebrating: a form reflowing, a gauge redrawing.
+    /// Critically damped for the same reason as `press` — three of its four original call sites were
+    /// non-gesture changes wearing a bouncy spring.
+    static let emphasis = Animation.spring(duration: 0.3, bounce: 0)
+
+    /// The ONE playful token, for a genuinely rare celebration (a crossed streak milestone).
+    /// Quarantined by name so bounce can never spread onto a dosing surface by accident — the same
+    /// reasoning that makes `TagChip.Style.brand` an explicit case rather than a default.
+    static let celebrate = Animation.spring(duration: 0.45, bounce: 0.25)
+
+    /// Expand / collapse. Was hand-spelled at SEVEN sites and had already drifted to two values
+    /// (`0.2` six times, `0.22` once) — two durations for one interaction. `easeOut`, not
+    /// `easeInOut`: an accordion is content ENTERING, and `easeInOut` front-loads slowness onto the
+    /// exact frame the user is watching.
+    static let disclosure = Animation.easeOut(duration: 0.22)
+
     static let entrance = Animation.easeOut(duration: 0.35)                       // staggered list entrances
-    static let drawer = Animation.spring(response: 0.38, dampingFraction: 0.9)    // existing drawer value
+    static let drawer = Animation.spring(duration: 0.38, bounce: 0.1)             // existing drawer feel
     static let stagger: Double = 0.04                                             // 40ms/row (Oura)
+
+    /// Applies the reduce-motion policy in ONE place, so a call site cannot forget it.
+    ///
+    /// Reduced motion means **fewer and gentler, not zero** — the accessibility guidance is about
+    /// vestibular triggers (travel), not about removing the fact that something changed. So the
+    /// default fallback is a short linear fade, NOT `nil`. Pass `reduced: nil` explicitly for the one
+    /// case that has no gentle form: motion that is *entirely* travel, where the destination should
+    /// simply appear.
+    static func gated(_ animation: Animation,
+                      _ reduceMotion: Bool,
+                      reduced: Animation? = .linear(duration: 0.14)) -> Animation? {
+        reduceMotion ? reduced : animation
+    }
 }
 
 // Glow rules (tightened in the chrome revision): a colored glow means "live/active" — never
@@ -390,13 +435,42 @@ extension View {
     }
 }
 
-/// Plain button style that adds a springy press-scale — tactile feedback used across tappable
-/// cards, so the app feels responsive rather than static.
+/// Press feedback for tappable surfaces — the most-felt motion in the app, so it is also the one
+/// most worth getting exactly right.
+///
+/// Two deliberate choices:
+/// - **Scale survives Reduce Motion; only its amount shrinks.** A 3% scale has no spatial trajectory,
+///   so it is not a vestibular trigger — and reduced motion means gentler, not absent. Removing press
+///   feedback entirely would take away the confirmation that a tap landed, which is the opposite of
+///   an accessibility improvement.
+/// - **The opacity dip is 0.96, not 0.92.** On a pure-black ground a deep dip reads as *the card
+///   dimmed*, not *the card was pushed* — it competes with the scale rather than reinforcing it.
 struct PressableStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.92 : 1)
-            .animation(Motion.press, value: configuration.isPressed)
+        let pressed = configuration.isPressed
+        return configuration.label
+            .scaleEffect(pressed ? (reduceMotion ? 0.99 : 0.97) : 1)
+            .opacity(pressed ? 0.96 : 1)
+            .animation(Motion.press, value: pressed)
+    }
+}
+
+/// Press feedback for FULL-WIDTH rows, as opposed to cards.
+///
+/// A separate style rather than a parameter because the correct amount is a function of the target's
+/// size: 0.97 on a 350pt-wide settings row is a visibly large movement, where the same value on a card
+/// reads as a press. Two documented registers beat one register plus dozens of `.plain` exceptions —
+/// which is what the app had, tracking the target's SHAPE rather than whether it was tappable.
+struct PressableRowStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        let pressed = configuration.isPressed
+        return configuration.label
+            .scaleEffect(pressed ? (reduceMotion ? 0.997 : 0.985) : 1)
+            .opacity(pressed ? 0.94 : 1)
+            .animation(Motion.press, value: pressed)
     }
 }

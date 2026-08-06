@@ -27,6 +27,7 @@ private enum LateAttribution: Hashable {
 /// tab says "You're all set!". A grouped front/back picker keeps sites compact; a success
 /// haptic confirms the save; logging draws down matching vials.
 struct LogView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var context
     @Query(sort: \LoggedDose.timestamp, order: .reverse) private var recent: [LoggedDose]
     @Query private var skips: [SkippedDose]
@@ -717,7 +718,7 @@ struct LogView: View {
                 // Collapsible "When" — defaults to now, so it stays collapsed; the header shows the
                 // chosen time so it's never ambiguous. Expand only to log an earlier dose.
                 VStack(alignment: .leading, spacing: Space.xs) {
-                    Button { withAnimation(.easeInOut(duration: 0.2)) { showWhen.toggle() } } label: {
+                    Button { withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { showWhen.toggle() } } label: {
                         HStack(spacing: Space.sm) {
                             Text("When").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                             Text(whenLabel).font(.caption).foregroundStyle(BrandColor.textSecondary)
@@ -854,7 +855,15 @@ struct LogView: View {
 
     /// Show a brief confirmation banner (auto-dismisses via the .task in the body).
     private func confirm(_ message: String) {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { confirmation = message }
+        // `Motion.emphasis` (300ms, bounce 0) rather than the old inline spring(0.35, damping 0.8),
+        // which was 350ms WITH bounce 0.20. Both changes matter here more than anywhere else in the
+        // app: this banner reports that a dose was recorded, and if it is slow to become legible a
+        // user who is unsure the tap registered will tap again — writing a SECOND `LoggedDose`, which
+        // then corrupts the adherence figure, the vial depletion count, and reminder suppression
+        // (`reminderSignature` includes the log count). Bounce is also wrong on principle: it reads as
+        // celebration on a medical record. The banner is a REPORT, never a gate — the write and the
+        // haptic already fire off the count, not off this frame. Keep that ordering.
+        withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { confirmation = message }
     }
 
     /// The lot number of the batch a vial came from, or "" when provenance wasn't recorded.
