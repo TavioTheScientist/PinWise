@@ -179,10 +179,18 @@ struct VialRow: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             Spacer(minLength: Space.sm)
-            if projection.needsReorder { TagChip(text: "Low", style: .danger) }
-            if let e = vial.expiryState, (e.isWarning || e.isError) {
-                TagChip(text: e.isError ? "Expired" : "Expiring", style: e.isError ? .danger : .warning)
+            // Capped. These are urgency BADGES — chrome — and at the largest sizes both together
+            // measured wider than the whole card, so the vial's NAME and STRENGTH truncated to make
+            // room for "EXPIRED" shouting at 3× their size. Total hierarchy inversion on the
+            // identity row of a dosing record, and on exactly the vial you most need to identify.
+            // The badges stop growing past xxxLarge; the name keeps scaling.
+            Group {
+                if projection.needsReorder { TagChip(text: "Low", style: .danger) }
+                if let e = vial.expiryState, (e.isWarning || e.isError) {
+                    TagChip(text: e.isError ? "Expired" : "Expiring", style: e.isError ? .danger : .warning)
+                }
             }
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
         }
     }

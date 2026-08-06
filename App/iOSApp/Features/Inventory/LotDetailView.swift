@@ -331,8 +331,12 @@ private struct COADocumentCard: View {
                                     set: { doc.endotoxinUnitRaw = $0.rawValue })) {
                                     ForEach(EndotoxinUnit.allCases, id: \.self) { Text($0.label).tag($0) }
                                 }
+                                // Was `.frame(width: 150)` with ~3pt of headroom at the default
+                                // size. `EU/mg` vs `EU/vial` are different measurements, and this
+                                // file records endotoxin "for safety" — a truncated unit makes the
+                                // number meaningless. Segmented while it fits, menu when it doesn't.
                                 .pickerStyle(.segmented)
-                                .frame(width: 150)
+                                .fixedSize()
                             }
                         }
                         FieldRow("Lab", hint: "Free text — Staxyz keeps no lab list.") {

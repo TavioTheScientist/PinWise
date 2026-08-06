@@ -197,10 +197,14 @@ struct ActiveLevelsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: Space.sm) {
                     Circle().fill(m.color).frame(width: 9, height: 9)
-                    Text(m.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
-                    Spacer()
+                    // The compound NAME is the identity; the status is an adjective. Without a
+                    // priority the two flexible Texts fought and the name lost to "Coming down".
+                    Text(m.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary)
+                        .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
+                    Spacer(minLength: Space.sm)
                     Text(m.status.label).font(.caption.weight(.semibold))
                         .foregroundStyle(m.status.isElevated ? m.color : BrandColor.textSecondary)
+                        .lineLimit(1)
                     Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
                 GeometryReader { geo in
@@ -592,7 +596,10 @@ struct ActiveLevelsView: View {
                             Circle().fill(series.color).frame(width: 10, height: 10)
                             Text(series.status.label).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                             Spacer()
-                            Text("\(fmt(onBoardNow)) \(unitLabel) on board")
+                            // NON-BREAKING space between the figure and its unit: with a plain
+                            // space, "1250" could land on one line and "mcg" on the next, on the
+                            // screen whose entire job is "how much is in you right now".
+                            Text("\(fmt(onBoardNow))\u{00A0}\(unitLabel) on board")
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(series.color)
                         }
                         Text(series.isLong ? "Long-acting compound." : "Short-acting compound.")

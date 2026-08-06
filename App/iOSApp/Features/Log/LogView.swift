@@ -260,7 +260,7 @@ struct LogView: View {
                         Text(confirmation).font(.subheadline.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(2)
                     }
                     .padding(.horizontal, Space.lg).padding(.vertical, Space.md)
-                    .background(BrandColor.surfaceElevated, in: Capsule())
+                    .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                     .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
                     // Clear the floating tab bar (~90pt reserved, see tabBarClearance) plus a gap.
@@ -597,7 +597,11 @@ struct LogView: View {
         VStack(alignment: .leading, spacing: 2) {
             MicroLabel(label)
             Text(value).font(Typo.numberMD).foregroundStyle(color)
-                .lineLimit(1).minimumScaleFactor(0.7)
+                // Two lines and a deeper floor. At one line with a 0.7 floor the value CLAMPS and
+                // then truncates in a ~158pt column — and this slot renders the syringe draw
+                // ("0.25 mL · 12.5 units"), i.e. how far to pull the plunger. A floor that
+                // guarantees truncation on a dosing figure is worse than no floor at all.
+                .lineLimit(2).minimumScaleFactor(0.5)
         }
     }
 

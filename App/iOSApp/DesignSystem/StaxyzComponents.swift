@@ -187,6 +187,9 @@ struct StatTile: View {
             MicroLabel(label)
             Text(value)
                 .font(compact ? Typo.statValue : (emphasized ? Typo.numberLG : Typo.numberMD))
+                // 21 of 22 display-type sites in the app apply this; StatTile was the one miss, so
+                // every emphasized 30pt stat rendered at body tracking.
+                .displayTracking()
                 .foregroundStyle(emphasized ? BrandColor.accentText : BrandColor.textPrimary)
                 // A 3-up strip gives each value ~101pt, and the whole premise of these strips is
                 // that the same fact sits in the same slot on every row. A date like "Aug 12"

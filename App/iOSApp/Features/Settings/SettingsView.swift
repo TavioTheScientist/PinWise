@@ -128,10 +128,15 @@ private struct SettingsRow: View {
                 .foregroundStyle(tint)
                 .frame(width: iconTile, height: iconTile)
                 .background(tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            // The title carries the wayfinding ("Apple Health & devices"), so it must be the last
+            // thing to give way. Both Texts were flexible with no priority, which meant the
+            // NAVIGATION LABEL truncated rather than just its value.
             Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                .layoutPriority(1)
             Spacer(minLength: Space.sm)
             if let value {
-                Text(value).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                Text(value).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
             Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
         }
@@ -318,7 +323,17 @@ private struct AboutSettingsView: View {
         return "\(v) (\(b))"
     }
     private var systemVersion: String { "iOS \(UIDevice.current.systemVersion)" }
-    private var deviceModel: String { UIDevice.current.model }
+    /// `UIDevice.current.model` returns the literal string "iPhone" on every iPhone ever made, so
+    /// the row read `Device — iPhone` and carried exactly zero information while presenting itself
+    /// as provenance. The machine identifier ("iPhone17,1") is what actually identifies the hardware.
+    private var deviceModel: String {
+        var sysinfo = utsname()
+        uname(&sysinfo)
+        let id = withUnsafeBytes(of: &sysinfo.machine) { raw in
+            raw.prefix { $0 != 0 }.map { String(UnicodeScalar(UInt8($0))) }.joined()
+        }
+        return id.isEmpty ? UIDevice.current.model : id
+    }
 
     private func infoRow(_ key: String, _ value: String) -> some View {
         HStack {

@@ -282,14 +282,22 @@ struct ProtocolBuilderView: View {
     }
 
     private var weekdayPicker: some View {
-        HStack(spacing: 6) {
-            // Monday-first order; labels match the cadence display (Su M T W Th F S).
-            ForEach(SavedProtocol.mondayFirst([1, 2, 3, 4, 5, 6, 7]), id: \.self) { d in
-                SelectableChip(title: SavedProtocol.shortWeekdayLabel(d),
-                               isSelected: weekdays.contains(d),
-                               shape: .rounded(8),
-                               fillWidth: true) {
-                    if weekdays.contains(d) { weekdays.remove(d) } else { weekdays.insert(d) }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                // Monday-first order; labels match the cadence display (Su M T W Th F S).
+                ForEach(SavedProtocol.mondayFirst([1, 2, 3, 4, 5, 6, 7]), id: \.self) { d in
+                    // NOT `fillWidth` any more. Seven chips sharing one row left ~18pt of label each,
+                    // so past roughly xxLarge — a size reached from Display & Brightness without ever
+                    // opening Accessibility — "Th" collapsed to "T" and "Su" to "S", making Thursday
+                    // indistinguishable from Tuesday and Sunday from Saturday. On the control that
+                    // chooses which days you inject, that is a data-entry fault, not a cosmetic one.
+                    // The chip now sizes to its label and the rail scrolls, which is exactly what the
+                    // discard-window presets in InventoryView already do for the same reason.
+                    SelectableChip(title: SavedProtocol.shortWeekdayLabel(d),
+                                   isSelected: weekdays.contains(d),
+                                   shape: .rounded(8)) {
+                        if weekdays.contains(d) { weekdays.remove(d) } else { weekdays.insert(d) }
+                    }
                 }
             }
         }
