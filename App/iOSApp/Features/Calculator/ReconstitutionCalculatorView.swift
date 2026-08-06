@@ -360,7 +360,7 @@ private struct DoseHeroCard: View {
                 MicroLabel("Draw to")
                 HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
                     Text(result.map { fmt($0.syringeUnits) } ?? "—")
-                        .font(Typo.numberXL)
+                        .font(Typo.numberXL).displayTracking()
                         .foregroundStyle(BrandColor.accentText)
                         .contentTransition(.numericText(value: result?.syringeUnits ?? 0))
                         // Short per-keystroke roll — an appearance reveal would lag live edits.

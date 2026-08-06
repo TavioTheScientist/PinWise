@@ -124,7 +124,7 @@ struct ToolsView: View {
     private var header: some View {
         HStack(alignment: .center) {
             Text("Tools")
-                .font(Typo.screenTitle)
+                .font(Typo.screenTitle).displayTracking()
                 .foregroundStyle(BrandColor.textPrimary)
             Spacer()
             Button { showCustomize = true } label: {
@@ -151,6 +151,7 @@ struct ToolsView: View {
 /// the native, VoiceOver-friendly List `.onMove` (rock-solid), and the grid behind updates live as
 /// the sheet writes the layout straight to AppStorage.
 struct ToolsCustomizeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
     @AppStorage(ToolLayout.orderKey) private var orderRaw = ""
     @AppStorage(ToolLayout.hiddenKey) private var hiddenRaw = ""
@@ -177,11 +178,19 @@ struct ToolsCustomizeView: View {
             .scrollContentBackground(.hidden)
             .heroScreen()
             .environment(\.editMode, .constant(.active))   // always in reorder mode; grips + toggles visible
+            // One feedback per control GROUP, at the container — the app's documented rule, and this
+            // screen was the only feature area with none. `order` covers the reorder (native `List`
+            // drag already ships its own lift/drop haptics, so this fires on the COMMITTED move) and
+            // `hidden` covers the show/hide toggles.
+            .sensoryFeedback(.impact(weight: .light), trigger: order)
+            .sensoryFeedback(.selection, trigger: hidden)
             .navigationTitle("Customize Tools")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Reset") { withAnimation { resetToDefault() } }
+                    // Rewrites the whole saved layout (order + every hidden flag), so it earns a
+                    // named token rather than an anonymous ~550ms spring.
+                    Button("Reset") { withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { resetToDefault() } }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }.fontWeight(.semibold)
@@ -325,7 +334,7 @@ struct ReverseDoseView: View {
                     VStack(alignment: .leading, spacing: Space.sm) {
                         MicroLabel("You drew about")
                         Text(dose?.displayString ?? "—")
-                            .font(Typo.numberXL)
+                            .font(Typo.numberXL).displayTracking()
                             .foregroundStyle(BrandColor.accentText)
                             .contentTransition(.numericText(value: dose?.micrograms ?? 0))
                             .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: dose?.micrograms)
@@ -408,7 +417,7 @@ struct TitrationPreviewView: View {
                         SectionHeader(title: "Example ladder")
                         ForEach(phases) { phase in
                             HStack(alignment: .firstTextBaseline) {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text(phase.dose.displayString).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                                     Text("\(phase.startDate.formatted(.dateTime.month().day())) – \(phase.endDate.formatted(.dateTime.month().day())) · \(weeks(phase.durationDays)) wks")
                                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
@@ -445,7 +454,6 @@ private struct TitrationLadderBar: View {
     let phases: [TitrationPlanner.Phase]
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var revealed = false
 
     private static let gap: CGFloat = 3
     private static let barHeight: CGFloat = 30
@@ -465,15 +473,11 @@ private struct TitrationLadderBar: View {
             }
         }
         .frame(height: Self.barHeight)
-        // Left-anchored grow-in on arrival; instant under Reduce Motion.
-        .scaleEffect(x: revealed ? 1 : 0, anchor: .leading)
-        .onAppear {
-            if reduceMotion {
-                revealed = true
-            } else {
-                withAnimation(.easeOut(duration: 0.5)) { revealed = true }
-            }
-        }
+        // NO reveal animation, deliberately. This grew from `scaleEffect(x: 0)` over 500ms, which is
+        // three faults at once: it animated from nothing (the `scale(0)` failure), it ran at 500ms on a
+        // non-modal element, and it was decoration over FUNCTIONAL DATA — a dose ladder the user is
+        // reading. It was also the only entrance in the app that bypassed the shared `.entrance(_:)`.
+        // If an arrival cue is ever wanted here, use `.entrance(0, group: "titration")` and nothing else.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Plan timeline")
         .accessibilityValue(summary)
@@ -534,7 +538,7 @@ struct RampUpPlannerView: View {
                         .font(.body.weight(.semibold))
                         .foregroundStyle(activeProtocols.isEmpty ? BrandColor.textSecondary : BrandColor.accentText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableRowStyle())   // full-width "Build a titration plan" row
                 .disabled(activeProtocols.isEmpty)
             } footer: {
                 Text(activeProtocols.isEmpty
@@ -550,7 +554,7 @@ struct RampUpPlannerView: View {
                     ForEach(plannedProtocols) { p in
                         Button { builderTarget = RampBuilderTarget(protocolID: p.id) } label: {
                             HStack(spacing: Space.sm) {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text(p.name).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
                                     Text(planSummary(p)).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
                                 }
@@ -558,7 +562,7 @@ struct RampUpPlannerView: View {
                                 Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                             }
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PressableRowStyle())   // full-width plan row with a chevron
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) { removePlan(p) } label: { Label("Delete", systemImage: "trash") }
                             Button { builderTarget = RampBuilderTarget(protocolID: p.id) } label: { Label("Edit", systemImage: "pencil") }
@@ -696,19 +700,27 @@ private struct RampBuilderSheet: View {
                         .labelsHidden().tint(BrandColor.accentText)
                 }
                 Divider().overlay(BrandColor.stroke)
+                // REFLOWS rather than crams. As one row this demanded ~355pt of a 329pt card on a
+                // 393pt phone — over budget at the DEFAULT text size, and 45pt over on a 375pt
+                // phone. The unit picker could not compress, so the two text fields absorbed the
+                // whole deficit: the weeks field was left about 20pt for its digits. `ViewThatFits`
+                // keeps the compact single row where it genuinely fits and splits dose from
+                // duration where it does not, so no field is ever squeezed below its content.
                 ForEach($phases) { $phase in
-                    HStack(spacing: Space.sm) {
-                        TextField("dose", text: $phase.doseText).keyboardType(.decimalPad).staxyzField().frame(maxWidth: 84)
-                        MassUnitPicker(selection: $phase.unit)
-                        Text("for").font(.caption).foregroundStyle(BrandColor.textSecondary)
-                        TextField("4", text: $phase.weeksText).keyboardType(.numberPad).staxyzField().frame(maxWidth: 44)
-                        Text("wks").font(.caption).foregroundStyle(BrandColor.textSecondary)
-                        Spacer(minLength: 0)
-                        if phases.count > 1 {
-                            Button { phases.removeAll { $0.id == phase.id } } label: {
-                                Image(systemName: "minus.circle.fill").foregroundStyle(BrandColor.textSecondary)
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: Space.sm) {
+                            phaseDose($phase)
+                            phaseDuration($phase)
+                            Spacer(minLength: Space.sm)
+                            phaseRemove(phase)
+                        }
+                        VStack(alignment: .leading, spacing: Space.sm) {
+                            HStack(spacing: Space.sm) {
+                                phaseDose($phase)
+                                Spacer(minLength: Space.sm)
+                                phaseRemove(phase)
                             }
-                            .buttonStyle(.plain)
+                            phaseDuration($phase)
                         }
                     }
                 }
@@ -716,7 +728,7 @@ private struct RampBuilderSheet: View {
                     Label("Add a phase", systemImage: "plus.circle.fill")
                         .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableRowStyle())   // full-width "Add a phase" row
             }
         }
     }
@@ -752,6 +764,37 @@ private struct RampBuilderSheet: View {
     }
 
     private func unit(for p: SavedProtocol) -> MassUnit { p.primaryItem?.doseUnit ?? .milligram }
+
+    /// Dose amount + unit. `layoutPriority` so, when the row is short of space, everything else
+    /// gives way before the number the user is typing does.
+    @ViewBuilder private func phaseDose(_ phase: Binding<EditablePhase>) -> some View {
+        TextField("dose", text: phase.doseText)
+            .keyboardType(.decimalPad).staxyzField()
+            .frame(minWidth: 72)
+            .layoutPriority(1)
+        MassUnitPicker(selection: phase.unit)
+    }
+
+    /// "for N wks". The two literals are `fixedSize` so they can never be the thing that truncates —
+    /// a chopped "wk" would leave the number unitless.
+    @ViewBuilder private func phaseDuration(_ phase: Binding<EditablePhase>) -> some View {
+        HStack(spacing: Space.sm) {
+            Text("for").font(.caption).foregroundStyle(BrandColor.textSecondary).fixedSize()
+            TextField("4", text: phase.weeksText)
+                .keyboardType(.numberPad).staxyzField()
+                .frame(minWidth: 44)
+            Text("wks").font(.caption).foregroundStyle(BrandColor.textSecondary).fixedSize()
+        }
+    }
+
+    @ViewBuilder private func phaseRemove(_ phase: EditablePhase) -> some View {
+        if phases.count > 1 {
+            Button { phases.removeAll { $0.id == phase.id } } label: {
+                Image(systemName: "minus.circle.fill").foregroundStyle(BrandColor.textSecondary)
+            }
+            .buttonStyle(PressableStyle())   // inline minus-circle — the glyph IS the target
+        }
+    }
 
     private func addPhase() {
         let last = phases.last

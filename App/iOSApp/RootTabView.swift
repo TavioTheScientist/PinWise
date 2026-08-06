@@ -98,6 +98,7 @@ final class TabScrollCoordinator {
 }
 
 private struct ScrollToTopOnReselect: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let tab: AppTab
     @Environment(TabScrollCoordinator.self) private var coordinator
     @State private var position = ScrollPosition(edge: .top)
@@ -107,7 +108,9 @@ private struct ScrollToTopOnReselect: ViewModifier {
             .scrollPosition($position)
             .onChange(of: coordinator.token) {
                 guard coordinator.target == tab else { return }
-                withAnimation(.easeInOut) { position.scrollTo(edge: .top) }
+                // 350ms for a gesture iOS itself performs near-instantly. `disclosure` (220ms) is the
+                // shortest honest option; scroll-to-top should feel like a jump, not a journey.
+                withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { position.scrollTo(edge: .top) }
             }
     }
 }
@@ -126,6 +129,7 @@ extension View {
 /// strictly monochrome; Log is a metallic chrome disc with a near-black glyph that crests
 /// above the capsule's top edge — the single colored element in the app's chrome.
 private struct StaxyzTabBar: View {
+    @ScaledMetric(relativeTo: .caption2) private var tabLabelSize: CGFloat = 10
     @Binding var selected: AppTab
     @Environment(TabScrollCoordinator.self) private var scrollCoordinator
 
@@ -171,7 +175,7 @@ private struct StaxyzTabBar: View {
         // as floating glass, and it is now the bar's primary separation (dark `.chrome` shadow
         // does nothing over bare black — it only works where a card scrolls beneath).
         .background(BrandColor.surfaceElevated.opacity(0.55), in: Capsule())
-        .background(.ultraThinMaterial, in: Capsule())
+        .background { GlassMaterial().clipShape(Capsule()) }
         // Flatten to one silhouette BEFORE the shadow so it follows the capsule plus the
         // protruding crest arc instead of haloing each icon. (compositingGroup, never
         // drawingGroup — Metal rasterization kills the material's backdrop sampling.)
@@ -221,7 +225,13 @@ private struct StaxyzTabBar: View {
                 // top edge together with its glyph.
                 .offset(y: prominent ? -(chipSize - iconRow) / 2 : 0)
                 Text(label)
-                    .font(.system(size: 10, weight: .medium))
+                    // Scales, capped. It was frozen at 10pt, so at accessibility sizes the app's
+                    // PRIMARY NAVIGATION was the smallest text on screen by a factor of five. The cap
+                    // exists because the column is only ~67pt wide — this is the same
+                    // `@ScaledMetric` + `min()` pattern `MicroLabel` already uses.
+                    .font(.system(size: min(tabLabelSize, 13), weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .foregroundStyle(isSelected ? BrandColor.textPrimary : BrandColor.textSecondary)
             }
             .frame(maxWidth: .infinity)
@@ -248,28 +258,3 @@ private struct TabHitShape: Shape {
     }
 }
 
-/// Themed placeholder for sections not yet built out.
-struct PlaceholderScreen: View {
-    let title: String
-    let systemImage: String
-    let subtitle: String
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: Space.md) {
-                Image(systemName: systemImage)
-                    .font(.largeTitle)
-                    .foregroundStyle(BrandColor.accentText)
-                Text(title).font(Typo.title).foregroundStyle(BrandColor.textPrimary)
-                Text(subtitle)
-                    .font(Typo.body)
-                    .foregroundStyle(BrandColor.textSecondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(Space.xl)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .heroScreen()
-            .navigationTitle(title)
-        }
-    }
-}

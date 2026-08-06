@@ -102,7 +102,7 @@ struct PaywallView: View {
     private var header: some View {
         VStack(spacing: 10) {
             Text("Staxyz")
-                .font(.system(size: 35.6, weight: .bold))
+                .font(Typo.gateWordmark)
                 .foregroundStyle(.white)
             Text(trialCopy)
                 .font(.system(size: 15))
@@ -146,7 +146,7 @@ struct PaywallView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(BrandColor.accentText)
                 .frame(width: 22)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                 Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
             }
@@ -189,18 +189,25 @@ struct PaywallView: View {
                 Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
                     .font(.system(size: 20))
                     .foregroundStyle(isSelected ? BrandColor.accent : BrandColor.strokeStrong)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: Space.sm) {
-                        Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
-                        if let badge { TagChip(text: badge) }
-                    }
+                // Three flexible items in one row with no priorities measured ~542pt into a 313pt
+                // card at the largest text size — and the price was the only part allowed to grow,
+                // so the plan NAME and the savings badge were crushed by it. This is the purchase
+                // decision surface, and the screen App Review looks at. The badge now drops below
+                // the title rather than competing with it on one line.
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                    if let badge { TagChip(text: badge) }
                     if let sub {
                         Text(sub).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                            .lineLimit(2)
                     }
                 }
+                .layoutPriority(1)
                 Spacer(minLength: Space.sm)
                 Text(product.displayPrice)
                     .font(Typo.statValue).foregroundStyle(BrandColor.textPrimary)
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
             .padding(Space.lg)
             .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))

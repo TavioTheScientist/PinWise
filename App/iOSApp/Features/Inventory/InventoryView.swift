@@ -6,6 +6,7 @@ import PeptideKit
 /// *formula* of one or more APIs (single-compound or a blend). Tap a vial to edit it.
 struct InventoryList: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \StoredVial.dateAcquired, order: .reverse) private var vials: [StoredVial]
     @Query(sort: \SavedProtocol.startDate, order: .reverse) private var protocols: [SavedProtocol]
     // Needed so a vial delete can null the soft `vialID` links on every dose that drew from it.
@@ -13,6 +14,9 @@ struct InventoryList: View {
     @Query private var lots: [StoredLot]
     @State private var showBuilder = false
     @State private var editTarget: EditTarget?
+    /// The vial awaiting a delete confirmation. A vial rather than a Bool so the dialog can name what
+    /// it is about to remove — "Remove Semaglutide 10 mg?" is answerable; "Are you sure?" is not.
+    @State private var pendingRemoval: StoredVial?
     /// Identifiable wrapper so a tapped vial can drive `.sheet(item:)` (same pattern as protocols).
     private struct EditTarget: Identifiable { let id = UUID(); let vial: StoredVial }
 
@@ -59,13 +63,22 @@ struct InventoryList: View {
                             Button { editTarget = EditTarget(vial: vial) } label: {
                                 Label("Edit", systemImage: "pencil")
                             }
-                            Button(role: .destructive) { vial.reconcileDelete(in: context, doses: logs, protocols: protocols) } label: {
+                            // Routed through the same confirmation as the inline button. A long-press
+                            // makes reaching this deliberate, but the tap that follows is still one tap
+                            // on a destructive item that never names what it is about to remove.
+                            Button(role: .destructive) { pendingRemoval = vial } label: {
                                 Label("Depleted — remove", systemImage: "trash.slash")
                             }
                         }
                         // Empty (or expired) vials get a one-tap way out of the inventory.
                         if projection.wholeDosesRemaining == 0 || (vial.expiryState?.isError ?? false) {
-                            Button(role: .destructive) { vial.reconcileDelete(in: context, doses: logs, protocols: protocols) } label: {
+                            // CONFIRMED, like its sibling in the builder. This was a full-width
+                            // destructive button that deleted a vial — and nulled the `vialID` on every
+                            // dose drawn from it — on ONE tap, with no confirmation, sitting directly
+                            // beneath a tappable card. Forgiveness was inversely proportional to
+                            // consequence: the same delete reached from the builder already showed a
+                            // dialog. Apple's Agency principle wants the opposite relationship.
+                            Button(role: .destructive) { pendingRemoval = vial } label: {
                                 Label(projection.wholeDosesRemaining == 0 ? "Depleted — remove from inventory"
                                                                           : "Expired — remove from inventory",
                                       systemImage: "trash.slash")
@@ -79,6 +92,22 @@ struct InventoryList: View {
                     }
                 }
             }
+        }
+        .confirmationDialog(pendingRemoval.map { "Remove \($0.displayName)?" } ?? "Remove this vial?",
+                            isPresented: Binding(get: { pendingRemoval != nil },
+                                                 set: { if !$0 { pendingRemoval = nil } }),
+                            titleVisibility: .visible) {
+            Button("Remove from inventory", role: .destructive) {
+                if let v = pendingRemoval {
+                    withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) {
+                        v.reconcileDelete(in: context, doses: logs, protocols: protocols)
+                    }
+                }
+                pendingRemoval = nil
+            }
+            Button("Keep it", role: .cancel) { pendingRemoval = nil }
+        } message: {
+            Text("Doses you already logged from this vial are kept — they just stop pointing at it.")
         }
         .sheet(isPresented: $showBuilder) { VialBuilderView() }
         .sheet(item: $editTarget) { VialBuilderView(editing: $0.vial) }
@@ -96,7 +125,7 @@ struct InventoryList: View {
                     Image(systemName: "shippingbox")
                         .font(.title3).foregroundStyle(BrandColor.textSecondary)
                         .frame(width: 32)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
                         Text("Lots & COA documents")
                             .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                         Text(lots.isEmpty ? "Track what was actually in the vial"
@@ -150,10 +179,18 @@ struct VialRow: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             Spacer(minLength: Space.sm)
-            if projection.needsReorder { TagChip(text: "Low", style: .danger) }
-            if let e = vial.expiryState, (e.isWarning || e.isError) {
-                TagChip(text: e.isError ? "Expired" : "Expiring", style: e.isError ? .danger : .warning)
+            // Capped. These are urgency BADGES — chrome — and at the largest sizes both together
+            // measured wider than the whole card, so the vial's NAME and STRENGTH truncated to make
+            // room for "EXPIRED" shouting at 3× their size. Total hierarchy inversion on the
+            // identity row of a dosing record, and on exactly the vial you most need to identify.
+            // The badges stop growing past xxxLarge; the name keeps scaling.
+            Group {
+                if projection.needsReorder { TagChip(text: "Low", style: .danger) }
+                if let e = vial.expiryState, (e.isWarning || e.isError) {
+                    TagChip(text: e.isError ? "Expired" : "Expiring", style: e.isError ? .danger : .warning)
+                }
             }
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
             Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
         }
     }
@@ -232,6 +269,7 @@ struct VialRow: View {
 /// Pre-mixed vials are entered the way the label reads — strength (mg/mL) + volume; powder
 /// vials as total mass + the volume you mix in.
 struct VialBuilderView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotionBuilder
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \CustomCompound.name) private var customCompounds: [CustomCompound]
@@ -282,6 +320,12 @@ struct VialBuilderView: View {
     @State private var storage: VialStorage?
     @State private var lightProtected: Bool?
     @State private var expandStability: Bool
+    /// Draft excursion log. Held locally and written on save like every other field, so backing out of
+    /// the sheet discards an unintended entry — an append-only record should not gain rows from a form
+    /// the user abandoned.
+    @State private var excursions: [StorageExcursion] = []
+    @State private var newExcursionHours = ""
+    @State private var newExcursionExposure: VialStorage = .roomTemperature
     @State private var coaAssayText: String
     @State private var coaContentText: String
     @State private var coaPurityText: String
@@ -330,6 +374,7 @@ struct VialBuilderView: View {
             _storage = State(initialValue: nil)
             _lightProtected = State(initialValue: nil)
             _expandStability = State(initialValue: false)
+            _excursions = State(initialValue: [])
             _coaAssayText = State(initialValue: "")
             _coaContentText = State(initialValue: "")
             _coaPurityText = State(initialValue: "")
@@ -381,6 +426,7 @@ struct VialBuilderView: View {
         // Opens itself only when there is something to see. An empty section that unfurls on every
         // edit trains people to collapse it, which is the opposite of collecting the data.
         _expandStability = State(initialValue: !v.reconstitutionRecord.isEmpty)
+        _excursions = State(initialValue: v.storageExcursions)
         _coaAssayText = State(initialValue: v.coaAssayPercent.map(Self.fmt) ?? "")
         _coaContentText = State(initialValue: v.coaContentPercent.map(Self.fmt) ?? "")
         _coaPurityText = State(initialValue: v.coaPurityPercent.map(Self.fmt) ?? "")
@@ -1017,6 +1063,8 @@ struct VialBuilderView: View {
                     .tint(BrandColor.accentText)
                 }
 
+                excursionEditor
+
                 FieldRow("Kept out of light", hint: "Amber vial, or stored in a box or drawer.") {
                     Picker("Light", selection: $lightProtected) {
                         Text("Not recorded").tag(Bool?.none)
@@ -1024,6 +1072,68 @@ struct VialBuilderView: View {
                         Text("No").tag(Bool?.some(false))
                     }
                     .pickerStyle(.segmented)
+                }
+            }
+        }
+    }
+
+    /// Excursion log — the append-only half of the stability record.
+    ///
+    /// Entry is deliberately ONE number plus a picker, not a date-and-time form. A user recording "left
+    /// it out about six hours" knows the duration and does not reliably know the timestamp, and asking
+    /// for precision they do not have is how a record fills up with invented values. The date is stamped
+    /// as now; the duration is what they actually observed.
+    ///
+    /// Removal is allowed while DRAFTING, because a typo is not history — but the list is written only on
+    /// save, so an abandoned sheet adds nothing.
+    @ViewBuilder private var excursionEditor: some View {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            FieldRow("Time out of storage",
+                     hint: "Left on a counter, or travelled unrefrigerated. Add one per occasion.") {
+                HStack(spacing: Space.sm) {
+                    TextField("Hours", text: $newExcursionHours)
+                        .keyboardType(.decimalPad)
+                        .staxyzField()
+                        .frame(maxWidth: 96)
+                    Picker("Exposed to", selection: $newExcursionExposure) {
+                        ForEach(VialStorage.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(BrandColor.accentText)
+                    Spacer(minLength: 0)
+                    Button {
+                        guard let h = Double(newExcursionHours), h > 0 else { return }
+                        withAnimation(Motion.gated(Motion.disclosure, reduceMotionBuilder)) {
+                            excursions.append(StorageExcursion(date: .now, hours: h,
+                                                               exposedTo: newExcursionExposure))
+                        }
+                        newExcursionHours = ""
+                    } label: {
+                        Text("Add").font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(PressableStyle())
+                    .disabled(Double(newExcursionHours).map { $0 <= 0 } ?? true)
+                }
+            }
+
+            ForEach(excursions) { ex in
+                HStack(spacing: Space.sm) {
+                    Text("\(ex.durationPhrase) \(ex.exposedTo.excursionPhrase)")
+                        .font(Typo.caption2).foregroundStyle(BrandColor.textPrimary)
+                    Text(ex.date.formatted(.dateTime.month(.abbreviated).day()))
+                        .font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
+                    Spacer(minLength: 0)
+                    Button {
+                        withAnimation(Motion.gated(Motion.disclosure, reduceMotionBuilder)) {
+                            excursions.removeAll { $0.id == ex.id }
+                        }
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .font(.caption)
+                            .foregroundStyle(BrandColor.textSecondary)
+                    }
+                    .buttonStyle(PressableStyle())
+                    .accessibilityLabel("Remove this excursion")
                 }
             }
         }
@@ -1038,7 +1148,7 @@ struct VialBuilderView: View {
             diluent: isPremixed ? nil : diluent,
             storage: storage,
             isLightProtected: lightProtected,
-            excursions: editing?.storageExcursions ?? [])
+            excursions: excursions)
     }
 
     private var lotCard: some View {
@@ -1249,6 +1359,7 @@ struct VialBuilderView: View {
         vial.diluentRaw = isPremixed ? nil : diluent?.rawValue
         vial.storageRaw = storage?.rawValue
         vial.isLightProtected = lightProtected
+        vial.storageExcursions = excursions
         return true
     }
 

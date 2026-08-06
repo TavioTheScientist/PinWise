@@ -49,7 +49,7 @@ struct WelcomeView: View {
                 // 2 — Name + description
                 VStack(spacing: 10) {
                     Text("Staxyz")
-                        .font(.system(size: 35.6, weight: .bold))
+                        .font(Typo.gateWordmark)
                         .foregroundStyle(.white)
                     Text("Real science for peptides.\nThe source of truth for dose tracking.")
                         .font(.system(size: 15))

@@ -6,6 +6,7 @@ import PeptideKit
 // plus the user's own added compounds.
 
 struct CompoundsView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.modelContext) private var context
     @Query(sort: \CustomCompound.name) private var custom: [CustomCompound]
     @State private var search = ""
@@ -103,11 +104,13 @@ struct CompoundsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button { toggleFilter() } label: {
-                    Image(systemName: filterActive ? "xmark" : "magnifyingglass")
-                }
-                .tint(BrandColor.accentText)
-                .accessibilityLabel(filterActive ? "Close search and filters" : "Search and filter")
+                // The SHARED trigger, not a bare toolbar glyph. `StaxyzComponents` declares the
+                // reveal-on-demand filter pattern (magnifier → SearchField + FilterChipRail →
+                // AppliedFilterHeader), and News already used `SearchToggleButton` while this screen
+                // hand-rolled an unstyled `Image` — so the two halves of one documented pattern looked
+                // unrelated, and a user who learned the circular magnifier on News did not find it
+                // here. Learnability across screens is worth more than the pixels a bare glyph saves.
+                SearchToggleButton(isActive: filterActive) { toggleFilter() }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -139,7 +142,9 @@ struct CompoundsView: View {
     }
 
     private func toggleFilter() {
-        withAnimation(.snappy) {
+        // `.snappy` is `spring(duration: 0.5, bounce: 0.15)` — 500ms, despite the name, and it was
+        // ungated. A filter re-apply is a state change, not a celebration.
+        withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) {
             filterActive.toggle()
             if !filterActive { clearFilters() }   // closing the panel clears the filters
         }
@@ -171,6 +176,7 @@ struct CompoundsView: View {
 
 /// Explains the evidence tiers, the WADA label, and half-life — reachable from the "?" button.
 struct CompoundLegendView: View {
+    @ScaledMetric(relativeTo: .caption2) private var badgeCol: CGFloat = 104
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -222,12 +228,7 @@ struct CompoundLegendView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
-        // Glass sheet — content passes beneath the presentation; the canvas is the material, cards stay opaque.
-        .presentationBackground {
-            BrandColor.background.opacity(0.5).background(.ultraThinMaterial)
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .glassSheet()   // the app's one reference-sheet recipe
     }
 
     private func tierRow(_ tier: EvidenceTier, _ desc: String) -> some View {
@@ -235,8 +236,11 @@ struct CompoundLegendView: View {
             // Fixed-width badge column so every description starts at the same x — the badges
             // vary in width ("A · Strong" vs "B · Moderate"), which otherwise ragged the text.
             EvidenceBadge(tier: tier)
-                .frame(width: 104, alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
+                // Scales with the badge's own text. At a hard 104pt the badge simply DRAWS OVER the
+                // description beside it at large sizes — `.frame(width:)` does not clip — which is the
+                // one true overlap in this audit rather than a truncation.
+                .frame(width: badgeCol, alignment: .leading)
+            VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(tier.label).font(.caption.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                 Text(desc).font(.caption2).foregroundStyle(BrandColor.textSecondary)
             }
@@ -343,7 +347,7 @@ struct CompoundDetailView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            Text(compound.name).font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+            Text(compound.name).font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
             if !compound.aliases.isEmpty {
                 Text(compound.aliases.joined(separator: " · "))
                     .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)

@@ -1,90 +1,175 @@
 # Staxyz
 
-> **Renamed 2026-08-01 — formerly PinWise.** The product is now **Staxyz** (a play on "Stack
-> Wise" / "Stack Easy"). The rename is **complete in code**: bundle ID `com.staxyz.app`,
-> `Staxyz.xcodeproj`, the `Staxyz` scheme, `StaxyzApp.swift`, `StaxyzTheme.swift`,
-> `StaxyzComponents.swift`, `StaxyzStore`, `StaxyzTabBar`, the `.staxyzField` modifier, and the
-> `STAXYZ_*` notification identifiers. Verified: 218/218 pk-verify, 75 tests, a clean
-> `xcodebuild`, and a launch on simulator.
->
-> **Three things still say PinWise, on purpose** — each names a live external resource that has
-> NOT been renamed, so changing it in code would produce a dead link:
-> 1. `github.com/TavioTheScientist/PinWise` — this repo's own path.
-> 2. `PinWise-NewsFeed` — the public feed repo the app fetches from at runtime.
-> 3. `@PinWiseApp` — the X / Instagram / TikTok handles linked in the side menu.
->
-> **The brand artwork is also still PinWise** and cannot be fixed by renaming: the vials hero,
-> launch wordmark, launch icon and app icon are raster PNGs showing the old wordmark and the
-> "PW" monogram. See **Pending: brand assets** below.
+A dose tracker for peptides, GLP-1s and other injectables — and the reference layer for the
+science around them. It is a **passive record-keeper**: it logs what you did, projects what you
+have left, and never recommends a dose.
 
-An app for tracking peptide / GLP-1 / multi-injectable dosing protocols — and the source of
-truth for the science around them. This repo holds the **advisory knowledge base** (research,
-strategy, specs) and the **app** (a CI-validated v1).
+**Platforms: iOS ships, Android is in progress.** iOS is native SwiftUI and is the source of
+truth for behaviour. Android is a Dart/Flutter rewrite whose domain core is already complete and
+verified; no Android UI exists yet.
 
-**Platform target: iOS *and* Android.** Shared branding, tailored per OS. The shipping v1 is
-native SwiftUI (iOS-only); the cross-platform build is a Flutter rewrite — see
-**Pending: cross-platform** below.
+Repo: `github.com/TavioTheScientist/PinWise` (private) · Xcode 26.6 / Swift 6.3 · Dart 3.12
 
-Repo: `github.com/TavioTheScientist/PinWise` · CI: GitHub Actions (compiles + tests every push).
+> **Working on this as an agent?** Read `CLAUDE.md` first. This README orients you; `CLAUDE.md`
+> holds the traps, invariants and in-flight state, and it is the file that gets updated per
+> session. Where the two overlap, `CLAUDE.md` is more current.
 
 ## Layout
-```
-PeptideTrackingApp/
-├── Knowledge/KnowledgeBase_v2/     # fact-checked KB — START HERE (00 report, 12 build status)
-├── App/
-│   ├── Package.swift               # PeptideKit library + pk-verify + tests
-│   ├── Sources/PeptideKit/         # verified domain core (models, calculators, catalog, safety, news contract)
-│   ├── Sources/pk-verify/          # runnable verification harness (66 checks)
-│   ├── Tests/PeptideKitTests/      # swift-testing suite (runs in Xcode/CI)
-│   ├── iOSApp/                     # SwiftUI app (Onboarding, Home, Log, Protocols+Inventory, News, Tools)
-│   └── project.yml                 # XcodeGen spec
-├── scripts/build-feed.mjs          # News feed generator (ClinicalTrials.gov + PubMed)
-├── feed/feed.json                  # generated News feed
-└── .github/workflows/              # ci.yml (build+test) · news-feed.yml (daily feed)
-```
 
-## Run it
+| Path | What it is |
+| --- | --- |
+| `App/Sources/PeptideKit/` | Pure-Swift domain core — units, models, calculators, safety rules, compound catalog, news contract. Foundation only, no UI, builds on Linux. |
+| `App/Sources/pk-verify/` | Assertion harness over `PeptideKit` — **273 checks**. Runnable anywhere. |
+| `App/Tests/PeptideKitTests/` | swift-testing suites — **85 tests / 18 suites**. |
+| `App/iOSApp/` | The SwiftUI app (55 Swift files, 16 feature areas). Deliberately outside `Sources/` so the package builds without an iOS SDK. |
+| `App/iOSApp/Vendor/MuscleMap/` | Vendored third-party fork — the region-precise injection map. Its docs describe upstream; don't edit them. |
+| `App/iOSAppTests/` | Host-app XCTest target `StaxyzTests` — app code that can't live in PeptideKit (StoreKit flow, cadence text). **Local-only, not in CI.** |
+| `App/project.yml` | XcodeGen spec, and the **source of truth for the project**. Generates `App/iOSApp/Info.plist` — never hand-edit the plist. |
+| `AndroidApp/peptide_kit/` | Pure-Dart port of `PeptideKit`. Same 273 checks, 192 tests. See its own README. |
+| `supabase/` | Migrations + Edge Functions — the AI proxy, the RAG corpus, the subscription webhook. See its own README. |
+| `scripts/build-feed.mjs` | Deterministic, LLM-free News feed generator (ClinicalTrials.gov + PubMed). |
+| `scripts/news-content/` | The human/agent content cycle that writes the curated feed. See its own README. |
+| `Design/`, `docs/` | Design briefs and roadmap notes. |
+| `.github/workflows/` | `ci.yml` (three jobs) · `news-feed.yml` (feed publish, **cron paused**) |
+
+**Gitignored, so they ship in no clone even if you see them locally:** `Knowledge/` (the private
+strategy corpus — it is *not* a starting point for anyone cloning this repo), `feed/` (a build
+artifact published to the separate public feed repo), `supabase/.temp/` (CLI scratch state,
+regenerated by `supabase link`), and `App/Staxyz.xcodeproj` (regenerate with `xcodegen generate`).
+`Branding/`, `RefImages/` and `docs/superpowers/` are untracked working material.
+
+## Build and verify
+
+Three CI jobs gate this repo (`.github/workflows/ci.yml`). All three run locally.
+
+**1. Domain core (PeptideKit)** — ubuntu, swift:6.0. No Xcode needed.
 ```sh
-brew install xcodegen        # once
-cd App && xcodegen generate && open Staxyz.xcodeproj   # then ⌘R
-swift run pk-verify          # domain-core check (no Xcode needed)
+cd App
+swift run pk-verify     # 273/273 checks
+swift test              # 85 tests in 18 suites
 ```
 
-## What's built (v1)
-A complete, CI-validated free-tier MVP — see **`Knowledge/KnowledgeBase_v2/12_v1_Build_Status_and_Next_Iteration.md`** for the full status + next-iteration backlog.
-- **Onboarding** + gated 18+ disclaimer acceptance.
-- **Home** — live adherence ring, next dose, recent activity.
-- **Log** — fast logging (quick-fill from protocols, site suggestion, backfill, haptics); decrements inventory.
-- **Protocols & Inventory** — protocol builder with reminders; vials with run-out/cost/expiry; compound library.
-- **News** — neutral, cited editorial feed (live pipeline + bundled fallback).
-- **Tools** — verified reconstitution calculator.
-- Deep-blue design system (60-30-10, WCAG-audited), reminders, SwiftData (CloudKit-safe), local-first.
+**2. Domain core (Dart port)** — ubuntu, no simulator.
+```sh
+cd AndroidApp/peptide_kit
+dart pub get
+dart analyze --fatal-infos
+dart format --output=none --set-exit-if-changed .
+dart run tool/pk_verify.dart   # 273 checks, 0 failures
+dart test                      # 192 tests
+```
 
-## Pending: brand assets, external resources, cross-platform
+**3. Build iOS app** — macos-15. The only job that needs Xcode.
+```sh
+brew install xcodegen                       # once
+cd App
+xcodegen generate                           # regenerates Staxyz.xcodeproj
+xcodebuild build -project Staxyz.xcodeproj -scheme Staxyz \
+  -destination 'generic/platform=iOS Simulator' \
+  -skipPackagePluginValidation COMPILER_INDEX_STORE_ENABLE=NO
+```
+Or `open Staxyz.xcodeproj` and ⌘R. Rerun `xcodegen generate` when files are **added or removed**;
+editing existing files does not need it.
 
-- **Brand assets (blocks a real launch).** Four raster assets still show the PinWise wordmark and
-  the "PW" monogram and cannot be renamed mechanically — they need redesign:
-  `Assets.xcassets/VialsHero.imageset` (onboarding hero), `LaunchWordmark.imageset`,
-  `LaunchIcon.imageset`, `AppIcon.appiconset` (dark + tinted 1024s), plus the source SVGs in
-  `App/design/AppIcon/`. "PW" has no mechanical Staxyz equivalent — the monogram is a design
-  decision. Regenerate with CoreGraphics/PIL only; never `sips` or `qlmanage`. Icon and launch
-  images cache aggressively — delete the app or `simctl erase` after changing them.
-- **External resources still named PinWise.** The code repo path, the public `PinWise-NewsFeed`
-  repo, and the `@PinWiseApp` social handles. Rename the resource FIRST, then the reference —
-  doing it the other way round breaks the news feed and the side-menu links.
-- **Supabase.** Apple sign-in is bound to the old bundle ID. The Services ID and auth redirect
-  URLs must be repointed to `com.staxyz.app` or Continue-with-Apple fails.
-- **Cross-platform.** One codebase shipping to **iOS and Android**, shared branding tailored per
-  OS. Flutter is the chosen framework. This **reverses** the earlier same-day "iOS-only, no port"
-  call — the measured cost stands and is not small: ~82% of the current code is Apple-specific
-  (`iOSApp` ~16.2k lines + ~4.8k vendored MuscleMap vs `PeptideKit` ~4.6k) across 14 Apple
-  frameworks, and `FoundationModels` has no Android equivalent. A Flutter build means re-deriving
-  PeptideKit's 218 `pk-verify` checks and 75 swift-testing tests in Dart. It is a rewrite, not a
-  port.
+`StaxyzTests` is in the scheme's TEST action but not its BUILD action, so `xcodebuild build`
+neither builds nor runs it — that is why it is absent from CI, and why it can rot without CI
+noticing. Run it explicitly with `xcodebuild test`.
+
+### Debug builds ship a different bundle id, on purpose
+
+`project.yml` sets `PRODUCT_BUNDLE_IDENTIFIER: com.pinwise.app` under `configs: debug:`. Release
+is untouched and still ships **`com.staxyz.app`**.
+
+This surprises people, so: Sign in with Apple is a grant scoped to a **specific bundle id**. The
+local simulator holds a cached grant for `com.pinwise.app` from when the app shipped under that
+name. `com.staxyz.app` has no grant, and Apple will not mint one because there is no Apple
+Developer account and therefore no registered App ID — so a ⌘R build under the new id cannot sign
+in, and fails with a message (`M2 missing (bad password)`) that reads like a credential problem
+and is not one. Pointing Debug at the id that has the grant means ⌘R produces an app that can
+actually log in, and puts exactly one Staxyz icon on the device instead of one that works and one
+that doesn't. **Remove it once the Developer account exists** — after that it would hide a real
+problem. The full reasoning is in the comment block in `project.yml`.
+
+### Devices
+
+There is exactly **one iOS simulator** (`iPhone 17 Pro`, `4F42A9A1`) and **one Android emulator**
+(`staxyz_pixel`), by design — one of each keeps StoreKit provisioning, Sign in with Apple grants
+and seeded data in one known place instead of scattered across look-alike devices. Don't create
+more; see `CLAUDE.md` for what is bound to that specific simulator.
+
+## The Swift and Dart cores are provably equivalent
+
+Not "both pass" — **label-for-label parity**. `swift run pk-verify` and `dart run
+tool/pk_verify.dart` emit the same 273 check labels in the same order across the same sections;
+diffing the two label lists yields zero differences in either direction. The only textual
+difference in the output is the summary line's wording (`✅ PASS — 273/273 checks passed` vs
+`273 checks, 0 failure(s)`). So they assert the same things, not merely the same number of things.
+
+That property is the deliverable. If you add a check on one side, add the identically-labelled
+check on the other, or the diff stops being meaningful.
+
+## What's built
+
+A complete iOS app behind a hard trial → paywall (21-day trial, then subscribe or locked out).
+
+- **Onboarding** with gated 18+ disclaimer acceptance.
+- **Home** — adherence ring, next dose, recent activity, due-dose CTA that routes rather than writes.
+- **Log** — fast logging with quick-fill, site suggestion, backfill, late-dose attribution; decrements inventory.
+- **Protocols & Inventory** — protocol builder with reminders; vials with run-out/cost/expiry; lots, COAs and stability records.
+- **Compounds** — 57 catalog entries, 57 authored profiles, structured side effects, citations model.
+- **News** — neutral, cited editorial feed (37 items, 5 flagged major) fetched live with a bundled cold-start fallback.
+- **Tools** — reconstitution and other calculators, user-reorderable.
+- **Assistant (Natt)**, Health/HealthKit reads, Biomarkers, Physique, Symptoms, Subscription, Legal.
+- Design system: pure-black ground with a metallic pale-rose accent, WCAG-audited. Reminders, SwiftData (CloudKit-safe), Sign in with Apple / email / guest.
+
+Backed by Supabase for the assistant, the RAG corpus and the subscription clock — the app is **not
+local-only**; it holds no provider API key and calls Edge Functions with a Supabase JWT.
+
+## Still says PinWise, on purpose
+
+The code rename is done: bundle ID, project, scheme, `StaxyzApp.swift`, `StaxyzTheme.swift`,
+`StaxyzComponents.swift`, `StaxyzStore`, `StaxyzTabBar`, `.staxyzField`, `STAXYZ_*` notification
+identifiers. Five things are still named PinWise deliberately. **Rename the resource first, then
+the reference** — the other order breaks a live dependency.
+
+| What | Where | Why it can't move yet |
+| --- | --- | --- |
+| `github.com/TavioTheScientist/PinWise` | this repo's own path, git remote | Rename on GitHub before changing any reference. |
+| `PinWise-NewsFeed` | `AppConfig.newsFeedURL`, `news-feed.yml` | The app fetches this **at runtime**. Changing the string before renaming the repo 404s the News tab. |
+| `@PinWiseApp` | `Features/Settings/SideMenu.swift` (X, Instagram, TikTok) | Live social handles. Dead links if changed first. |
+| `pinwise_backend` | the Supabase project name | Server-side; renaming buys nothing and risks the live project. |
+| `com.pinwise.app` | `project.yml` `configs: debug:` | Deliberate — see the build section above. Release ships `com.staxyz.app`. |
+
+**The brand artwork is also still PinWise, and renaming cannot fix it.** `VialsHero.imageset`,
+`LaunchWordmark.imageset`, `LaunchIcon.imageset` and `AppIcon.appiconset` are raster PNGs showing
+the old wordmark and the "PW" monogram, as are the source SVGs in `App/design/AppIcon/`. "PW" has
+no mechanical Staxyz equivalent — someone has to design the new mark. Regenerate with
+CoreGraphics/PIL only, never `sips` or `qlmanage`; icon and launch images cache hard, so delete the
+app or `simctl erase` after changing them.
+
+## Cross-platform: the shape of the remaining work
+
+**SwiftUI is the source of truth. The Dart/Flutter side translates it and never leads it.** Every
+Android screen must be built by reading the corresponding Swift view. An earlier pass built screens
+from a design brief instead and produced UI that looked plausible and matched nothing.
+
+Step one — port the domain core — is **done**: `AndroidApp/peptide_kit` is at label-for-label
+parity with the Swift (273 checks) plus 192 tests, and it has its own CI job. That was the right
+first move because it is the one layer that can't go stale (no UI, no platform APIs) and the one
+where a silent error is a dosing-safety problem rather than a cosmetic one.
+
+Step two — the screens — is **on hold**, because the SwiftUI app is still moving and translating a
+moving target means translating it twice.
+
+The cost estimate that shapes all of this still holds: roughly **80% of the code is
+Apple-specific** — `iOSApp` ~19.2k lines plus ~4.8k vendored MuscleMap, against ~6.0k in
+`PeptideKit` — across 14 Apple frameworks, with `FoundationModels` having no Android equivalent,
+and the injection map needing a from-scratch rebuild. It is a rewrite, not a port. Don't let anyone
+describe it as "adding a platform."
 
 ## Ground rules baked into the design
-Staxyz is a **passive record-keeper**: it never recommends a dose or titration (FDA CDS
-guidance; Apple Guideline 1.4.2). Calculators are personal converters, titration ladders are
-user-configured templates, insights are neutral display. Local-first; privacy language lives
-only in agreements/disclaimers. **Not medical or legal advice** — the clinical catalog and
-regulatory posture require licensed-clinician and licensed-attorney review before launch.
+
+Staxyz **never recommends a dose or a titration** (FDA CDS guidance; Apple Guideline 1.4.2).
+Calculators are personal unit converters, titration ladders are user-configured templates, and
+insights are neutral display of what the user already entered. **Not medical or legal advice** —
+the clinical catalog and the regulatory posture both require licensed review before launch.

@@ -116,17 +116,17 @@ struct HomeView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.xl) {
-                    header.entrance(0)
+                    header.entrance(0, group: "home")
                     // Dosing leads; the (optional) health snapshot sits below it.
                     if !activeProtocols.isEmpty {
-                        heroActive.entrance(1)
-                        stackCard.entrance(2)
+                        heroActive.entrance(1, group: "home")
+                        stackCard.entrance(2, group: "home")
                         // Directly under the card that says what's due, so the statement and the
                         // action are adjacent. Self-hiding, so on a day with nothing due Home looks
                         // exactly as it did before.
-                        logDueAction.entrance(3)
+                        logDueAction.entrance(3, group: "home")
                     } else if !recent.isEmpty {
-                        heroActivity.entrance(1)
+                        heroActivity.entrance(1, group: "home")
                     } else {
                         emptyState
                     }
@@ -135,7 +135,7 @@ struct HomeView: View {
                     if !hideHealthCard {
                         HomeHealthCard()
                             .padding(.top, Space.xxxl - Space.xl)
-                            .entrance(4)
+                            .entrance(4, group: "home")
                     }
                 }
                 .padding(Space.lg)
@@ -175,7 +175,7 @@ struct HomeView: View {
                 // Date eyebrow — the instrument micro-register above the display greeting.
                 MicroLabel(Date.now.formatted(.dateTime.weekday(.wide).month().day()))
                 Text(greeting ?? "Track your protocol.\nKnow the science.")
-                    .font(Typo.screenTitle)
+                    .font(Typo.screenTitle).displayTracking()
                     .foregroundStyle(BrandColor.textPrimary)
                     .minimumScaleFactor(0.7).lineLimit(2)
             }
@@ -227,7 +227,7 @@ struct HomeView: View {
 
         return Card(style: .hero, padding: Space.xl) {
             VStack(alignment: .leading, spacing: Space.lg) {
-                HStack(spacing: Space.lg) {
+                HStack(alignment: .top, spacing: Space.lg) {
                     VStack(spacing: Space.sm) {
                         AdherenceRing(fraction: fraction, size: Self.ringSize)
                         // Capped to the ring's own width so a long label (or a large Dynamic Type
@@ -276,7 +276,15 @@ struct HomeView: View {
             if let m = celebratingMilestone {
                 milestoneBadge(m)
                     .padding(Space.md)
-                    .transition(reduceMotion ? .opacity : .scale(scale: 0.6).combined(with: .opacity))
+                    // 0.92, not 0.6. Nothing in the physical world appears from 60% of itself —
+                    // that is the `scale(0)` failure mode in a softer form. The standard is 0.9–0.97.
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    // Bounded so a celebration can never cover the data it is celebrating: at large
+                    // sizes this badge measured ~280pt over a 313pt card, occluding the ring and the
+                    // next-pin row for its whole 3.5s life.
+                    .frame(maxWidth: 200)
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.92).combined(with: .opacity))
             }
         }
         .onAppear { checkMilestone() }
@@ -285,7 +293,7 @@ struct HomeView: View {
         .task(id: celebratingMilestone) {
             guard celebratingMilestone != nil else { return }
             try? await Task.sleep(for: .seconds(3.5))
-            withAnimation { celebratingMilestone = nil }
+            withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { celebratingMilestone = nil }
         }
     }
 
@@ -307,37 +315,58 @@ struct HomeView: View {
     /// instead of its height) and only when it *adds* something: "BEST 12" while there is a record to
     /// chase, and "YOUR BEST" in `success` at the moment you are level with it, which is the one time
     /// the fact is worth celebrating rather than restating.
+    /// Flame + "N doses" as ONE concatenated run.
+    ///
+    /// Concatenated, not two sibling `Text`s: as siblings in a compressed HStack each wrapped
+    /// independently, so "13 doses" split into "1 dos-" / "3 es". One run means the only legal break
+    /// is the space between number and unit — and `lineLimit(1)` plus a scale floor removes even
+    /// that, so the value and its unit can never be separated. A number without its unit is not a fact.
+    @ViewBuilder private func streakValue(_ streak: StreakCalculator.Result) -> some View {
+        Image(systemName: "flame.fill")
+            .font(.caption)
+            .foregroundStyle(streak.current > 0 ? BrandColor.warning : BrandColor.textSecondary)
+            .accessibilityHidden(true)
+        (
+            Text("\(streak.current)")
+                .font(Typo.statValue)
+                .foregroundStyle(BrandColor.textPrimary)
+            + Text(" \(streak.current == 1 ? "dose" : "doses")")
+                .font(.caption)
+                .foregroundStyle(BrandColor.textSecondary)
+        )
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+        .layoutPriority(1)
+    }
+
+    /// The comparison — only when it ADDS something: "BEST 12" while there is a record to chase,
+    /// "YOUR BEST" in `success` at the moment you are level with it.
+    @ViewBuilder private func streakBest(_ streak: StreakCalculator.Result, atBest: Bool) -> some View {
+        if atBest {
+            MicroLabel("Your best", color: BrandColor.success).lineLimit(1)
+        } else if streak.longest > streak.current {
+            MicroLabel("Best \(streak.longest)").lineLimit(1)
+        }
+    }
+
     private func streakStat(_ streak: StreakCalculator.Result) -> some View {
         let atBest = streak.current > 0 && streak.current == streak.longest
-        return VStack(alignment: .leading, spacing: 2) {
+        return VStack(alignment: .leading, spacing: Space.xxs) {
             MicroLabel("Dose streak")
-            HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
-                Image(systemName: "flame.fill")
-                    .font(.caption)
-                    .foregroundStyle(streak.current > 0 ? BrandColor.warning : BrandColor.textSecondary)
-                    .accessibilityHidden(true)
-                // ONE concatenated text run, not two sibling Texts. As siblings in a compressed
-                // HStack each wrapped independently at accessibility sizes, so "13 doses" split
-                // into "1 dos-" / "3 es" — the number itself broken across lines and the unit
-                // hyphenated. Concatenation keeps them a single run, so the only legal break is
-                // the space between them, while each half keeps its own font and color.
-                (
-                    Text("\(streak.current)")
-                        .font(Typo.statValue)
-                        .foregroundStyle(BrandColor.textPrimary)
-                    + Text(" \(streak.current == 1 ? "dose" : "doses")")
-                        .font(.caption)
-                        .foregroundStyle(BrandColor.textSecondary)
-                )
-                // The best rides the VALUE line, not the label line above it. Sharing the label's
-                // line put "DOSE STREAK" and "YOUR BEST" in ~185pt of tracked 11pt caps, which
-                // wrapped the label to two lines; and the comparison belongs beside the number it
-                // compares anyway, where a baseline-aligned micro-label reads as one instrument row.
-                Spacer(minLength: Space.sm)
-                if atBest {
-                    MicroLabel("Your best", color: BrandColor.success)
-                } else if streak.longest > streak.current {
-                    MicroLabel("Best \(streak.longest)")
+            // REFLOWS rather than compresses. Squeezing the comparison to fit beside the value
+            // truncated it to "Y…", which is strictly worse than the two-line wrap it replaced —
+            // a truncated label conveys nothing at all, where a wrapped one is merely untidy.
+            // `ViewThatFits` keeps them side by side while both fit and drops the comparison to
+            // its own line when they don't, so neither ever loses characters.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+                    streakValue(streak)
+                    Spacer(minLength: Space.sm)
+                    streakBest(streak, atBest: atBest)
+                }
+                VStack(alignment: .leading, spacing: Space.xxs) {
+                    HStack(alignment: .firstTextBaseline, spacing: Space.xs) { streakValue(streak) }
+                    streakBest(streak, atBest: atBest)
                 }
             }
         }
@@ -461,7 +490,11 @@ struct HomeView: View {
         }
         if earned > celebratedMilestone {
             celebratedMilestone = earned
-            withAnimation(reduceMotion ? nil : Motion.emphasis) { celebratingMilestone = earned }
+            // `celebrate`, not `emphasis`: a crossed milestone is the ONE place in this app where bounce is
+            // earned. `emphasis` is now critically damped (it was being used for four unrelated
+            // non-gesture jobs while carrying bounce 0.20), so this call site would otherwise have
+            // silently lost the overshoot that makes it read as a celebration.
+            withAnimation(Motion.gated(Motion.celebrate, reduceMotion)) { celebratingMilestone = earned }
         } else if earned < celebratedMilestone {
             celebratedMilestone = earned
         }
@@ -471,7 +504,7 @@ struct HomeView: View {
         Card(style: .hero, padding: Space.xl) {
             HStack(alignment: .center, spacing: Space.lg) {
                 VStack(alignment: .leading, spacing: Space.xs) {
-                    Text("\(thisWeekCount)").font(Typo.numberHero).foregroundStyle(BrandColor.textPrimary)
+                    Text("\(thisWeekCount)").font(Typo.numberHero).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     MicroLabel("Doses logged this week")
                 }
                 Spacer(minLength: 0)
@@ -481,9 +514,14 @@ struct HomeView: View {
     }
 
     private func heroStat(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.xxs) {
             MicroLabel(label)
+            // Same protection `streakStat` carries. `DoseDuePhrase` emits single words like
+            // "Tomorrow" with no break opportunity, so without a scale factor the only way to fit
+            // one in this column at large sizes is to break it mid-word.
             Text(value).font(Typo.statValue).foregroundStyle(BrandColor.textPrimary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.6)
         }
     }
 
@@ -634,6 +672,7 @@ struct HomeView: View {
 /// invite to connect a wearable or log a lab. Tap to open Labs & metrics; connecting Health
 /// lives in the menu.
 struct HomeHealthCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("weightInPounds") private var pounds = true
     // Same key HomeView gates on — setting it here removes the card from Home; menu → Connections
     // flips it back on.
@@ -713,7 +752,7 @@ struct HomeHealthCard: View {
                 Text(pounds ? "lb" : "kg")
                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
                 if let delta {
-                    HStack(spacing: 2) {
+                    HStack(spacing: Space.xxs) {
                         Image(systemName: delta < 0 ? "arrow.down" : "arrow.up")
                             .font(.system(size: 8, weight: .bold))
                         Text(String(format: pounds ? "%.0f" : "%.1f", abs(delta)))
@@ -751,7 +790,7 @@ struct HomeHealthCard: View {
                     Spacer()
                     Menu {
                         Button(role: .destructive) {
-                            withAnimation { hidden = true }
+                            withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) { hidden = true }
                         } label: { Label("Hide from Home", systemImage: "eye.slash") }
                     } label: {
                         Image(systemName: "ellipsis")
@@ -805,9 +844,14 @@ struct HomeHealthCard: View {
 
                             LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.md), GridItem(.flexible(), spacing: Space.md)], spacing: Space.md) {
                                 ForEach(metrics) { m in
-                                    VStack(alignment: .leading, spacing: 2) {
+                                    VStack(alignment: .leading, spacing: Space.xxs) {
                                         MicroLabel(m.label)
                                         Text(m.value).font(Typo.numberMD).foregroundStyle(BrandColor.textPrimary)
+                                            // ~158pt cells. "10,432 steps" or "182.4 lb" overflow at
+                                            // large sizes; LogView's identical stat shape already
+                                            // carries both modifiers, this one had neither.
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.6)
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 }

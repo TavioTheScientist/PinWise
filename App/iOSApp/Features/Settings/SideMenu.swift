@@ -4,6 +4,9 @@ import SwiftUI
 /// pans in from the left to ~85% width over a dimmed page. Hosts the account/config
 /// destinations that don't belong in the tab bar. Rendered at the root, above the tab bar.
 struct SideMenuDrawer: View {
+    // Icon column scales with its `.title3` glyph (20 → ~55pt). A hard 26pt column let the
+    // symbol overrun into the row label beside it.
+    @ScaledMetric(relativeTo: .title3) private var iconCol: CGFloat = 26
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var isOpen: Bool
     @State private var route: MenuRoute?
@@ -38,7 +41,7 @@ struct SideMenuDrawer: View {
                         // black scrim works AGAINST a bright panel and no ultraThin tint below
                         // ~0.9 holds textSecondary at 4.5:1 over dark content behind the drawer.
                         .background(BrandColor.background.opacity(scheme == .dark ? 0.7 : 0.92))
-                        .background(.ultraThinMaterial)
+                        .background { GlassMaterial() }
                         .overlay(alignment: .trailing) {
                             Rectangle().fill(BrandColor.stroke).frame(width: 0.5)
                         }
@@ -49,10 +52,13 @@ struct SideMenuDrawer: View {
                         // vestibular trigger it has — and it shipped ungated, against the rule `Motion`'s own
                         // doc comment states. The scrim already fades, so the whole drawer becomes one clean
                         // dissolve: gentler, not absent.
+                        .drawerDismiss(edge: .leading, width: width, isOpen: $isOpen)
                         .transition(reduceMotion ? .opacity : .move(edge: .leading))
                 }
             }
-            .animation(Motion.gated(Motion.drawer, reduceMotion), value: isOpen)
+            // Direction-aware: `isOpen` is already the new value, so opening uses `drawer` and
+            // closing the faster `drawerOut`. Same enter/exit timing is the checklist item.
+            .animation(Motion.gated(isOpen ? Motion.drawer : Motion.drawerOut, reduceMotion), value: isOpen)
         }
         .allowsHitTesting(isOpen)
         .sheet(item: $route) { $0.view }
@@ -72,7 +78,9 @@ struct SideMenuDrawer: View {
                         .frame(width: 40, height: 40)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                // `PressableRowStyle`, not `.plain`: these are full-width pressable ROWS, and 0.985 is the
+                // right amount at that width where a card's 0.97 would read as a lurch.
+                .buttonStyle(PressableRowStyle())
                 .accessibilityLabel("Close menu")
             }
             .padding(.top, topInset + Space.md)
@@ -86,7 +94,7 @@ struct SideMenuDrawer: View {
             } label: {
                 HStack(spacing: Space.md) {
                     ProfileAvatar(name: headerName, size: 44, photo: photos.image)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
                         Text(headerName.isEmpty ? "Set up your profile" : headerName)
                             .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                             .lineLimit(1)
@@ -101,7 +109,7 @@ struct SideMenuDrawer: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
             // Keep the account identity audible — VoiceOver users check guest vs signed-in here.
             .accessibilityLabel("Your profile — \(headerName.isEmpty ? "not set up" : headerName), \(auth.accountSubtitle)")
             .padding(.horizontal, Space.xl)
@@ -144,14 +152,14 @@ struct SideMenuDrawer: View {
     private func actionRow(_ icon: String, _ title: String, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: Space.lg) {
-                Image(systemName: icon).font(.title3).frame(width: 26).foregroundStyle(BrandColor.textSecondary)
+                Image(systemName: icon).font(.title3).frame(width: iconCol).foregroundStyle(BrandColor.textSecondary)
                 Text(title).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Spacer()
             }
             .padding(.vertical, Space.md)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableRowStyle())
         .accessibilityLabel(title)
     }
 
@@ -194,7 +202,7 @@ struct SideMenuDrawer: View {
                 .padding(.vertical, Space.xs)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
             .accessibilityLabel("\(handle) on \(asset.replacingOccurrences(of: "Social", with: ""))")
         }
     }
@@ -207,7 +215,7 @@ struct SideMenuDrawer: View {
             HStack(spacing: Space.lg) {
                 Image(systemName: icon)
                     .font(.title3)
-                    .frame(width: 26)
+                    .frame(width: iconCol)
                     .foregroundStyle(BrandColor.accentText)
                 Text(title)
                     .font(Typo.headline)
@@ -217,7 +225,7 @@ struct SideMenuDrawer: View {
             .padding(.vertical, Space.md)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableRowStyle())
         .accessibilityLabel(title)
     }
 }
@@ -258,6 +266,8 @@ struct MenuSheet<Content: View>: View {
 }
 
 struct HealthConnectionsView: View {
+    // Same reason as SideMenuDrawer's column: the glyph scales, so its column must.
+    @ScaledMetric(relativeTo: .title3) private var iconCol: CGFloat = 26
     @State private var health = HealthManager.shared
     // Mirror of HomeView's gate — the source of truth is the "hideHomeHealthCard" default.
     @AppStorage("hideHomeHealthCard") private var hideHomeHealthCard = false
@@ -269,7 +279,7 @@ struct HealthConnectionsView: View {
             HealthWidget()
             Card {
                 Toggle(isOn: Binding(get: { !hideHomeHealthCard }, set: { hideHomeHealthCard = !$0 })) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
                         Text("Show on Home").font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         Text("Keep the health card at the top of your Home tab.")
                             .font(.caption2).foregroundStyle(BrandColor.textSecondary)
@@ -301,8 +311,8 @@ struct HealthConnectionsView: View {
 
     private func sourceRow(_ name: String, _ icon: String, _ note: String, on: Bool = false) -> some View {
         HStack(alignment: .top, spacing: Space.md) {
-            Image(systemName: icon).font(.title3).frame(width: 26).foregroundStyle(BrandColor.accentText)
-            VStack(alignment: .leading, spacing: 2) {
+            Image(systemName: icon).font(.title3).frame(width: iconCol).foregroundStyle(BrandColor.accentText)
+            VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(name).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                 Text(note).font(.caption2).foregroundStyle(BrandColor.textSecondary)
             }
@@ -325,7 +335,7 @@ struct AboutView: View {
         MenuSheet(title: "About & Legal") {
             Card {
                 VStack(alignment: .leading, spacing: Space.sm) {
-                    Text("Staxyz").font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                    Text("Staxyz").font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     Text("The source of truth for peptides and dose tracking — transparent about where the evidence stands.")
                         .font(.caption).foregroundStyle(BrandColor.textSecondary)
                     HStack {
@@ -354,7 +364,7 @@ struct AboutView: View {
                 .background(BrandColor.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(BrandColor.stroke, lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
             .sheet(isPresented: $showTerms) { LegalDocumentView() }
         }
     }

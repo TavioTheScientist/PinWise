@@ -83,16 +83,35 @@ struct DoseLatenessTests {
         #expect(state(0.5) == .due)     // 30 min — still simply due
     }
 
-    @Test("past the due window it is late, and stays late to the end of the nudge window")
+    @Test("past the due window it is late, up to the 18-hour ceiling")
     func pastDueIsLate() {
         #expect(state(1.5) == .late)
-        #expect(state(35.9) == .late)
+        #expect(state(17.9) == .late)
+        // Was `state(35.9) == .late`, because a weekly protocol's nudge window is 36h. The flat
+        // 18-hour overdue window now caps every cadence: past 18h the app stops asking, whatever
+        // the schedule. The nudge window still shortens things for tighter cadences — it can only
+        // ever pull the boundary IN, never past the ceiling.
     }
 
-    @Test("past the nudge window it is missed — urgency stops here")
-    func pastWindowIsMissed() {
-        #expect(state(36.1) == .missed)
-        #expect(state(24 * 7) == .missed)
+    @Test("past 18 hours the dose has LAPSED — the app stops asking, on every cadence")
+    func pastWindowLapses() {
+        #expect(state(18.1) == .lapsed)
+        #expect(state(24 * 7) == .lapsed)
+        // The rule that matters: a WEEKLY protocol lapses at 18h even though its own nudge window
+        // is 36h. Checked because the first implementation evaluated the cadence window first and
+        // silently never lapsed a weekly dose at all.
+        #expect(!state(18.1).isActionable)
+        #expect(state(17.9).isActionable)
+    }
+
+    @Test("lapsing stops the nagging without touching adherence credit")
+    func lapseDoesNotChangeAttribution() {
+        // Two different questions, deliberately two different numbers. If these ever collapsed into
+        // one, a user who logged a dose the app had merely stopped ASKING about would silently lose
+        // the adherence credit their cadence entitles them to.
+        #expect(DosePolicy.long.attributionGraceDays == 2)
+        #expect(DosePolicy.short.attributionGraceDays == 0)
+        #expect(DoseLateness.overdueWindowHours == 18)
     }
 
     @Test("a daily schedule goes missed far sooner than a weekly one")

@@ -187,7 +187,17 @@ struct StatTile: View {
             MicroLabel(label)
             Text(value)
                 .font(compact ? Typo.statValue : (emphasized ? Typo.numberLG : Typo.numberMD))
+                // 21 of 22 display-type sites in the app apply this; StatTile was the one miss, so
+                // every emphasized 30pt stat rendered at body tracking.
+                .displayTracking()
                 .foregroundStyle(emphasized ? BrandColor.accentText : BrandColor.textPrimary)
+                // A 3-up strip gives each value ~101pt, and the whole premise of these strips is
+                // that the same fact sits in the same slot on every row. A date like "Aug 12"
+                // measures ~167pt at the largest size, so without this it breaks across two lines
+                // and the slots stop aligning — which is the one thing the layout exists to do.
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -428,7 +438,7 @@ struct FrostedTagChip: View {
             .padding(.vertical, Space.xs)
             .foregroundStyle(.white)
             .background(Color.black.opacity(0.6), in: Capsule())
-            .background(.ultraThinMaterial, in: Capsule())
+            .background { GlassMaterial().clipShape(Capsule()) }
     }
 }
 
@@ -544,14 +554,21 @@ struct SearchField: View {
 
 /// The standard reveal toggle: a circular magnifier that flips to an ✕ while the filter panel is open.
 struct SearchToggleButton: View {
+    // Circle and glyph scale together — a `.headline` symbol reaches ~53pt, which would escape a
+    // hard 40pt circle and its hairline rim. This is the shared filter trigger on News and
+    // Compounds, so the break would be visible on two screens.
+    @ScaledMetric(relativeTo: .headline) private var disc: CGFloat = 40
     let isActive: Bool
     let action: () -> Void
     var body: some View {
         Button(action: action) {
             Image(systemName: isActive ? "xmark" : "magnifyingglass")
+                // The glyph IS the state here, and it was hard-cutting. `.replace` makes the change
+                // legible without animating the chip around it.
+                .contentTransition(.symbolEffect(.replace))
                 .font(.headline.weight(.semibold))
                 .foregroundStyle(BrandColor.textPrimary)
-                .frame(width: 40, height: 40)
+                .frame(width: disc, height: disc)
                 .background(BrandColor.surfaceElevated, in: Circle())
                 .overlay(Circle().strokeBorder(BrandColor.stroke, lineWidth: 1))
         }
@@ -725,7 +742,8 @@ struct DisclosureSection<Content: View>: View {
             // remember either. It previously animated at 0.22 while its three callers each wrapped
             // the toggle in `withAnimation(.easeInOut(duration: 0.2))` — and the inner animation
             // WINS, so the duration written at the call site was never the duration that played.
-            .animation(Motion.gated(Motion.disclosure, reduceMotion), value: isExpanded)
+            .animation(Motion.gated(isExpanded ? Motion.disclosure : Motion.disclosureOut, reduceMotion),
+                       value: isExpanded)
         }
     }
 
@@ -767,6 +785,7 @@ struct DisclosureSection<Content: View>: View {
 /// together (~900ms). The hue IS the read — amber behind, blue on pace, green ahead — over
 /// an own-color track. Accessible (label + value); Reduce Motion skips the sweep entirely.
 struct AdherenceRing: View {
+    @ScaledMetric(relativeTo: .caption2) private var ringLabel: CGFloat = 8.5
     let fraction: Double
     var size: CGFloat = 88
 
@@ -807,7 +826,10 @@ struct AdherenceRing: View {
                     .contentTransition(.numericText(value: clamped))
                     .foregroundStyle(BrandColor.textPrimary)
                 Text("ADHERENCE")
-                    .font(.system(size: 8.5, weight: .semibold)).tracking(0.5)
+                    // Was a frozen 8.5pt — below Apple's 11pt floor and unreachable by anyone who
+                    // enlarges text, on the label of the app's hero instrument. `.caption2` is 11pt
+                    // and scales; the ring is fixed, so it is capped like `MicroLabel`.
+                    .font(.system(size: min(ringLabel, 13), weight: .semibold)).tracking(0.5)
                     .foregroundStyle(BrandColor.textSecondary)
             }
         }
@@ -818,12 +840,192 @@ struct AdherenceRing: View {
     }
 }
 
+extension View {
+    /// Tightens tracking for large display type. Pair with `Typo.screenTitle` / `title` / `numberXL` /
+    /// `numberLG` / `numberHero` — never with body or caption text, which wants the opposite sign.
+    func displayTracking() -> some View { modifier(DisplayTracking()) }
+}
+
+/// Tracking for large display type, scaled with the text so the em ratio holds.
+///
+/// Tracking is fundamentally a RATIO expressed in points. Before the ramp was text-style-backed the
+/// display fonts were frozen, so a fixed −0.7pt was a fixed −0.02em and that was correct. Now that
+/// `screenTitle`/`title` grow with Dynamic Type, a fixed point value would loosen as the type grew —
+/// −0.02em at the default size, but roughly −0.013em at accessibility sizes — which is the "one value
+/// for every size is wrong somewhere" fault this modifier exists to avoid, re-appearing at exactly the
+/// sizes where tightening matters most. `@ScaledMetric` scales the base with the font, holding the ratio.
+private struct DisplayTracking: ViewModifier {
+    @ScaledMetric(relativeTo: .largeTitle) private var amount: CGFloat = Typo.displayTracking
+    func body(content: Content) -> some View { content.tracking(amount) }
+}
+
+/// `.ultraThinMaterial`, unless the user has asked for less transparency — then an opaque surface.
+///
+/// Apple lists Reduce Transparency alongside Reduce Motion as an INDEPENDENT accessibility signal, and
+/// the app read it nowhere: all five glass surfaces (the floating tab bar, chips, both drawers, and the
+/// reference-sheet canvas) blurred regardless. For someone who turned it on because translucency makes
+/// text hard to resolve, a blurred backdrop under 11pt tracked caps is exactly the problem they were
+/// trying to switch off.
+///
+/// Returning a `ShapeStyle` rather than wrapping the view keeps every call site a one-word change and
+/// leaves the shape (`Capsule`, rect, whatever) in the caller's hands.
+struct GlassMaterial: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    var body: some View {
+        if reduceTransparency { BrandColor.surfaceElevated } else { Color.clear.background(.ultraThinMaterial) }
+    }
+}
+
+/// Reference-sheet chrome. A modifier rather than a plain `func` because the tint must read
+/// `colorScheme`, and an `extension View` method cannot hold `@Environment`.
+private struct GlassSheet: ViewModifier {
+    let detents: Set<PresentationDetent>
+    @Environment(\.colorScheme) private var scheme
+
+    func body(content: Content) -> some View {
+        content
+            .presentationBackground {
+                // Scheme-split, matching the side-menu drawer — the only place in the app that
+                // actually MEASURED this. Its note: light mode needs 0.92, because there the black
+                // scrim works AGAINST a bright panel and no ultraThin tint below ~0.9 holds
+                // `textSecondary` at 4.5:1 over dark content behind it. This sheet shipped 0.5 and
+                // renders 12pt secondary prose on it, so the two disagreed and the drawer was right.
+                BrandColor.background.opacity(scheme == .dark ? 0.7 : 0.92)
+                    .background { GlassMaterial() }
+            }
+            .presentationDetents(detents)
+            .presentationDragIndicator(.visible)
+    }
+}
+
+extension View {
+    /// The app's REFERENCE-sheet chrome: a glass canvas that lets the page beneath show through, with
+    /// a drag indicator and medium/large detents.
+    ///
+    /// Exists because this exact recipe was copy-pasted in two files — comment and all — while a third
+    /// sheet set detents but no background, and the remaining ~30 took iOS defaults. The app therefore
+    /// had three sheet looks assigned by whichever file the author happened to be in. Sheet chrome is
+    /// the frame around every Settings and reference screen, so an accidental register is visible
+    /// constantly.
+    ///
+    /// **Use for REFERENCE sheets** — things you read and dismiss (glossaries, explainers, legal). Task
+    /// sheets that you fill in (the vial builder, the protocol builder, sign-in) stay opaque and
+    /// `.large`: a form wants a stable, undistracting canvas, and a half-height detent invites a
+    /// dismissal mid-entry.
+    func glassSheet(detents: Set<PresentationDetent> = [.medium, .large]) -> some View {
+        modifier(GlassSheet(detents: detents))
+    }
+}
+
+/// Swipe-to-dismiss for an edge-anchored drawer.
+///
+/// **This closes the one Apple-principle gap a token set cannot.** *Designing Fluid Interfaces* calls
+/// interruptibility the single most important principle, and both drawers were non-interruptible: they
+/// could only be dismissed by a scrim tap or the ✕, so a user who started the universal iOS reflex —
+/// swiping a left-edge drawer away — got nothing at all. A panel already in flight also could not be
+/// caught and reversed.
+///
+/// Three behaviours, each doing a specific job:
+/// - **1:1 tracking in the closing direction.** The panel goes exactly where the finger goes. Anything
+///   less breaks the illusion that you are moving the thing itself.
+/// - **Rubber-banding the wrong way** (12% of travel), rather than a hard stop. A boundary that simply
+///   refuses reads as broken; one that resists reads as physical.
+/// - **Velocity dismissal, not just distance.** A quick flick dismisses even when short, via SwiftUI's
+///   `predictedEndTranslation` — which is the system's own momentum projection, and the right native
+///   equivalent of "compute velocity and dismiss above a threshold". Reusing Apple's projection means
+///   the drawer agrees with every other iOS gesture instead of inventing its own feel.
+///
+/// Under Reduce Motion the gesture stays fully active — it is direct manipulation, not decoration, and
+/// removing it would take away a navigation affordance rather than reduce vestibular load.
+struct DrawerDismiss: ViewModifier {
+    let edge: HorizontalEdge
+    let width: CGFloat
+    @Binding var isOpen: Bool
+    @State private var drag: CGFloat = 0
+
+    /// Fraction of panel width that commits a dismissal on distance alone.
+    private let commitFraction: CGFloat = 0.3
+    /// Fraction the projected endpoint must pass for a flick to commit.
+    private let flickFraction: CGFloat = 0.55
+
+    private func closingComponent(_ raw: CGFloat) -> CGFloat {
+        edge == .leading ? min(raw, 0) : max(raw, 0)
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .offset(x: drag)
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 10)
+                    .onChanged { value in
+                        let raw = value.translation.width
+                        let closing = closingComponent(raw)
+                        // Whatever is left over is travel in the OPENING direction, which has nowhere
+                        // to go — resist it instead of allowing the panel to over-extend.
+                        let overshoot = raw - closing
+                        drag = closing + overshoot * 0.12
+                    }
+                    .onEnded { value in
+                        let closed = closingComponent(value.translation.width)
+                        let projected = closingComponent(value.predictedEndTranslation.width)
+                        let committed = abs(closed) > width * commitFraction
+                            || abs(projected) > width * flickFraction
+                        if committed {
+                            isOpen = false
+                        } else {
+                            // Snap back on the drawer's own spring so an abandoned gesture settles the
+                            // same way an opening one does.
+                            withAnimation(Motion.drawer) { drag = 0 }
+                        }
+                    }
+            )
+            // Reset when the drawer is dismissed by ANY route (drag, scrim tap, ✕), so the next open
+            // does not start pre-offset.
+            .onChange(of: isOpen) { _, open in if !open { drag = 0 } }
+    }
+}
+
+extension View {
+    /// Makes an edge-anchored drawer panel swipe-dismissable. Apply to the PANEL, not the container.
+    func drawerDismiss(edge: HorizontalEdge, width: CGFloat, isOpen: Binding<Bool>) -> some View {
+        modifier(DrawerDismiss(edge: edge, width: width, isOpen: isOpen))
+    }
+}
+
+/// Remembers which entrances have already played in THIS PROCESS.
+///
+/// The reason this exists: `RootTabView` selects its screen with a `switch` inside a `Group`, which
+/// DESTROYS the outgoing screen. `Entrance` keyed its state off a per-instance `@State` plus
+/// `.onAppear`, so returning to a tab rebuilt the view and replayed the whole reveal — on Home that
+/// is 0.51s (4 × 40ms stagger + 350ms) before the dashboard is readable, paid dozens of times a day,
+/// on data the user opened Home specifically to read. It also inverted the frequency rule the rest of
+/// the app follows, and contradicted a decision this codebase had already made out loud: `AdherenceRing`
+/// refuses to sweep in ("renders at its value immediately") while the `.entrance(1)` wrapper around its
+/// own card faded and lifted it anyway.
+///
+/// A first launch is a first launch. A tab switch is not.
+@MainActor
+private final class EntranceLedger {
+    static let shared = EntranceLedger()
+    private var played: Set<String> = []
+    /// True only the first time this key is claimed in this process.
+    func claim(_ key: String) -> Bool { played.insert(key).inserted }
+}
+
 /// One-shot staggered entrance for list/section arrivals: fade + 12pt rise, delayed by
 /// `index` × `Motion.stagger`. Apply from a ForEach (or ordered siblings) as `.entrance(i)`.
 /// Reduce Motion collapses it to a quick opacity-only fade with no offset or stagger.
+///
+/// **Plays once per process per (group, index).** On any later appearance the content arrives at rest —
+/// note `shown = true` is set OUTSIDE any animation there, so there is no fade to see rather than a
+/// fast one. Pass `group` to keep separate screens from sharing a ledger key.
 struct Entrance: ViewModifier {
     let index: Int
+    let group: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // A literal initialiser, deliberately: per CLAUDE.md, `@State private var x = <expr>` re-evaluates
+    // `<expr>` on every re-init of the struct, so the ledger claim must NOT live here — it would fire
+    // repeatedly and the "once" guarantee would be a lie.
     @State private var shown = false
 
     func body(content: Content) -> some View {
@@ -832,6 +1034,10 @@ struct Entrance: ViewModifier {
             .offset(y: shown || reduceMotion ? 0 : 12)
             .onAppear {
                 guard !shown else { return }
+                guard EntranceLedger.shared.claim("\(group)#\(index)") else {
+                    shown = true            // already played this launch — arrive at rest
+                    return
+                }
                 let anim = reduceMotion
                     ? Animation.easeOut(duration: 0.2)
                     : Motion.entrance.delay(Double(index) * Motion.stagger)
@@ -841,9 +1047,10 @@ struct Entrance: ViewModifier {
 }
 
 extension View {
-    /// Staggered entrance reveal — `index` is the view's position in its arriving group.
-    func entrance(_ index: Int) -> some View {
-        modifier(Entrance(index: index))
+    /// Staggered entrance reveal — `index` is the view's position in its arriving group, `group`
+    /// names the screen so two screens' entrances don't share a ledger key. Plays ONCE per launch.
+    func entrance(_ index: Int, group: String = "default") -> some View {
+        modifier(Entrance(index: index, group: group))
     }
 }
 

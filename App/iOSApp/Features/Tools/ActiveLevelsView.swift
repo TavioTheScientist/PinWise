@@ -18,6 +18,7 @@ import PeptideKit
 /// "Right now" gauge answers "what's high/low" at a glance; tap any compound for exact numbers. Compounds
 /// with no known half-life are named as omitted, not dropped. Educational estimate — not dosing advice.
 struct ActiveLevelsView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<SavedProtocol> { $0.isActive })
     private var activeProtocols: [SavedProtocol]
     @Query private var loggedDoses: [LoggedDose]
@@ -128,7 +129,7 @@ struct ActiveLevelsView: View {
         Card {
             HStack(alignment: .top, spacing: Space.sm) {
                 Image(systemName: "waveform.path.ecg").font(.title3).foregroundStyle(BrandColor.accentText)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     MicroLabel("What's next")
                     Text(briefing(models, now: now))
                         .font(.title3.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
@@ -186,7 +187,7 @@ struct ActiveLevelsView: View {
                 ForEach(models) { gaugeRow($0).transition(.opacity) }
             }
             // Logging a dose (or a compound clearing) fades the row in/out rather than hard-cutting.
-            .animation(.easeInOut(duration: 0.35), value: models.map(\.id))
+            .animation(Motion.gated(Motion.emphasis, reduceMotion), value: models.map(\.id))
         }
     }
 
@@ -196,10 +197,14 @@ struct ActiveLevelsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: Space.sm) {
                     Circle().fill(m.color).frame(width: 9, height: 9)
-                    Text(m.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary).lineLimit(1)
-                    Spacer()
+                    // The compound NAME is the identity; the status is an adjective. Without a
+                    // priority the two flexible Texts fought and the name lost to "Coming down".
+                    Text(m.name).font(.subheadline.weight(.medium)).foregroundStyle(BrandColor.textPrimary)
+                        .lineLimit(1).minimumScaleFactor(0.8).layoutPriority(1)
+                    Spacer(minLength: Space.sm)
                     Text(m.status.label).font(.caption.weight(.semibold))
                         .foregroundStyle(m.status.isElevated ? m.color : BrandColor.textSecondary)
+                        .lineLimit(1)
                     Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                 }
                 GeometryReader { geo in
@@ -216,7 +221,7 @@ struct ActiveLevelsView: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableRowStyle())   // gaugeRow — a full-width card-shaped row
     }
 
     // MARK: - Timeline (range selector + primary/secondary split)
@@ -364,7 +369,7 @@ struct ActiveLevelsView: View {
                             }
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PressableRowStyle())   // legend row toggle
                     }
                 }
             }
@@ -591,7 +596,10 @@ struct ActiveLevelsView: View {
                             Circle().fill(series.color).frame(width: 10, height: 10)
                             Text(series.status.label).font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                             Spacer()
-                            Text("\(fmt(onBoardNow)) \(unitLabel) on board")
+                            // NON-BREAKING space between the figure and its unit: with a plain
+                            // space, "1250" could land on one line and "mcg" on the next, on the
+                            // screen whose entire job is "how much is in you right now".
+                            Text("\(fmt(onBoardNow))\u{00A0}\(unitLabel) on board")
                                 .font(.subheadline.weight(.semibold)).foregroundStyle(series.color)
                         }
                         Text(series.isLong ? "Long-acting compound." : "Short-acting compound.")

@@ -7,8 +7,25 @@ import PeptideKit   // TrialWindow.trialDays — the trial length is stated once
 /// inline pickers and toggles. Presented as a sheet from the side menu.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    /// Read so the Membership row can state the REAL entitlement. It previously hardcoded
+    /// "Free trial", which meant a paying subscriber opened Settings and was told they were on a
+    /// trial — a billing surface asserting something false about the user's own account, and the
+    /// one place they would go to check. `MembershipView` behind it always read this correctly;
+    /// only the row lied.
+    @State private var subsState = SubscriptionManager.shared
 
     // Complex, self-contained flows stay modal sheets; simple option screens push as subpages.
+    /// The Membership row's trailing value. Derived from the same `entitlement` the sheet switches
+    /// on, so the row and the screen it opens can never disagree. Day count included on the trial
+    /// branch because "14 days left" answers the question the row is asked; a bare "Trial" does not.
+    private var membershipRowValue: String {
+        switch subsState.entitlement {
+        case .pro: return "Member"
+        case .trial(let days): return days == 1 ? "1 day left" : "\(days) days left"
+        case .expired: return "Expired"
+        }
+    }
+
     @State private var showMembership = false
     @State private var showConnections = false
     @State private var showLegal = false
@@ -27,7 +44,8 @@ struct SettingsView: View {
                     // `tint:` survives so a genuinely semantic row (a destructive "Delete
                     // account") can still carry `danger` — it is not a decorative slot.
                     section("Account") {
-                        sheetRow("Membership", icon: "creditcard.fill", tint: BrandColor.textSecondary, value: "Free trial") { showMembership = true }
+                        sheetRow("Membership", icon: "creditcard.fill", tint: BrandColor.textSecondary,
+                                 value: membershipRowValue) { showMembership = true }
                     }
 
                     section("Preferences") {
@@ -79,19 +97,25 @@ struct SettingsView: View {
     private func pushRow<Dest: View>(_ title: String, icon: String, tint: Color, value: String? = nil,
                                      @ViewBuilder dest: () -> Dest) -> some View {
         NavigationLink { dest() } label: { SettingsRow(title: title, icon: icon, tint: tint, value: value) }
-            .buttonStyle(.plain)
+            // `PressableRowStyle`, not `.plain`: these are full-width pressable ROWS, and 0.985 is the
+            // right amount at that width where a card's 0.97 would read as a lurch.
+            .buttonStyle(PressableRowStyle())
     }
 
     private func sheetRow(_ title: String, icon: String, tint: Color, value: String? = nil,
                           action: @escaping () -> Void) -> some View {
         Button(action: action) { SettingsRow(title: title, icon: icon, tint: tint, value: value) }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
     }
 }
 
 /// One settings row: a colored icon tile + label + optional value + chevron. The tile register
 /// matches the Tools cards and iOS Settings, so the list reads as considered, not utilitarian.
 private struct SettingsRow: View {
+    // The tile is a CONTAINER for a scaling glyph, so it has to scale too. A `.callout` symbol
+    // reaches ~51pt at the largest accessibility size; in a hard 30pt frame it simply draws
+    // outside it (frames do not clip), colliding with the title beside it.
+    @ScaledMetric(relativeTo: .callout) private var iconTile: CGFloat = 30
     let title: String
     let icon: String
     var tint: Color = BrandColor.accentText
@@ -102,12 +126,17 @@ private struct SettingsRow: View {
             Image(systemName: icon)
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(tint)
-                .frame(width: 30, height: 30)
+                .frame(width: iconTile, height: iconTile)
                 .background(tint.opacity(0.16), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            // The title carries the wayfinding ("Apple Health & devices"), so it must be the last
+            // thing to give way. Both Texts were flexible with no priority, which meant the
+            // NAVIGATION LABEL truncated rather than just its value.
             Text(title).font(Typo.body).foregroundStyle(BrandColor.textPrimary)
+                .layoutPriority(1)
             Spacer(minLength: Space.sm)
             if let value {
-                Text(value).font(.caption).foregroundStyle(BrandColor.textSecondary).lineLimit(1)
+                Text(value).font(.caption).foregroundStyle(BrandColor.textSecondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
             Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
         }
@@ -141,7 +170,7 @@ private struct NotificationsSettingsView: View {
                         }
                         Divider().overlay(BrandColor.stroke)
                         Toggle(isOn: $showCompoundNames) {
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: Space.xxs) {
                                 Text("Show compound names").font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                 Text("Off keeps doses private — reminders just say “Dose due now.”")
                                     .font(.caption2).foregroundStyle(BrandColor.textSecondary)
@@ -160,7 +189,7 @@ private struct NotificationsSettingsView: View {
                     Label("Open iOS notification settings", systemImage: "bell.badge")
                         .font(.footnote.weight(.semibold)).foregroundStyle(BrandColor.accentText)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableRowStyle())
             }
             .padding(Space.lg)
         }
@@ -220,7 +249,7 @@ private struct PrivacySecuritySettingsView: View {
                     VStack(alignment: .leading, spacing: Space.md) {
                         if BiometricLock.isAvailable {
                             Toggle(isOn: faceIDBinding) {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text("Unlock with \(BiometricLock.biometryName)")
                                         .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                     Text("Require \(BiometricLock.biometryName) each time you open Staxyz. Off by default.")
@@ -232,7 +261,7 @@ private struct PrivacySecuritySettingsView: View {
                             Divider().overlay(BrandColor.stroke)
                         }
                         Toggle(isOn: $shareHealthWithNatt) {
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: Space.xxs) {
                                 Text("Share Apple Health with Natt")
                                     .font(Typo.body).foregroundStyle(BrandColor.textPrimary)
                                 Text("Let Natt use your Apple Health metrics — weight, heart rate, HRV, sleep, steps — to personalize answers. You agree to this when you start using Natt; turn it off anytime.")
@@ -294,7 +323,17 @@ private struct AboutSettingsView: View {
         return "\(v) (\(b))"
     }
     private var systemVersion: String { "iOS \(UIDevice.current.systemVersion)" }
-    private var deviceModel: String { UIDevice.current.model }
+    /// `UIDevice.current.model` returns the literal string "iPhone" on every iPhone ever made, so
+    /// the row read `Device — iPhone` and carried exactly zero information while presenting itself
+    /// as provenance. The machine identifier ("iPhone17,1") is what actually identifies the hardware.
+    private var deviceModel: String {
+        var sysinfo = utsname()
+        uname(&sysinfo)
+        let id = withUnsafeBytes(of: &sysinfo.machine) { raw in
+            raw.prefix { $0 != 0 }.map { String(UnicodeScalar(UInt8($0))) }.joined()
+        }
+        return id.isEmpty ? UIDevice.current.model : id
+    }
 
     private func infoRow(_ key: String, _ value: String) -> some View {
         HStack {
@@ -350,7 +389,7 @@ struct MembershipView: View {
                     .foregroundStyle(BrandColor.accentText)
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressableRowStyle())
             .disabled(subs.isWorking)
         }
         .task { await subs.load() }
@@ -380,7 +419,7 @@ struct MembershipView: View {
                 // billing countdown would say something about the user that isn't true.
                 TrialWindowStrip(daysLeft: daysLeft)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(daysLeft == 0
                          ? "Your free trial has ended."
                          : "\(daysLeft) \(daysLeft == 1 ? "day" : "days") left in your free trial")

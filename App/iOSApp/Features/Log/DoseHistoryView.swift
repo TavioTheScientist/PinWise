@@ -53,7 +53,7 @@ struct DoseHistoryView: View {
         }()
         return Card(style: .flat) {
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(vial?.isBlend == true ? vial!.apiNames.joined(separator: " + ") : entry.compoundName)
                         .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                     // The lot rides on the SECONDARY line, appended after the site: this is the

@@ -84,13 +84,37 @@ public enum DoseLateness: Sendable, Equatable {
     /// Past due but still worth acting on: one follow-up nudge belongs here, and a log made now is
     /// still "this dose, late".
     case late
-    /// Past the nudge window. Stop pushing — show it in-app and let the user log or skip it.
+    /// Past the nudge window but still inside the 18-hour actionable window: show it in-app, let the
+    /// user log it late, but stop pushing notifications.
     case missed
+    /// **Past the 18-hour window — the dose has lapsed.** It is no longer a prompt: no alert on the
+    /// protocol card, no nudge, no decision to make. It remains in history and remains loggable from
+    /// there. This case exists so "we stopped asking" is a state the code can name, rather than an
+    /// absence that each surface has to infer for itself.
+    case lapsed
 
     /// Minutes after the scheduled time during which the dose reads simply as `due` rather than
     /// `late`. Matches the ballpark of Apple Health's follow-up reminder (~30 min) — long enough
     /// that someone dosing on schedule is never told they are behind.
     public static let dueWindowMinutes = 60
+
+    /// **How long a missed dose stays actionable: 18 hours past its scheduled time.**
+    ///
+    /// Inside this window the dose is OVERDUE — the card says so, and the user may still log it
+    /// late. Outside it the dose has LAPSED: it stops being a prompt, the card drops the alert, and
+    /// it survives only as history.
+    ///
+    /// Flat rather than cadence-derived, which is a deliberate departure from `lateWindowHours`
+    /// (6h daily / 12h medium / 36h weekly). The window answers a question about the USER — how long
+    /// is it still reasonable to ask them to act — and that does not change with the compound. The
+    /// pharmacology question is separate and still cadence-derived; see `attributionGraceDays`.
+    ///
+    /// **This is NOT the adherence rule, and conflating the two would be a real bug.** A lapsed dose
+    /// can still be logged from the history surfaces and can still COUNT, because
+    /// `attributionGraceDays` decides credit and remains per-cadence (a weekly GLP-1 keeps its
+    /// published 2-day catch-up). The 18-hour window governs only whether the app is still asking.
+    /// Stopping the nagging must not silently reduce anyone's adherence figure.
+    public static let overdueWindowHours = 18
 
     public static func state(scheduledAt: Date, now: Date, policy: DosePolicy) -> DoseLateness {
         // An as-needed protocol has no slot, so it can never be late.
@@ -98,8 +122,26 @@ public enum DoseLateness: Sendable, Equatable {
 
         let elapsed = now.timeIntervalSince(scheduledAt)
         if elapsed < 0 { return .upcoming }
+        // THE 18-HOUR CEILING IS CHECKED FIRST, and that ordering is the whole rule.
+        //
+        // A weekly protocol's `lateWindowHours` is 36 — longer than the window. Tested after the
+        // late check, an 18.1-hour-old weekly dose returned `.late` and never reached the lapse
+        // branch, so the flat window did nothing for exactly the cadence it matters most for. (The
+        // pk-verify check for this failed on the first implementation; the comment claimed a
+        // behaviour the code did not have.) Evaluated first, 18h is an absolute ceiling that no
+        // cadence can extend.
+        if elapsed >= Double(overdueWindowHours) * 3600 { return .lapsed }
         if elapsed < Double(dueWindowMinutes) * 60 { return .due }
         if elapsed < Double(policy.lateWindowHours) * 3600 { return .late }
         return .missed
+    }
+
+    /// True while the dose is still worth putting in front of the user — `.due`, `.late`, or
+    /// `.missed`. The single predicate every surface should ask, instead of re-deriving the window.
+    public var isActionable: Bool {
+        switch self {
+        case .due, .late, .missed: return true
+        case .upcoming, .lapsed: return false
+        }
     }
 }

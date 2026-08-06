@@ -19,7 +19,7 @@ struct EmailSignInView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     Text(codeSent ? "Enter your code" : "Sign in with email")
-                        .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                        .font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     Text(codeSent
                          ? "We emailed a 6-digit code to \(email). It may take a moment to arrive."
                          : "We'll email you a one-time code. No password needed.")

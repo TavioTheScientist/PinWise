@@ -109,9 +109,24 @@ struct ProtocolPresentation {
 
         // Names the dose that was actually missed — the useful half of "Overdue". Rendered in
         // `.full` only; the dense row has one slot and spends it on the status word.
-        overdueNote = overdueSince.map { missed in
+        //
+        // **GATED ON THE STATUS, not merely on `overdueSince`.** This note used to derive straight
+        // from the date, independently of `displayStatus`, which meant a card could show a green
+        // "LOGGED TODAY" and a red "Missed Sat, Aug 1" at the same time. Both facts were true, and
+        // together they told the user nothing: am I current, or am I behind?
+        //
+        // `displayStatus` had ALREADY decided that question — its precedence puts `doneToday` above
+        // `overdue` precisely because "logging today means you are current again, and leading with
+        // Overdue after the user has just dosed would be both wrong and discouraging". The word
+        // obeyed that ruling and the note ignored it. One derivation, one answer: the note now
+        // appears only when the status it belongs to is the one being shown.
+        //
+        // Nothing is hidden by this. The missed dose is still counted where it belongs — in the
+        // adherence ring, which is the surface that reports history. The card answers "what do I do
+        // now", and after logging today the honest answer is "nothing".
+        overdueNote = status == .overdue ? overdueSince.map { missed in
             "Missed \(missed.formatted(.dateTime.weekday(.abbreviated).month().day()))"
-        }
+        } : nil
 
         // The next dose date — gated on `isActive`. A paused protocol has no next pin at all;
         // computing one from its schedule (which is what every previous surface did) made a
@@ -332,13 +347,18 @@ struct ProtocolSummary: View {
     /// either: `contents` names every compound, which is strictly more informative than a
     /// five-character "Blend" badge and costs no badge budget at all.
     private var rowBody: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.xxs) {
             HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
                 StatusDot(color: presentation.statusColor, glows: presentation.dotGlows)
                 Text(presentation.name)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(BrandColor.textPrimary)
-                    .lineLimit(1)
+                    // Two lines and a scale floor, because a truncated compound name is worse than
+                    // a small one: "BPC-157 recovery" clipped to "BPC-15…" does not read as
+                    // truncated — it reads as a different, plausible identifier. Same reasoning as
+                    // the cadence label always naming its weekday.
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
                 Spacer(minLength: Space.sm)
                 Text(presentation.rowFact)
                     .font(Typo.caption.weight(.semibold))
@@ -394,8 +414,12 @@ private struct ProtocolStat: View {
             Text(value)
                 .font(Typo.statValue)
                 .foregroundStyle(tint)
-                .lineLimit(compresses ? 2 : nil)
-                .minimumScaleFactor(compresses ? 0.8 : 1)
+                // The non-`compresses` branch used to DISABLE both protections (`nil` / `1`), so a
+                // due date like "Tomorrow," ran to five ragged lines and still truncated mid-token
+                // in a 158pt column. Nothing in the app benefits from unlimited lines here; the
+                // flag now only chooses how AGGRESSIVELY a slot compresses, never whether it may.
+                .lineLimit(compresses ? 2 : 3)
+                .minimumScaleFactor(compresses ? 0.8 : 0.85)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

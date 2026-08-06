@@ -337,9 +337,29 @@ extension SavedProtocol {
         // the next one belongs to the next day. A weekly GLP-1 gets the published 2-day catch-up.
         let grace = graceDays ?? dosePolicy.attributionGraceDays
         let resolved = ownedLogDates(in: logs) + ownedSkipSlots(in: skips)
-        return AdherenceCalculator.lastOverdue(schedule: schedule, start: startDate, asOf: now,
-                                               logDates: resolved,
-                                               graceDays: grace, calendar: calendar)
+        guard let missed = AdherenceCalculator.lastOverdue(schedule: schedule, start: startDate, asOf: now,
+                                                           logDates: resolved,
+                                                           graceDays: grace, calendar: calendar)
+        else { return nil }
+
+        // **THE 18-HOUR WINDOW.** A missed slot is only reported as OVERDUE while it is still
+        // actionable. Past 18 hours from its scheduled time the dose has LAPSED: the card drops the
+        // alert entirely and the slot survives as history. Without this the app kept a red warning
+        // up indefinitely — a permanent alarm, which is how a user learns to ignore alarms.
+        //
+        // Measured from the slot's scheduled TIME, not the start of its day, so "18 hours" means
+        // what it says. When reminders are off the app has no user-stated time of day, so it falls
+        // back to the stored reminder hour (default 09:00) — a default, not an assertion, and noted
+        // here because it is the one place this derivation is softer than it looks.
+        guard let slotTime = scheduledTime(on: missed, calendar: calendar) else { return missed }
+        return now.timeIntervalSince(slotTime) < Double(DoseLateness.overdueWindowHours) * 3600
+            ? missed : nil
+    }
+
+    /// The scheduled instant of a dose slot: the slot's DAY at the protocol's reminder time.
+    func scheduledTime(on day: Date, calendar: Calendar = .current) -> Date? {
+        calendar.date(bySettingHour: reminderHour, minute: reminderMinute, second: 0,
+                      of: calendar.startOfDay(for: day))
     }
 
     /// The live lateness of TODAY's scheduled dose — the state a card or nudge acts on.
@@ -453,12 +473,33 @@ extension SavedProtocol {
             let ordered = SavedProtocol.mondayFirst(weekdays)
             if ordered.count == 7 { return "Daily" }              // every day selected
             if ordered.isEmpty { return "Weekly" }
-            // A single weekday reads as "Weekly", not as the day's name — because every surface that
-            // shows this cadence ALSO shows the next dose, which is that same weekday. "Mon ·
-            // Semaglutide … Mon" printed the same word twice on one row and read as an oversight.
-            // "Weekly" is strictly more informative here: it names the pattern, the right-hand column
-            // names the day, and together they say something neither says alone.
-            if ordered.count == 1 { return "Weekly" }
+            // A single weekday names THE DAY: "Every Mon", not a bare "Weekly".
+            //
+            // This previously returned "Weekly", on the reasoning that every surface showing the
+            // cadence also shows the next dose — so naming the day twice read as an oversight. That
+            // premise was wrong, and the cost of being wrong fell entirely on the user:
+            //
+            //  1. The next-dose column is not the same fact. It is a DATE, and it is absent or
+            //     unrelated whenever the protocol is paused, inactive, or overdue — exactly the states
+            //     where "which day is this supposed to be?" is the question being asked.
+            //  2. "Weekly" alone cannot answer the first question a user has about a weekly protocol.
+            //     Six of seven possible answers are wrong and the label does not say which.
+            //  3. It silently broke the CSV EXPORT, which shares this function and has no second
+            //     column to lean on: a weekly protocol exported as "Weekly" with the weekday
+            //     unrecoverable from the file.
+            //
+            // A rule and an instance are different facts and may sit side by side: "Every Mon" says
+            // what the protocol IS, the pin says when the next one falls. Deleting information to
+            // resolve a visual repetition is the wrong trade — the repetition was cosmetic, the
+            // missing weekday was not.
+            //
+            // The export keeps the compact strip ("M"), unchanged from before this regression, so a
+            // parser sees one grammar and the day is always present.
+            if ordered.count == 1 {
+                return spellOutDays
+                    ? "Every \(SavedProtocol.mediumWeekdayLabel(ordered[0]))"
+                    : SavedProtocol.shortWeekdayLabel(ordered[0])
+            }
             let spelled = spellOutDays && ordered.count <= SavedProtocol.spelledCadenceDayLimit
             return spelled
                 ? ordered.map(SavedProtocol.mediumWeekdayLabel).joined(separator: ", ")

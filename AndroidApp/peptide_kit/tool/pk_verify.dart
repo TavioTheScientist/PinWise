@@ -2203,6 +2203,73 @@ void main() {
     );
   }
 
+  // ── The 18-hour overdue window
+  section('Overdue window (18h, then lapsed)');
+  {
+    const weekly =
+        DosePolicy.long; // lateWindowHours 36, attributionGraceDays 2
+    const daily =
+        DosePolicy.short; // lateWindowHours 6,  attributionGraceDays 0
+    final slot = DateTime.fromMillisecondsSinceEpoch(
+      1800000000 * 1000,
+      isUtc: true,
+    );
+    DateTime at(double hours) =>
+        slot.add(Duration(microseconds: (hours * 3600 * 1e6).round()));
+    DoseLateness st(double h, DosePolicy p) =>
+        DoseLateness.state(scheduledAt: slot, now: at(h), policy: p);
+
+    check(
+      DoseLateness.overdueWindowHours == 18,
+      'the window is 18 hours, stated once',
+    );
+
+    check(
+      st(-1, weekly) == DoseLateness.upcoming,
+      'before the slot ⇒ upcoming',
+    );
+    check(
+      st(0.5, weekly) == DoseLateness.due,
+      'inside the 60-minute due window ⇒ due, never \'behind\'',
+    );
+    check(
+      st(5, weekly) == DoseLateness.late,
+      'past due, inside the nudge window ⇒ late',
+    );
+
+    check(
+      st(17.9, weekly).isActionable,
+      '17.9h after a WEEKLY slot ⇒ still actionable (log-late is still offered)',
+    );
+    check(
+      st(18.1, weekly) == DoseLateness.lapsed,
+      '18.1h after a weekly slot ⇒ lapsed, even though lateWindowHours is 36',
+    );
+    check(
+      st(17.9, daily).isActionable,
+      '17.9h after a DAILY slot ⇒ still actionable',
+    );
+    check(
+      st(18.1, daily) == DoseLateness.lapsed,
+      '18.1h after a daily slot ⇒ lapsed',
+    );
+
+    check(
+      !DoseLateness.lapsed.isActionable && !DoseLateness.upcoming.isActionable,
+      'only due/late/missed are actionable — lapsed and upcoming are not',
+    );
+
+    check(
+      DosePolicy.long.attributionGraceDays == 2 &&
+          DosePolicy.short.attributionGraceDays == 0,
+      'attribution grace stays PER-CADENCE and is untouched by the 18h window',
+    );
+    check(
+      DosePolicy.asNeeded.lateWindowHours == 0,
+      'as-needed has no slot, so it can never lapse',
+    );
+  }
+
   // ── The port is COMPLETE: all 27 sections, 273 checks, matching `swift run pk-verify` section
   // for section and check for check. If the Swift grows a check, port it here in the same place.
 

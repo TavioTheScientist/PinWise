@@ -243,15 +243,36 @@ enum ChartPalette {
 /// Type ramp — system font (SF), monospaced figures. `.black` is reserved for the number
 /// ramp (the number is the headline); titles and chrome top out at `.bold`.
 enum Typo {
-    /// Screen/tab titles — bold, sentence case rather than all-caps.
-    static let screenTitle = Font.system(size: 34, weight: .bold)
-    static let title = Font.system(size: 28, weight: .bold)
-    static let headline = Font.system(size: 20, weight: .semibold)
-    static let body = Font.system(size: 16, weight: .regular)
-    static let caption = Font.system(size: 13, weight: .medium)
+    // ── THE PROSE RAMP — text-style-backed, so it participates in Dynamic Type ───────────────
+    //
+    // These were `Font.system(size:)`, which **ignores the user's text-size setting entirely**.
+    // Nine of eleven tokens were frozen, so the app's headline, section titles, body copy and
+    // field labels never grew — while `statValue`, `numberMD` and every raw `.caption`/`.body`
+    // call site did. Two consequences, both measured in-simulator:
+    //
+    //  1. Someone who enlarges text sees no change in the app's actual prose.
+    //  2. Hierarchy INVERTS. At the largest size a stat value out-sized the screen title above it,
+    //     a `.caption` hint rendered ~2× the `Typo.body` question it explained, and a five-letter
+    //     taxonomy badge rendered 3.4× the dose line beneath it.
+    //
+    // Each token lands on an Apple text style at EXACTLY its old point size at Dynamic Type
+    // "Large" (largeTitle 34, title 28, title3 20, callout 16, footnote 13, caption 12,
+    // caption2 11), and rendered string widths are byte-identical, so single-line text is
+    // unchanged at the default setting. What does change, deliberately, is multi-line LEADING:
+    // fixed-size SF is a flat 1.193 line-height ratio at every size, where Apple's styles carry
+    // the size-inverse curve §15 asks for (1.206 at 34pt → 1.385 at 13pt). Body prose gains
+    // ~1.9pt per line.
+    //
+    // That second benefit is not otherwise reachable: `Font.Leading(.tight/.loose)` is a measured
+    // NO-OP on `Font.system(size:)`. Text styles were the only route to correct leading at all.
+    static let screenTitle = Font.system(.largeTitle, weight: .bold)
+    static let title = Font.system(.title, weight: .bold)
+    static let headline = Font.system(.title3, weight: .semibold)
+    static let body = Font.system(.callout)
+    static let caption = Font.system(.footnote, weight: .medium)
     /// The sub-caption register (footnotes, disclaimers, secondary hints) — one token so the
     /// smallest text is consistent instead of scattered raw `.caption2`/`.footnote` calls.
-    static let caption2 = Font.system(size: 12, weight: .regular)
+    static let caption2 = Font.system(.caption)
     // Rounded design for vital numbers — the Apple Health/Fitness signature; reads as a
     // considered product choice rather than default system type.
     static let numberXL = Font.system(size: 40, weight: .black, design: .rounded).monospacedDigit()
@@ -259,8 +280,35 @@ enum Typo {
     /// `.title2` is exactly 22pt, so this is visually identical to the old fixed size but scales.
     static let numberMD = Font.system(.title2, design: .rounded).weight(.bold).monospacedDigit()
     // Instrument data voice — uppercase micro-labels over tabular values (Whoop/Strava/Oura).
-    static let microLabel = Font.system(size: 11, weight: .semibold)
+    static let microLabel = Font.system(.caption2, weight: .semibold)
     static let microTracking: CGFloat = 1.1          // pair with .tracking() at call sites
+
+    /// Tracking for LARGE display type — negative, and that is the whole point.
+    ///
+    /// **Tracking is size-specific; one value for all sizes is wrong somewhere.** Letters read too far
+    /// apart as they grow, so display text wants tightening while small text wants the opposite. This app
+    /// already had the small half right (`microTracking` +1.1 at 11pt, +0.5 on button caps) and nothing at
+    /// all on the large half — so 28–44pt type was rendering at a spacing tuned for body copy.
+    ///
+    /// ≈ -0.02em, the standard display adjustment, expressed in points at the DEFAULT size. Applied
+    /// via `.displayTracking()` rather than baked into the `Font`, because SwiftUI carries tracking as
+    /// a view modifier and not as a font trait.
+    ///
+    /// **Now that the ramp scales, this base value must scale with it** — see `displayTracking()`,
+    /// which routes it through `@ScaledMetric`. Tracking is an em ratio expressed in points; if the
+    /// points stay fixed while the font grows, the ratio silently loosens exactly as the type gets
+    /// large enough for tightening to matter. Leaving this constant would have re-introduced, at
+    /// accessibility sizes, the same "one value for all sizes" fault it was added to fix.
+    /// The 20pt rung, which had no tracking at all. `microTracking` covers the small end and
+    /// `displayTracking` the large; `headline` sat between them at exactly zero, so the one register
+    /// the app uses for section and card titles was the one with no optical adjustment. −0.2pt at
+    /// 20pt is ≈ −0.010em: half the display adjustment, which is what a mid-size rung wants.
+    /// The gate wordmark (sign-in and paywall). Was `Font.system(size: 35.6)` duplicated in both
+    /// files — a mockup measurement nobody could defend, frozen, on the two screens a new user meets
+    /// first. `.largeTitle` is 34pt: a 1.6pt change no one will see, and it scales.
+    static let gateWordmark = Font.system(.largeTitle, weight: .bold)
+    static let headlineTracking: CGFloat = -0.2
+    static let displayTracking: CGFloat = -0.7
     /// 3-up stat-grid value register (Strava: 11pt caps label over 17/700 tabular value).
     ///
     /// Declared against the `.body` TEXT STYLE rather than a fixed `size: 17`, so it actually
@@ -283,6 +331,11 @@ enum Typo {
 }
 
 enum Space {
+    /// The label-over-value gap. It existed as a bare `2` at 32 call sites — alongside `1` and
+    /// `Space.xs` for the SAME "title above subtitle inside a row" pattern, sometimes in one file.
+    /// Craft means every spacing value is a choice you can defend; three undocumented values for one
+    /// relationship is the opposite. Named so it is chosen once.
+    static let xxs: CGFloat = 2
     static let xs: CGFloat = 4
     static let sm: CGFloat = 8
     static let md: CGFloat = 12
@@ -320,6 +373,15 @@ enum Motion {
     /// rather than machined on every card in the app.
     static let press = Animation.spring(duration: 0.16, bounce: 0)
 
+    /// Press RELEASE, deliberately slower than the press itself.
+    ///
+    /// The checklist item this fixes is "same enter/exit transition speed" — and the principle behind it
+    /// is *slow where the user is deciding, fast where the system is responding*. A press is the user
+    /// acting, so it must be immediate; the release is the surface relaxing, and it may take its time.
+    /// One duration in both directions is the thing that reads as mechanical. Matches UIKit's own
+    /// highlight/unhighlight asymmetry.
+    static let pressRelease = Animation.spring(duration: 0.26, bounce: 0)
+
     /// A state change worth noticing but not celebrating: a form reflowing, a gauge redrawing.
     /// Critically damped for the same reason as `press` — three of its four original call sites were
     /// non-gesture changes wearing a bouncy spring.
@@ -335,9 +397,26 @@ enum Motion {
     /// `easeInOut`: an accordion is content ENTERING, and `easeInOut` front-loads slowness onto the
     /// exact frame the user is watching.
     static let disclosure = Animation.easeOut(duration: 0.22)
+    /// Disclosure COLLAPSE. A section closing is content the user has finished with; it should leave
+    /// quicker than it arrived.
+    static let disclosureOut = Animation.easeOut(duration: 0.16)
 
-    static let entrance = Animation.easeOut(duration: 0.35)                       // staggered list entrances
+    /// Staggered list entrances. 280ms, not 350: the checklist caps a UI-element duration at ~300ms,
+    /// and a stagger multiplies its own duration by the number of items — so every 10ms here is paid
+    /// once per row.
+    static let entrance = Animation.easeOut(duration: 0.28)
+
+    /// Full-screen GATE hand-off (sign-in → app, paywall → app). The ONE token above 300ms, and it is
+    /// justified twice: it is seen at most once per launch, and it is a whole-viewport page transition
+    /// rather than a UI element. Was three copies of `.easeInOut(duration: 0.55)` — 550ms is nearly 2×
+    /// the UI budget, and a slow gate is the first thing a new user experiences, so it reads as a slow
+    /// app. `easeInOut` is kept here, unlike everywhere else: a symmetric cross-dissolve has no side
+    /// that is "entering" more than the other.
+    static let gate = Animation.easeInOut(duration: 0.42)
     static let drawer = Animation.spring(duration: 0.38, bounce: 0.1)             // existing drawer feel
+    /// Drawer CLOSE. Faster than opening: dismissing is the user asking to get out of the way, and a
+    /// panel that lingers on the way out reads as the app arguing.
+    static let drawerOut = Animation.spring(duration: 0.28, bounce: 0)
     static let stagger: Double = 0.04                                             // 40ms/row (Oura)
 
     /// Applies the reduce-motion policy in ONE place, so a call site cannot forget it.
@@ -412,13 +491,24 @@ extension View {
     }
 }
 
+/// Bottom inset for the floating tab bar. **Scales**, because the bar itself grows: its label was
+/// frozen at 10pt and the 90pt clearance was derived from that assumption, so once the label scales
+/// the bar gets taller and a fixed 90 lets content run underneath it — which is what a section
+/// header disappearing behind the capsule at accessibility sizes actually was.
+private struct TabBarClearance: ViewModifier {
+    @ScaledMetric(relativeTo: .caption2) private var inset: CGFloat = 90
+    func body(content: Content) -> some View {
+        content.contentMargins(.bottom, inset, for: .scrollContent)
+    }
+}
+
 extension View {
     /// Bottom clearance so scrollable content always clears the floating tab bar (an overlay
     /// that reserves no layout space). 90 = bar content height 65 (top pad 12 + iconRow 30 +
     /// spacing 3 + label ≈12 + bottom pad 8) + 8 bottom float + 17 breathing gap. No-op on
     /// non-scrolling screens.
     func tabBarClearance() -> some View {
-        contentMargins(.bottom, 90, for: .scrollContent)
+        modifier(TabBarClearance())
     }
 
     /// Flat brand canvas (used by utility/detail screens).
@@ -453,7 +543,9 @@ struct PressableStyle: ButtonStyle {
         return configuration.label
             .scaleEffect(pressed ? (reduceMotion ? 0.99 : 0.97) : 1)
             .opacity(pressed ? 0.96 : 1)
-            .animation(Motion.press, value: pressed)
+            // Direction-aware: `pressed` is already the NEW state here, so pressing picks `press` and
+            // releasing picks `pressRelease`.
+            .animation(pressed ? Motion.press : Motion.pressRelease, value: pressed)
     }
 }
 
@@ -471,6 +563,8 @@ struct PressableRowStyle: ButtonStyle {
         return configuration.label
             .scaleEffect(pressed ? (reduceMotion ? 0.997 : 0.985) : 1)
             .opacity(pressed ? 0.94 : 1)
-            .animation(Motion.press, value: pressed)
+            // Direction-aware: `pressed` is already the NEW state here, so pressing picks `press` and
+            // releasing picks `pressRelease`.
+            .animation(pressed ? Motion.press : Motion.pressRelease, value: pressed)
     }
 }

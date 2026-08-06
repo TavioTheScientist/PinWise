@@ -32,7 +32,7 @@ struct AssistantDrawer: View {
                         // black scrim works AGAINST a bright panel and no ultraThin tint below
                         // ~0.9 holds textSecondary at 4.5:1 over dark content behind the drawer.
                         .background(BrandColor.background.opacity(scheme == .dark ? 0.7 : 0.92))
-                        .background(.ultraThinMaterial)
+                        .background { GlassMaterial() }
                         .overlay(alignment: .leading) { Rectangle().fill(BrandColor.stroke).frame(width: 0.5) }
                         .ignoresSafeArea()
                         .shadow(color: .black.opacity(0.45), radius: 24, x: -8)
@@ -41,10 +41,13 @@ struct AssistantDrawer: View {
                         // vestibular trigger it has — and it shipped ungated, against the rule `Motion`'s own
                         // doc comment states. The scrim already fades, so the whole drawer becomes one clean
                         // dissolve: gentler, not absent.
+                        .drawerDismiss(edge: .trailing, width: width, isOpen: $isOpen)
                         .transition(reduceMotion ? .opacity : .move(edge: .trailing))
                 }
             }
-            .animation(Motion.gated(Motion.drawer, reduceMotion), value: isOpen)
+            // Direction-aware: `isOpen` is already the new value, so opening uses `drawer` and
+            // closing the faster `drawerOut`. Same enter/exit timing is the checklist item.
+            .animation(Motion.gated(isOpen ? Motion.drawer : Motion.drawerOut, reduceMotion), value: isOpen)
         }
         .allowsHitTesting(isOpen)
     }
@@ -306,7 +309,7 @@ struct AssistantView: View {
                     Image(systemName: "sparkles.rectangle.stack")
                         .font(.largeTitle).foregroundStyle(BrandColor.accentText)
                     Text("Sign in to chat with Natt")
-                        .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                        .font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     Text("Natt, Staxyz's AI assistant, comes with your account. Sign in with Apple or email to start chatting — everything else stays free for guests.")
                         .font(.callout).foregroundStyle(BrandColor.textSecondary)
                 }
@@ -329,7 +332,7 @@ struct AssistantView: View {
                     Image(systemName: "exclamationmark.bubble")
                         .font(.largeTitle).foregroundStyle(BrandColor.accentText)
                     Text("Before you chat with Natt")
-                        .font(Typo.title).foregroundStyle(BrandColor.textPrimary)
+                        .font(Typo.title).displayTracking().foregroundStyle(BrandColor.textPrimary)
                     Text("Natt is Staxyz's AI assistant. A few things to know first.")
                         .font(Typo.body).foregroundStyle(BrandColor.textSecondary)
                     VStack(alignment: .leading, spacing: Space.md) {
@@ -361,7 +364,7 @@ struct AssistantView: View {
     private func gatePoint(_ title: String, _ body: String) -> some View {
         HStack(alignment: .top, spacing: Space.sm) {
             Image(systemName: "checkmark.shield").font(.body).foregroundStyle(BrandColor.warning).padding(.top, 2)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Space.xxs) {
                 Text(title).font(.callout.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                 Text(body).font(.callout).foregroundStyle(BrandColor.textSecondary)
             }

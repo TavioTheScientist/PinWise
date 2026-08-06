@@ -171,6 +171,7 @@ enum ProfileFields {
 /// Disclosed by a `DisclosureRow`, never standing on its own — a bare wheel gives no hint that it
 /// scrolls (see `ProfileView.personalizationCard`).
 struct HeightField: View {
+    @ScaledMetric(relativeTo: .body) private var wheelHeight: CGFloat = 120
     @Binding var feetText: String
     @Binding var inchesText: String
     @Binding var cmText: String
@@ -196,7 +197,9 @@ struct HeightField: View {
                 .pickerStyle(.wheel)
             }
         }
-        .frame(height: 120)
+        // UIPickerView grows its row height with the content size category, so a hard 120pt window
+        // clips the selected row — on a control whose only affordance is seeing the rows around it.
+        .frame(height: wheelHeight)
     }
 
     // Wheels select whole numbers; bridge to the existing String bindings so ProfileFields'
@@ -302,7 +305,7 @@ struct ProfileView: View {
 
             VStack(spacing: Space.sm) {
                 Text(name.isEmpty ? "Set up your profile" : name)
-                    .font(Typo.title)
+                    .font(Typo.title).displayTracking()
                     .foregroundStyle(BrandColor.textPrimary)
                     .multilineTextAlignment(.center)
                 // "Guest" is taxonomy (neutral); "Staxyz Member" is the app's ONE sanctioned

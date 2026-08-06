@@ -214,7 +214,7 @@ struct LogView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.lg) {
                     Text("Log a dose")
-                        .font(Typo.screenTitle)
+                        .font(Typo.screenTitle).displayTracking()
                         .foregroundStyle(BrandColor.textPrimary)
                         .minimumScaleFactor(0.7).lineLimit(1)
 
@@ -260,7 +260,7 @@ struct LogView: View {
                         Text(confirmation).font(.subheadline.weight(.semibold)).foregroundStyle(BrandColor.textPrimary).lineLimit(2)
                     }
                     .padding(.horizontal, Space.lg).padding(.vertical, Space.md)
-                    .background(BrandColor.surfaceElevated, in: Capsule())
+                    .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                     .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
                     // Clear the floating tab bar (~90pt reserved, see tabBarClearance) plus a gap.
@@ -271,7 +271,9 @@ struct LogView: View {
             .task(id: confirmation) {
                 guard confirmation != nil else { return }
                 try? await Task.sleep(for: .seconds(2.5))
-                withAnimation(.easeInOut) { confirmation = nil }
+                // Exit is FASTER than the entrance: the banner leaving is the system letting go, and a
+                // departing confirmation is no longer information the user needs to track.
+                withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { confirmation = nil }
             }
             .onAppear {
                 // Protocol-first, always opening on the "Which protocol?" picker with nothing
@@ -326,7 +328,7 @@ struct LogView: View {
             let day = slot.formatted(.dateTime.weekday(.wide))
             Card {
                 VStack(alignment: .leading, spacing: Space.md) {
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: Space.xxs) {
                         Text("\(day)'s dose was never logged")
                             .font(Typo.headline).foregroundStyle(BrandColor.textPrimary)
                         Text(slot.formatted(.dateTime.month(.abbreviated).day()))
@@ -335,7 +337,7 @@ struct LogView: View {
                     attributionOption(.today, "This is today's dose",
                                       "\(day)'s stays unlogged.")
                     attributionOption(.missedSlot, "This was \(day)'s dose",
-                                      "Records it at \(day)'s scheduled time — for when you took it and forgot to log.")
+                                      "Counts toward \(day) and logs the time you actually took it.")
                     attributionOption(.skipMissed, "Skip \(day)'s, log today's",
                                       "Marks \(day) deliberately skipped so it stops resurfacing.")
                 }
@@ -353,7 +355,7 @@ struct LogView: View {
                 Image(systemName: attribution == value ? "largecircle.fill.circle" : "circle")
                     .font(.title3)
                     .foregroundStyle(attribution == value ? BrandColor.accent : BrandColor.textSecondary)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     Text(title).font(.body.weight(.semibold)).foregroundStyle(BrandColor.textPrimary)
                     Text(detail).font(Typo.caption2).foregroundStyle(BrandColor.textSecondary)
                 }
@@ -386,7 +388,7 @@ struct LogView: View {
     private var protocolCard: some View {
         Card {
             VStack(alignment: .leading, spacing: Space.md) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Space.xxs) {
                     // With nothing due, the card STATES that rather than asking a question it then
                     // answers with "nothing". The prompt only earns the top line when there is
                     // something to pick.
@@ -440,7 +442,7 @@ struct LogView: View {
                             // A blend is one injection at a fixed mass ratio — show every compound
                             // that single shot delivers (the primary's dose fixes them all).
                             if let deliver {
-                                VStack(alignment: .leading, spacing: 2) {
+                                VStack(alignment: .leading, spacing: Space.xxs) {
                                     Text("Each shot delivers").font(.caption2.weight(.semibold)).foregroundStyle(BrandColor.textSecondary)
                                     ForEach(deliver, id: \.name) { line in
                                         HStack {
@@ -472,7 +474,7 @@ struct LogView: View {
     @ViewBuilder
     private var earlyDisclosure: some View {
         Button {
-            withAnimation(Motion.emphasis) {
+            withAnimation(Motion.gated(Motion.emphasis, reduceMotion)) {
                 showEarly.toggle()
                 // Collapsing hides the row that opened the entry fields — drop the selection with it.
                 if !showEarly, let sel = selectedProtocolID,
@@ -535,6 +537,8 @@ struct LogView: View {
                 // the width the radio leaves.
                 ProtocolSummary(presentation: presentation, layout: .row)
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    // `.replace.offUp` reads as the mark ARRIVING rather than two glyphs swapping.
+                    .contentTransition(.symbolEffect(.replace.offUp))
                     .font(.title3)
                     .foregroundStyle(isSelected ? BrandColor.accent : BrandColor.textSecondary)
             }
@@ -590,10 +594,14 @@ struct LogView: View {
     }
 
     private func doseMetric(_ label: String, _ value: String, _ color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Space.xxs) {
             MicroLabel(label)
             Text(value).font(Typo.numberMD).foregroundStyle(color)
-                .lineLimit(1).minimumScaleFactor(0.7)
+                // Two lines and a deeper floor. At one line with a 0.7 floor the value CLAMPS and
+                // then truncates in a ~158pt column — and this slot renders the syringe draw
+                // ("0.25 mL · 12.5 units"), i.e. how far to pull the plunger. A floor that
+                // guarantees truncation on a dosing figure is worse than no floor at all.
+                .lineLimit(2).minimumScaleFactor(0.5)
         }
     }
 
@@ -685,10 +693,9 @@ struct LogView: View {
                 FieldRow("How much?", hint: "The dose you took this time.") {
                     HStack {
                         TextField("e.g. 2.5", text: $doseText).keyboardType(.decimalPad).staxyzField()
-                        Picker("", selection: $doseUnit) {
-                            ForEach(MassUnit.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                        }
-                        .pickerStyle(.segmented).frame(width: 120)
+                        // The shared picker, not a hand-rolled one — it is the component that
+                        // guarantees `mcg`/`mg` never truncate. See MassUnitPicker.
+                        MassUnitPicker(selection: $doseUnit)
                     }
                 }
             }
@@ -808,7 +815,14 @@ struct LogView: View {
         // insert — writing the dose changes what `lastOverdueDose` returns.
         let slot = overdueSlot
         let choice = slot == nil || showWhen ? .today : attribution
-        let stamp = choice == .missedSlot ? (slot.flatMap { scheduledTime(of: $0, for: p) } ?? timestamp) : timestamp
+        // ALWAYS the real time the dose was taken. `.missedSlot` used to backdate the log to the
+        // slot's scheduled time, which fabricated a record: it asserted the user injected at 9:00 on
+        // Saturday when they actually injected at 14:20 on Monday. History has to be what happened.
+        //
+        // Attribution does not need the lie. `AdherenceCalculator`'s second pass already credits a
+        // real-timestamped log to an earlier slot within `attributionGraceDays`, so choosing
+        // "this was Saturday's" still resolves Saturday — it just stops rewriting when it happened.
+        let stamp = timestamp
 
         // Draw down each DISTINCT vial once per session, even when several stack items resolve
         // to the same blend vial (one physical injection) — prevents double-counting.
