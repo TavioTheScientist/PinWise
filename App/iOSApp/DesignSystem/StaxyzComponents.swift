@@ -829,7 +829,20 @@ struct AdherenceRing: View {
 extension View {
     /// Tightens tracking for large display type. Pair with `Typo.screenTitle` / `title` / `numberXL` /
     /// `numberLG` / `numberHero` — never with body or caption text, which wants the opposite sign.
-    func displayTracking() -> some View { tracking(Typo.displayTracking) }
+    func displayTracking() -> some View { modifier(DisplayTracking()) }
+}
+
+/// Tracking for large display type, scaled with the text so the em ratio holds.
+///
+/// Tracking is fundamentally a RATIO expressed in points. Before the ramp was text-style-backed the
+/// display fonts were frozen, so a fixed −0.7pt was a fixed −0.02em and that was correct. Now that
+/// `screenTitle`/`title` grow with Dynamic Type, a fixed point value would loosen as the type grew —
+/// −0.02em at the default size, but roughly −0.013em at accessibility sizes — which is the "one value
+/// for every size is wrong somewhere" fault this modifier exists to avoid, re-appearing at exactly the
+/// sizes where tightening matters most. `@ScaledMetric` scales the base with the font, holding the ratio.
+private struct DisplayTracking: ViewModifier {
+    @ScaledMetric(relativeTo: .largeTitle) private var amount: CGFloat = Typo.displayTracking
+    func body(content: Content) -> some View { content.tracking(amount) }
 }
 
 /// `.ultraThinMaterial`, unless the user has asked for less transparency — then an opaque surface.

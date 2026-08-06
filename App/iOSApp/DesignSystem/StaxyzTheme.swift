@@ -243,15 +243,36 @@ enum ChartPalette {
 /// Type ramp — system font (SF), monospaced figures. `.black` is reserved for the number
 /// ramp (the number is the headline); titles and chrome top out at `.bold`.
 enum Typo {
-    /// Screen/tab titles — bold, sentence case rather than all-caps.
-    static let screenTitle = Font.system(size: 34, weight: .bold)
-    static let title = Font.system(size: 28, weight: .bold)
-    static let headline = Font.system(size: 20, weight: .semibold)
-    static let body = Font.system(size: 16, weight: .regular)
-    static let caption = Font.system(size: 13, weight: .medium)
+    // ── THE PROSE RAMP — text-style-backed, so it participates in Dynamic Type ───────────────
+    //
+    // These were `Font.system(size:)`, which **ignores the user's text-size setting entirely**.
+    // Nine of eleven tokens were frozen, so the app's headline, section titles, body copy and
+    // field labels never grew — while `statValue`, `numberMD` and every raw `.caption`/`.body`
+    // call site did. Two consequences, both measured in-simulator:
+    //
+    //  1. Someone who enlarges text sees no change in the app's actual prose.
+    //  2. Hierarchy INVERTS. At the largest size a stat value out-sized the screen title above it,
+    //     a `.caption` hint rendered ~2× the `Typo.body` question it explained, and a five-letter
+    //     taxonomy badge rendered 3.4× the dose line beneath it.
+    //
+    // Each token lands on an Apple text style at EXACTLY its old point size at Dynamic Type
+    // "Large" (largeTitle 34, title 28, title3 20, callout 16, footnote 13, caption 12,
+    // caption2 11), and rendered string widths are byte-identical, so single-line text is
+    // unchanged at the default setting. What does change, deliberately, is multi-line LEADING:
+    // fixed-size SF is a flat 1.193 line-height ratio at every size, where Apple's styles carry
+    // the size-inverse curve §15 asks for (1.206 at 34pt → 1.385 at 13pt). Body prose gains
+    // ~1.9pt per line.
+    //
+    // That second benefit is not otherwise reachable: `Font.Leading(.tight/.loose)` is a measured
+    // NO-OP on `Font.system(size:)`. Text styles were the only route to correct leading at all.
+    static let screenTitle = Font.system(.largeTitle, weight: .bold)
+    static let title = Font.system(.title, weight: .bold)
+    static let headline = Font.system(.title3, weight: .semibold)
+    static let body = Font.system(.callout)
+    static let caption = Font.system(.footnote, weight: .medium)
     /// The sub-caption register (footnotes, disclaimers, secondary hints) — one token so the
     /// smallest text is consistent instead of scattered raw `.caption2`/`.footnote` calls.
-    static let caption2 = Font.system(size: 12, weight: .regular)
+    static let caption2 = Font.system(.caption)
     // Rounded design for vital numbers — the Apple Health/Fitness signature; reads as a
     // considered product choice rather than default system type.
     static let numberXL = Font.system(size: 40, weight: .black, design: .rounded).monospacedDigit()
@@ -259,7 +280,7 @@ enum Typo {
     /// `.title2` is exactly 22pt, so this is visually identical to the old fixed size but scales.
     static let numberMD = Font.system(.title2, design: .rounded).weight(.bold).monospacedDigit()
     // Instrument data voice — uppercase micro-labels over tabular values (Whoop/Strava/Oura).
-    static let microLabel = Font.system(size: 11, weight: .semibold)
+    static let microLabel = Font.system(.caption2, weight: .semibold)
     static let microTracking: CGFloat = 1.1          // pair with .tracking() at call sites
 
     /// Tracking for LARGE display type — negative, and that is the whole point.
@@ -269,9 +290,15 @@ enum Typo {
     /// already had the small half right (`microTracking` +1.1 at 11pt, +0.5 on button caps) and nothing at
     /// all on the large half — so 28–44pt type was rendering at a spacing tuned for body copy.
     ///
-    /// ≈ -0.02em, the standard display adjustment, expressed in points at this scale. Applied via
-    /// `.displayTracking()` rather than baked into the `Font`, because SwiftUI carries tracking as a view
-    /// modifier and not as a font trait.
+    /// ≈ -0.02em, the standard display adjustment, expressed in points at the DEFAULT size. Applied
+    /// via `.displayTracking()` rather than baked into the `Font`, because SwiftUI carries tracking as
+    /// a view modifier and not as a font trait.
+    ///
+    /// **Now that the ramp scales, this base value must scale with it** — see `displayTracking()`,
+    /// which routes it through `@ScaledMetric`. Tracking is an em ratio expressed in points; if the
+    /// points stay fixed while the font grows, the ratio silently loosens exactly as the type gets
+    /// large enough for tightening to matter. Leaving this constant would have re-introduced, at
+    /// accessibility sizes, the same "one value for all sizes" fault it was added to fix.
     static let displayTracking: CGFloat = -0.7
     /// 3-up stat-grid value register (Strava: 11pt caps label over 17/700 tabular value).
     ///
