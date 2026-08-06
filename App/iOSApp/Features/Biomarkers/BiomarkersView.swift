@@ -75,6 +75,7 @@ struct BiomarkersView: View {
     @State private var savedCount = 0
     @State private var range: ChartRange = .all
     @State private var showAllHistory = false
+    @State private var showLogSheet = false
     @State private var scrubDate: Date?
     @State private var health = HealthManager.shared
 
@@ -126,7 +127,10 @@ struct BiomarkersView: View {
             // so it is ordered by that answer: switch metric, read the number, see the trend, log,
             // then history if you want it. The old order led with a form and a paragraph, so the
             // number you came for was below the fold.
-            VStack(alignment: .leading, spacing: Space.xl) {
+            // UNEVEN spacing, deliberately. Even gaps are what make a page read as a stack of
+            // components rather than a composition: the hero and its chart are ONE object and sit
+            // close together, then a longer pause before history, which is a different tier.
+            VStack(alignment: .leading, spacing: Space.xxxl) {
                 metricRail
 
                 if seriesForSelected.isEmpty {
@@ -135,7 +139,6 @@ struct BiomarkersView: View {
                     heroAndTrend
                 }
 
-                logRow
                 history
             }
             .padding(Space.lg)
@@ -143,6 +146,19 @@ struct BiomarkersView: View {
         .heroScreen()
         .navigationTitle(selected.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        // Logging is an ACTION, so it lives where actions live — not as a permanent block in a
+        // composition about a number. As a field-and-button in the flow it was a standard component
+        // sitting between the chart and the history, which is the thing that made the page read as
+        // stacked rather than authored. A toolbar affordance keeps it one tap away and gives the
+        // page back to the value and its trend.
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showLogSheet = true } label: { Image(systemName: "plus") }
+                    .tint(BrandColor.accentText)
+                    .accessibilityLabel("Log \(selected.displayName)")
+            }
+        }
+        .sheet(isPresented: $showLogSheet) { logSheet }
         .sensoryFeedback(.success, trigger: savedCount)
         .task { await health.refreshIfConnected() }
         .onChange(of: selected) { scrubDate = nil }
@@ -176,7 +192,9 @@ struct BiomarkersView: View {
 
     /// The hero and its chart, as ONE region rather than a value card above a chart widget.
     private var heroAndTrend: some View {
-        VStack(alignment: .leading, spacing: Space.lg) {
+        // `Space.md`, not `lg`: the chart is not a sibling of the number, it is the number's
+        // evidence. Binding them tightly is what makes them read as one composed object.
+        VStack(alignment: .leading, spacing: Space.md) {
             trendHero
             if seriesForSelected.count >= 2 {
                 trendChart
@@ -195,30 +213,28 @@ struct BiomarkersView: View {
     /// the top half of the screen permanently — so the dominant element on a page about a number was
     /// the apparatus for entering one. A single field, its unit, and a compact commit control is the
     /// same capability at a fraction of the vertical cost. The note stays available and collapsed.
-    private var logRow: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            HStack(spacing: Space.sm) {
-                TextField(selected.placeholder, text: $valueText)
-                    .keyboardType(.decimalPad)
-                    .staxyzField()
-                Text(selected.unit(pounds: weightInPounds))
-                    .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
-                    .fixedSize()
-                Button { save() } label: {
-                    Text("Log").font(.caption.weight(.bold))
-                        .padding(.horizontal, Space.md)
-                        .frame(minHeight: 44)
-                        .background(BrandColor.ctaFill, in: Capsule())
-                        .foregroundStyle(BrandColor.onCtaFill)
+    private var logSheet: some View {
+        MenuSheet(title: "Log \(selected.displayName)") {
+            VStack(alignment: .leading, spacing: Space.lg) {
+                HStack(spacing: Space.sm) {
+                    TextField(selected.placeholder, text: $valueText)
+                        .keyboardType(.decimalPad)
+                        .staxyzField()
+                    Text(selected.unit(pounds: weightInPounds))
+                        .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
+                        .fixedSize()
                 }
-                .buttonStyle(PressableStyle())
-                .disabled(!canSave).opacity(canSave ? 1 : 0.4)
-                .accessibilityLabel("Log \(selected.displayName)")
+                healthPrefillButton
+                CollapsibleNoteField(text: $note, expanded: $showNote,
+                                     hint: "Optional — e.g. \"fasting\", \"post-workout\".")
+                PrimaryButton(title: "Log \(selected.displayName)", systemImage: "plus") {
+                    save()
+                    showLogSheet = false
+                }
+                .disabled(!canSave).opacity(canSave ? 1 : 0.5)
             }
-            healthPrefillButton
-            CollapsibleNoteField(text: $note, expanded: $showNote,
-                                 hint: "Optional — e.g. \"fasting\", \"post-workout\".")
         }
+        .presentationDetents([.medium])
     }
 
     /// Recent readings for THIS metric, five by default.
@@ -232,7 +248,7 @@ struct BiomarkersView: View {
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: Space.sm) {
                 SectionHeader(title: "History")
-                ForEach(showAllHistory ? rows : Array(rows.prefix(5)), id: \.id) { e in
+                ForEach(showAllHistory ? rows : Array(rows.prefix(4)), id: \.id) { e in
                     HStack(spacing: Space.sm) {
                         Text(format(e.value) + " " + (e.unitRaw ?? selected.unit(pounds: weightInPounds)))
                             .font(Typo.statValue).foregroundStyle(BrandColor.textPrimary)
@@ -254,7 +270,7 @@ struct BiomarkersView: View {
                         }
                     }
                 }
-                if rows.count > 5 {
+                if rows.count > 4 {
                     Button { withAnimation(Motion.gated(Motion.disclosure, reduceMotion)) { showAllHistory.toggle() } } label: {
                         Text(showAllHistory ? "Show less" : "Show all \(rows.count)")
                             .font(.caption.weight(.semibold)).foregroundStyle(BrandColor.accentText)
