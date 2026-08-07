@@ -74,10 +74,17 @@ jobs:
     runs-on: macos-26               # 10× minutes — unavoidable (needs Xcode + iOS SDK)
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode 26
+      # Pins the MAJOR version (26 = the iOS 26 SDK, which is what Liquid Glass needs) while
+      # tolerating point-release churn in the runner image. A hardcoded `Xcode_26.app` does not
+      # exist — the image ships `Xcode_26.0.app` … `Xcode_26.3.app` — and `set -e` turned that
+      # missing path into an unexplained step failure. Resolving the newest 26.x and PRINTING it
+      # means a future mismatch names itself in the log rather than arriving as compile errors.
+      - name: Select the newest Xcode 26.x
         run: |
-          ls /Applications | grep -i '^Xcode' || true
-          sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          test -n "$XC" || { echo "::error::No Xcode 26.x on this runner"; ls /Applications | grep -i xcode; exit 1; }
+          echo "Selected $XC"
+          sudo xcode-select -s "$XC/Contents/Developer"
           xcodebuild -version
           xcodebuild -showsdks | grep -i 'iphonesimulator' || true
       - name: Cache SwiftPM
