@@ -4,7 +4,10 @@
 //        -H "Authorization: Bearer <SERVICE_ROLE_KEY>"
 // The corpus JSON is bundled via imports, so no separate upload step.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import compounds from "../../kb/compounds.json" with { type: "json" };
+// `corpus.json` is GENERATED from the Swift catalog by `swift run kb-export`, never hand-edited —
+// CI regenerates and diffs it, so a compound added to `CompoundCatalog` cannot silently fail to
+// reach Natt. It replaced a hand-maintained `compounds.json` that nothing kept in sync.
+import corpus from "../../kb/corpus.json" with { type: "json" };
 import docs from "../../kb/docs.json" with { type: "json" };
 
 // `Supabase.ai` is injected by the Edge runtime (on-device gte-small embeddings; no external key).
@@ -16,17 +19,76 @@ interface Chunk { source: string; title: string; content: string; metadata: Reco
 
 function buildChunks(): Chunk[] {
   const out: Chunk[] = [];
-  for (const c of compounds as Array<Record<string, any>>) {
+
+  // ── Two chunks per compound, and the split is MEASURED, not stylistic ──────────────────────
+  //
+  // `gte-small` embeds a 512-token window. Composed as one chunk, 12 of the 57 compounds exceed it
+  // — and because dosing, side effects and storage sit at the END of a profile, those are precisely
+  // the fields that would be silently truncated out of the vector. The compound would still appear
+  // to be indexed; it just would not be retrievable by the questions people actually ask.
+  //
+  // Splitting on the natural seam — what it IS versus how it is USED — keeps every chunk inside the
+  // window (longest is ~1.8k chars against a ~2k ceiling) and sharpens retrieval: "is retatrutide a
+  // GLP-1?" and "how much retatrutide do people take?" want different halves.
+  for (const c of corpus.compounds as Array<Record<string, any>>) {
+    const aliases = Array.isArray(c.aliases) && c.aliases.length
+      ? ` (also known as: ${c.aliases.join(", ")})`
+      : "";
     const half = c.halfLifeHours != null ? ` Half-life about ${c.halfLifeHours} hours.` : "";
     const wada = c.wadaProhibited ? " WADA-prohibited." : "";
-    const aliases = Array.isArray(c.aliases) && c.aliases.length ? ` (also known as: ${c.aliases.join(", ")})` : "";
+
+    const overview = [
+      `${c.name}${aliases}.`,
+      `Category: ${c.category}. Regulatory status: ${c.regulatory}. Evidence: ${c.evidence}.${half}${wada}`,
+      c.tagline, c.whatItIs, c.howItWorks, c.whatToExpect, c.notes,
+    ].filter(Boolean).join(" ");
+
+    const practical = [
+      `${c.name} — dosing, timing and side effects.`,
+      c.dosingStudied && `Studied dosing: ${c.dosingStudied}`,
+      c.dosingCommunity && `Commonly reported dosing: ${c.dosingCommunity}`,
+      c.route && `Route: ${c.route}`,
+      c.timing && `Timing: ${c.timing}`,
+      Array.isArray(c.sideEffectsCommon) && c.sideEffectsCommon.length
+        && `Common side effects: ${c.sideEffectsCommon.join(", ")}.`,
+      Array.isArray(c.sideEffectsSerious) && c.sideEffectsSerious.length
+        && `Serious side effects: ${c.sideEffectsSerious.join(", ")}.`,
+      c.safetyFlag && `Safety: ${c.safetyFlag}`,
+      c.storageHandling && `Storage: ${c.storageHandling}`,
+    ].filter(Boolean).join(" ");
+
     out.push({
       source: `compound:${c.name}`,
       title: c.name,
-      content: `${c.name}${aliases}. Category: ${c.category}. Regulatory status: ${c.regulatory}. Evidence: ${c.evidence}.${half}${wada} ${c.notes}`,
-      metadata: { category: "compound" },
+      content: overview,
+      metadata: { category: "compound", part: "overview" },
+    });
+    // Only when a profile actually supplied something — a bare header would embed as noise and
+    // could outrank a real chunk on a short query.
+    if (practical.length > `${c.name} — dosing, timing and side effects.`.length) {
+      out.push({
+        source: `compound:${c.name}:practical`,
+        title: c.name,
+        content: practical,
+        metadata: { category: "compound", part: "practical" },
+      });
+    }
+  }
+
+  // ── Blends ────────────────────────────────────────────────────────────────────────────────
+  //
+  // Absent from the corpus entirely until now, so "what's in GLOW?" retrieved nothing and Natt
+  // answered from model memory — on community shorthand a general model has no grounding for. The
+  // preset name carries both the shorthand and the components, so one chunk is searchable by either.
+  for (const b of corpus.blends as Array<Record<string, any>>) {
+    out.push({
+      source: `blend:${b.name}`,
+      title: b.name,
+      content: `${b.name} is a blend — one injection delivering ${b.components.join(" + ")} per vial. ${b.notes ?? ""}`.trim(),
+      metadata: { category: "blend" },
     });
   }
+
   for (const d of docs as Array<Record<string, any>>) {
     out.push({
       source: `doc:${d.title}`,

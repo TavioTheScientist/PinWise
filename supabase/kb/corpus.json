@@ -1,0 +1,1724 @@
+{
+  "blends" : [
+    {
+      "components" : [
+        "Cagrilintide 10 mg",
+        "Semaglutide 10 mg"
+      ],
+      "name" : "CagriSema (Cagrilintide + Semaglutide)",
+      "notes" : "INVESTIGATIONAL amylin + GLP-1 combo (roughly 1:1). Not FDA-approved."
+    },
+    {
+      "components" : [
+        "CJC-1295 (no DAC) 5 mg",
+        "Ipamorelin 5 mg"
+      ],
+      "name" : "CJC-1295 + Ipamorelin",
+      "notes" : "Common GHRH + ghrelin-mimetic combo. Research-only; WADA-prohibited."
+    },
+    {
+      "components" : [
+        "GHK-Cu 50 mg",
+        "BPC-157 10 mg",
+        "TB-500 10 mg"
+      ],
+      "name" : "GLOW (GHK-Cu + BPC-157 + TB-500)",
+      "notes" : "Research-only. One injection volume sets all three component doses at once."
+    },
+    {
+      "components" : [
+        "GHK-Cu 50 mg",
+        "KPV 10 mg",
+        "BPC-157 10 mg",
+        "TB-500 10 mg"
+      ],
+      "name" : "KLOW (GHK-Cu + KPV + BPC-157 + TB-500)",
+      "notes" : "Research-only; all components preclinical. KLOW = GLOW + KPV."
+    },
+    {
+      "components" : [
+        "Sermorelin 5 mg",
+        "Ipamorelin 5 mg"
+      ],
+      "name" : "Sermorelin + Ipamorelin",
+      "notes" : "Common GH-secretagogue pairing. Research-only; WADA-prohibited."
+    },
+    {
+      "components" : [
+        "BPC-157 10 mg",
+        "TB-500 10 mg"
+      ],
+      "name" : "Wolverine (BPC-157 + TB-500)",
+      "notes" : "Research-only; both components are preclinical and WADA-prohibited."
+    }
+  ],
+  "compounds" : [
+    {
+      "aliases" : [
+        "5-Amino-1-methylquinolinium"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Oral capsules are commonly sold at 50–150 mg/day. Reported, not recommended, and with no trial basis at any dose.",
+      "dosingStudied" : "No human dosing has been established, because no human trial has been run. Rodent doses do not translate directly and are not reproduced here for that reason.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "NNMT (nicotinamide N-methyltransferase) consumes nicotinamide and is highly expressed in fat tissue. Inhibiting it is proposed to raise cellular NAD+ and shift adipocyte metabolism toward fat burning. In obese mice, NNMT inhibition reduced fat mass without changing food intake — which is the entire basis for the marketing.",
+      "name" : "5-Amino-1MQ",
+      "notes" : "CORRECTION: a small-molecule NNMT inhibitor, NOT a peptide, and taken orally. Preclinical (animal) data only for fat loss/metabolism; no human trials; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "ORAL. It is a small molecule with oral bioavailability — that is the whole reason it is sold as a capsule rather than a vial.",
+      "safetyFlag" : "This is not a peptide. It is a small molecule, taken ORALLY as a capsule. It is grouped with peptides by vendors, and people reconstitute and inject it on that assumption — there is no basis for injecting it and no data on doing so.",
+      "sideEffectsCommon" : [
+        "Not characterized in humans — no clinical safety study exists",
+        "Anecdotal reports mention mild GI upset"
+      ],
+      "sideEffectsSerious" : [
+        "Human safety is entirely unstudied, including long-term NNMT inhibition",
+        "NNMT is expressed well beyond fat tissue (liver especially), so systemic inhibition has consequences nobody has measured in people"
+      ],
+      "storageHandling" : "Sold as oral capsules or bulk powder. Store cool, dry and sealed. Does NOT need reconstitution — if a vendor supplies it as a vial to be mixed and injected, that alone is a reason to question the vendor.",
+      "tagline" : "Oral small molecule for fat loss — NOT a peptide, and not injected.",
+      "timing" : "Once daily is the conventional pattern. No human pharmacokinetics are published.",
+      "wadaProhibited" : false,
+      "whatItIs" : "5-Amino-1MQ (5-amino-1-methylquinolinium) is a small synthetic molecule — a quinolinium salt — that inhibits the enzyme NNMT. It sits in peptide catalogs for commercial reasons, not chemical ones.",
+      "whatToExpect" : "Honestly: unknown in humans. Every fat-loss claim traces to rodent work. There are no human trials, so effect size, time course, and whether it does anything at all in people are all open."
+    },
+    {
+      "aliases" : [
+        "ActRIIB-Fc",
+        "Ramatercept"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community use exists and is not documented here as a range. A compound whose trials were stopped for vascular bleeding is not one where an anecdotal number belongs in a reference.",
+      "dosingStudied" : "Phase 1 used single ascending subcutaneous doses; as an Fc-fusion its half-life is long — roughly 10–15 days (Attie et al., 2013), which is why exposure persists well after a dose and why a problem cannot be quickly withdrawn.",
+      "evidence" : "preclinicalOrFailed",
+      "halfLifeHours" : 300,
+      "howItWorks" : "It works as a trap: circulating ActRIIB-Fc binds myostatin before myostatin can reach real receptors on muscle, removing the brake on muscle growth. The problem is selectivity. ActRIIB also binds BMP9 and BMP10, which regulate vascular integrity — so trapping ligands broadly interferes with blood-vessel maintenance. That is the accepted explanation for the bleeding and telangiectasia that stopped the programme, and it is why the side effects are not something a lower dose reliably avoids.",
+      "name" : "ACE-031",
+      "notes" : "A soluble activin receptor (myostatin/activin trap). As an Fc-fusion its half-life is long (~10–15 days SC; Attie 2013). Human trials were HALTED for safety (nosebleeds, gum bleeding, dilated vessels). WADA-prohibited; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous.",
+      "safetyFlag" : "Human trials were STOPPED early for safety: nosebleeds, gum bleeding and dilated surface blood vessels. The cause is mechanistic, not a dosing accident — the receptor it blocks also handles signals that maintain blood-vessel integrity.",
+      "sideEffectsCommon" : [
+        "Nosebleeds (epistaxis)",
+        "Gum bleeding",
+        "Dilated surface blood vessels (telangiectasia)",
+        "Injection-site reactions"
+      ],
+      "sideEffectsSerious" : [
+        "The bleeding effects are what ENDED the human programme — they are the expected outcome of the mechanism, not a rare idiosyncrasy",
+        "Off-target BMP9/BMP10 trapping affects vascular integrity; consequences of prolonged exposure in healthy adults are unstudied",
+        "The ~10–15 day half-life means exposure cannot be quickly reversed if a problem appears"
+      ],
+      "storageHandling" : "Fc-fusion proteins are more fragile than short peptides — sensitive to freeze-thaw and agitation. Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Myostatin trap whose human trials were HALTED for bleeding side effects.",
+      "timing" : "Long half-life (~10–15 days), so trial dosing was infrequent. The long tail is a safety consideration in itself: the effect does not stop when you do.",
+      "wadaProhibited" : true,
+      "whatItIs" : "ACE-031 (ramatercept) is a soluble decoy receptor — the activin receptor type IIB fused to an antibody Fc fragment. Developed by Acceleron Pharma, it was trialled in Duchenne muscular dystrophy to increase muscle mass.",
+      "whatToExpect" : "Trials did show increases in lean mass — the mechanism works. They also produced the bleeding effects that ended development. Both halves are the result."
+    },
+    {
+      "aliases" : [
+        "hGH fragment 176-191"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Injectable community ranges are commonly cited around 300 mcg daily. Anecdotal, with no trial evidence either supporting or refuting it.",
+      "dosingStudied" : "No human dose is documented here, because no retrievable human trial establishes one. The animal joint work used intra-articular injection at 0.25 mg per knee in rabbits — an entirely different route, target and species from anything a person is doing with it.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "The selling point is what it LACKS: the fragment was designed to reproduce growth hormone's lipolytic (fat-mobilizing) effect without GH's growth-promoting, IGF-1-raising or insulin-resistance effects. Preclinically it reduced fat in obese rodents without those liabilities. The same selectivity that made it attractive is a plausible reason the fat-loss effect turned out to be too small to matter in people.",
+      "name" : "AOD-9604",
+      "notes" : "GH fragment (176-191) marketed for fat loss; human obesity trials did NOT show meaningful weight loss vs placebo. Not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous as sold. The obesity programme pursued an oral formulation, which is a further reason not to read anything from that programme onto an injection.",
+      "safetyFlag" : "It was developed as an anti-obesity drug and never approved. Note what is NOT available: no published human obesity trial is retrievable in PubMed, and there is NO ClinicalTrials.gov registration for it at all — so the human record is thinner than the marketing implies in either direction.",
+      "sideEffectsCommon" : [
+        "Generally reported as well tolerated",
+        "Occasional injection-site irritation"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is unstudied — and note there is no retrievable human trial to have established a safety profile in the first place",
+        "Products sold under this name have turned up in customs seizures, so identity and purity depend entirely on the supplier"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "GH fragment for fat loss that FAILED its human obesity trials.",
+      "timing" : "Half-life is short; community protocols dose daily, often fasted, on the theory that insulin blunts lipolysis.",
+      "wadaProhibited" : false,
+      "whatItIs" : "AOD-9604 is a synthetic fragment of human growth hormone — residues 176–191, the C-terminal end of the molecule. It was developed by Metabolic Pharmaceuticals specifically as an anti-obesity drug.",
+      "whatToExpect" : "Realistically, nothing you should count on for fat loss. It was developed specifically as an obesity drug by Metabolic Pharmaceuticals and never reached approval — a programme that runs for years and produces no marketed product is a signal in itself. Be careful how far you take that inference though: the absence of a retrievable trial is not the same as a published negative result, and this profile does not claim one."
+    },
+    {
+      "aliases" : [
+        "Acetyl hexapeptide-8",
+        "Acetyl hexapeptide-3"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingStudied" : "Cosmetic formulations are typically in the range of a few percent by weight in a serum. This is a formulation figure, not a dose you administer.",
+      "evidence" : "precursorOffLabel",
+      "howItWorks" : "The proposed mechanism is interference with SNAP-25, part of the machinery vesicles use to release neurotransmitter at the neuromuscular junction — the same protein botulinum toxin cleaves. The honest caveat is delivery: whether a hexapeptide applied to intact skin reaches motor nerve terminals in a meaningful amount is the part the mechanism story skips.",
+      "name" : "Argireline",
+      "notes" : "A TOPICAL cosmetic peptide marketed as a 'Botox-like' wrinkle softener. Evidence is for topical skincare use only; not an injectable and not a drug.",
+      "regulatory" : "researchOnly",
+      "route" : "Topical. Applied to skin, in a finished cosmetic product.",
+      "safetyFlag" : "TOPICAL ONLY. Do not inject. Cosmetic serums are not sterile injectable products, and injecting one risks infection and a foreign-body reaction. Nothing about this peptide has been studied by injection.",
+      "sideEffectsCommon" : [
+        "Generally well tolerated topically",
+        "Occasional irritation or stinging, usually from the vehicle rather than the peptide"
+      ],
+      "sideEffectsSerious" : [
+        "Injecting a cosmetic serum risks infection, abscess and foreign-body reaction — the product is not sterile and not formulated for injection"
+      ],
+      "storageHandling" : "Store the finished cosmetic product as its label directs — typically cool and out of direct light. This is not a lyophilized vial and needs no reconstitution.",
+      "tagline" : "Topical \"Botox-like\" wrinkle peptide — a serum ingredient, not an injectable.",
+      "timing" : "Applied once or twice daily; cosmetic studies run over weeks to months.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Argireline is the trade name for acetyl hexapeptide-8 (older labels say hexapeptide-3), a six-amino-acid peptide used in anti-wrinkle creams and serums. It is marketed as a topical alternative to botulinum toxin.",
+      "whatToExpect" : "Topical studies report modest reductions in measured wrinkle depth over weeks. Expect softening at the margins, not a comparison to an injectable neuromodulator."
+    },
+    {
+      "aliases" : [
+        "Body Protection Compound-157",
+        "BPC"
+      ],
+      "category" : "Healing / recovery",
+      "dosingCommunity" : "Commonly reported at approximately 200–500 mcg once or twice daily, sometimes injected near the injury site, in cycles of several weeks. These are anecdotal ranges with no trial basis. Reported, not recommended.",
+      "evidence" : "preclinicalOrFailed",
+      "halfLifeHours" : 0.4,
+      "howItWorks" : "In animal studies it appears to promote angiogenesis (new blood-vessel growth) and to modulate growth-factor and nitric-oxide pathways, which could plausibly aid tissue repair. These mechanisms are characterized largely in rodents, not humans.",
+      "name" : "BPC-157",
+      "notes" : "No completed Phase II trial; human data from <30 subjects across uncontrolled studies. Removed from FDA 503A Category 2 (April 2026, procedural).",
+      "regulatory" : "researchOnly",
+      "route" : "Usually subcutaneous, sometimes intramuscular near the target area. The claim that local injection heals faster is not established in humans.",
+      "sideEffectsCommon" : [
+        "Generally reported as well tolerated at these doses",
+        "Occasional injection-site irritation, nausea, or lightheadedness"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term safety has not been studied in humans — the main unknown"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Synthetic peptide; used off-label for tendon, joint, and gut recovery.",
+      "timing" : "Plasma half-life is short (well under an hour), which is the basis for once- or twice-daily dosing in practice.",
+      "wadaProhibited" : true,
+      "whatItIs" : "BPC-157 (\"Body Protection Compound\") is a synthetic peptide derived from a protein found in gastric juice. It is used with the aim of accelerating tendon, ligament, muscle, and gut healing. Human evidence is very limited.",
+      "whatToExpect" : "Users report faster recovery from tendon and joint injuries and gut symptom relief, often within 1–2 weeks. No completed controlled human trial demonstrates this, and placebo and natural-healing effects cannot be ruled out from anecdotal reports."
+    },
+    {
+      "aliases" : [
+        "BPC-157 arginine salt",
+        "Stable BPC-157"
+      ],
+      "category" : "Healing / recovery",
+      "evidence" : "preclinicalOrFailed",
+      "halfLifeHours" : 0.4,
+      "name" : "BPC-157 Arginate",
+      "notes" : "The arginine-salt form of BPC-157, marketed as more stable than the acetate. Same preclinical-only evidence base and WADA-prohibited status as BPC-157.",
+      "regulatory" : "researchOnly",
+      "sideEffectsCommon" : [
+        "Same profile as BPC-157 — this is the same molecule in a different salt",
+        "Generally reported as well tolerated at these doses",
+        "Occasional injection-site irritation, nausea, or lightheadedness"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term safety has not been studied in humans — the main unknown",
+        "The arginate salt has no separate human safety data of its own; it inherits BPC-157's, which is preclinical"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Arginine-salt form of BPC-157; used off-label for recovery.",
+      "wadaProhibited" : true,
+      "whatItIs" : "BPC-157 arginate is the arginine-salt form of BPC-157, marketed as more stable in solution than the usual acetate form. Its evidence and regulatory status are the same as standard BPC-157."
+    },
+    {
+      "aliases" : [
+        "AEDL",
+        "Ala-Glu-Asp-Leu"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation. Not independently established.",
+      "name" : "Bronchogen",
+      "notes" : "Khavinson peptide bioregulator (bronchial). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "safetyFlag" : "Breathing symptoms are not something to self-treat. Asthma and COPD have effective prescribed treatments, and substituting an unproven peptide for an inhaler is dangerous.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tetrapeptide (AEDL) aimed at bronchial and lung claims.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Bronchogen is Ala-Glu-Asp-Leu, directed at bronchial and respiratory claims.",
+      "whatToExpect" : "No demonstrated respiratory endpoint — no spirometry, symptom-score, or exacerbation data — in controlled human research."
+    },
+    {
+      "aliases" : [
+        "Cagri",
+        "AM833"
+      ],
+      "category" : "GLP-1 / incretin",
+      "dosingCommunity" : "Research-only supply; community use mirrors the approximately 2.4 mg weekly trial dose without manufacturing verification. Reported, not recommended.",
+      "dosingStudied" : "Studied at approximately 2.4 mg once weekly, often titrated to that dose and matched to semaglutide's schedule in the combination.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 168,
+      "howItWorks" : "Amylin slows gastric emptying and increases satiety through a pathway distinct from GLP-1. Combining the two addresses appetite through two mechanisms, which is the rationale behind CagriSema.",
+      "name" : "Cagrilintide",
+      "notes" : "INVESTIGATIONAL long-acting amylin analog, studied weekly and combined with semaglutide (CagriSema). Not FDA-approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, once weekly.",
+      "sideEffectsCommon" : [
+        "Nausea (most common), similar to GLP-1 agonists",
+        "More likely when combined with semaglutide"
+      ],
+      "sideEffectsSerious" : [
+
+      ],
+      "tagline" : "Long-acting amylin analog; studied for weight loss, often combined with semaglutide.",
+      "timing" : "Long half-life (approximately one week) supports once-weekly dosing.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Cagrilintide is a long-acting analog of amylin, a hormone co-released with insulin that promotes satiety. It is investigational and is studied as the partner to semaglutide in the combination \"CagriSema.\"",
+      "whatToExpect" : "Alone it produces moderate weight loss; combined with semaglutide the effect is larger in trials. It remains investigational, so durable and long-term outcomes are not established."
+    },
+    {
+      "aliases" : [
+        "AED",
+        "Ala-Glu-Asp"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation. Nothing establishes a cartilage-specific effect in humans.",
+      "name" : "Cartalax",
+      "notes" : "Khavinson peptide bioregulator (cartilage/connective tissue). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tripeptide (AED) aimed at cartilage and connective tissue.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Cartalax is Ala-Glu-Asp, a Khavinson bioregulator whose claims target cartilage and connective tissue — which is why it appears in joint-support marketing.",
+      "whatToExpect" : "No demonstrated effect on joint pain, cartilage volume, or function in controlled human research."
+    },
+    {
+      "aliases" : [
+        "CJC-1295 with DAC",
+        "DAC:GRF"
+      ],
+      "category" : "GH secretagogue",
+      "dosingCommunity" : "Commonly reported at approximately 1–2 mg once weekly (sometimes split twice weekly). Reported, not recommended.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 168,
+      "howItWorks" : "Same GHRH mechanism, but the DAC keeps it circulating for days, raising baseline GH and IGF-1 rather than producing discrete pulses. The trade-off between convenience and loss of the pulsatile pattern is the main point of debate.",
+      "name" : "CJC-1295 (DAC)",
+      "notes" : "GHRH analog with Drug Affinity Complex. Long-acting; ~1–2 mg weekly in community use. Distinct from no-DAC.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous.",
+      "sideEffectsCommon" : [
+        "Flushing",
+        "Water retention"
+      ],
+      "sideEffectsSerious" : [
+        "Carpal-tunnel-like tingling, joint aches, or rising blood sugar — and because levels stay elevated longer, these can be more sustained than with no-DAC"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Long-acting GHRH analog; sustained action over days rather than pulsatile.",
+      "timing" : "Half-life approximately 6–8 days; weekly or twice-weekly dosing. It does not require multiple daily injections.",
+      "wadaProhibited" : true,
+      "whatItIs" : "CJC-1295 with DAC has a Drug Affinity Complex that binds it to blood albumin, extending its action to days. This makes it different from the no-DAC version, which clears in minutes.",
+      "whatToExpect" : "Users report recovery and body-composition changes over weeks, with fewer injections required. Because it elevates GH more continuously, it departs further from the physiological GH rhythm."
+    },
+    {
+      "aliases" : [
+        "Mod-GRF(1-29)",
+        "Modified GRF 1-29",
+        "CJC without DAC"
+      ],
+      "category" : "GH secretagogue",
+      "dosingCommunity" : "Commonly reported at approximately 100–300 mcg, one to three times daily, typically before bed or fasted, often with ipamorelin. Reported, not recommended.",
+      "dosingStudied" : "The approximately 100 mcg \"saturation dose\" concept (the amount that maximally stimulates a GH pulse) comes from GHRH-analog research.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 0.5,
+      "howItWorks" : "It stimulates the pituitary to release GH in a pulse, then clears quickly, preserving the body's pulsatile GH pattern. Combined with a GHRP such as ipamorelin, the two pathways amplify each other.",
+      "name" : "CJC-1295 (no DAC)",
+      "notes" : "Short-acting GHRH analog; ~100–300 mcg 1–3×/day in community use. The ~30-min half-life is a community estimate, NOT literature (the closest studied analog, D-Ala²-GHRH, is ~7 min IV). Distinct from the DAC version.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, small volume, rotated across abdominal sites.",
+      "sideEffectsCommon" : [
+        "A warm flush after injecting",
+        "Head-rush",
+        "Injection-site itch",
+        "Water retention",
+        "Hunger (largely from the GHRP partner)"
+      ],
+      "sideEffectsSerious" : [
+        "Numbness or tingling in the hands (carpal-tunnel-like)",
+        "Joint aches",
+        "Rising blood sugar — ease off if these appear"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Short-acting GHRH analog; commonly combined with ipamorelin.",
+      "timing" : "Short-acting (community estimate approximately 30 minutes; not established in the literature), which is the basis for dosing multiple times per day during empty-stomach windows, since food (especially carbohydrate and fat) blunts the GH pulse.",
+      "wadaProhibited" : true,
+      "whatItIs" : "CJC-1295 without DAC (also called Mod-GRF 1-29) is a short-acting analog of GHRH, the hormone that signals the pituitary to release growth hormone. It is usually combined with a ghrelin mimetic such as ipamorelin. It is distinct from the DAC version, which is long-acting.",
+      "whatToExpect" : "Users report improved sleep, recovery, and body composition over weeks to months. Effects are indirect, mediated by the user's own GH and IGF-1, so they are more gradual than injected GH. Human efficacy data for physique goals are limited."
+    },
+    {
+      "aliases" : [
+        "AEDP",
+        "Ala-Glu-Asp-Pro"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation, as with the rest of the family. Preclinical nerve-regeneration reports exist; independent replication does not.",
+      "name" : "Cortagen",
+      "notes" : "Khavinson peptide bioregulator (cortex/nerve). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tetrapeptide (AEDP) aimed at nerve and cortex claims.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Cortagen is Ala-Glu-Asp-Pro, directed at nerve tissue and described in the source literature as supporting peripheral nerve regeneration.",
+      "whatToExpect" : "No reliable human effect has been demonstrated. Anecdotal reports centre on recovery and nerve discomfort."
+    },
+    {
+      "aliases" : [
+        "EDP",
+        "Glu-Asp-Pro"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation. No independently established immune mechanism.",
+      "name" : "Crystagen",
+      "notes" : "Khavinson peptide bioregulator (immune). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tripeptide (EDP) aimed at immune claims.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Crystagen is Glu-Asp-Pro, directed at immune-system claims.",
+      "whatToExpect" : "No demonstrated immune endpoint in controlled human research."
+    },
+    {
+      "aliases" : [
+        "Delta sleep-inducing peptide"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community ranges are commonly cited around 100–200 mcg before bed. Reported, not recommended.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Never satisfactorily established. No specific receptor has been identified, which is unusual for a peptide studied this long, and proposed mechanisms remain indirect. The absence of a known receptor after fifty years is itself informative.",
+      "name" : "DSIP",
+      "notes" : "Nonapeptide studied for sleep/stress with inconsistent results. No approved human product.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous.",
+      "sideEffectsCommon" : [
+        "Reported as generally well tolerated",
+        "Vivid dreams",
+        "Paradoxical stimulation or difficulty sleeping — reported often enough to be worth expecting",
+        "Headache"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is unstudied",
+        "Persistent insomnia has causes worth diagnosing (sleep apnea especially); an unproven peptide can delay finding one"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Sleep peptide from the 1970s whose effects never reproduced reliably.",
+      "timing" : "Short-acting; taken shortly before bed by convention.",
+      "wadaProhibited" : false,
+      "whatItIs" : "DSIP (delta sleep-inducing peptide) is a nine-amino-acid peptide isolated in 1974 from the venous blood of sleeping rabbits, and named for the delta-wave sleep it was thought to induce.",
+      "whatToExpect" : "Human studies from the 1970s and 80s produced inconsistent results — some reported improved sleep onset, others found nothing. It has also been investigated for withdrawal symptoms and chronic pain, with similarly mixed findings. Users report vivid dreams and, notably, sometimes the opposite of the intended effect."
+    },
+    {
+      "aliases" : [
+        "Trulicity",
+        "Dula"
+      ],
+      "category" : "GLP-1 / incretin",
+      "dosingStudied" : "Label: 0.75 mg once weekly to start, up to 4.5 mg weekly, in fixed-dose pens.",
+      "evidence" : "fdaApproved",
+      "halfLifeHours" : 108,
+      "howItWorks" : "The GLP-1 mechanism shared by the class — slows gastric emptying, reduces appetite, and prompts glucose-dependent insulin release — on a fragment engineered to last about a week.",
+      "name" : "Dulaglutide",
+      "notes" : "FDA-approved once-weekly GLP-1 (T2D). Supplied in fixed-dose pens.",
+      "regulatory" : "fdaApproved",
+      "route" : "Subcutaneous, once weekly. Rotate abdomen / thigh / upper arm.",
+      "safetyFlag" : "Boxed warning for thyroid C-cell tumors — do not use with a personal or family history of medullary thyroid carcinoma or MEN 2. Stop and seek care for severe, persistent abdominal pain (possible pancreatitis).",
+      "sideEffectsCommon" : [
+        "Nausea",
+        "Diarrhea",
+        "Reduced appetite",
+        "Injection-site reactions"
+      ],
+      "sideEffectsSerious" : [
+        "Same thyroid C-cell (rodent) and pancreatitis cautions as the class",
+        "Contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2"
+      ],
+      "storageHandling" : "Pens: refrigerate before first use; an in-use pen can sit at room temperature for a set number of days per its label.",
+      "tagline" : "GLP-1 receptor agonist; a once-weekly diabetes drug.",
+      "timing" : "Half-life about 4.5 days → once weekly, the same day each week.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Dulaglutide (Trulicity) is an FDA-approved once-weekly GLP-1 receptor agonist, used mainly for type 2 diabetes and to lower cardiovascular risk in people with diabetes. It comes in fixed-dose auto-injector pens.",
+      "whatToExpect" : "Strong blood-sugar control and modest weight loss, smaller than semaglutide or tirzepatide in head-to-head data. Weekly; appetite effects appear early."
+    },
+    {
+      "aliases" : [
+        "Epitalon",
+        "AEDG",
+        "Ala-Glu-Asp-Gly"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "The proposed mechanism is that the peptide enters cells, binds DNA or histones, and alters gene transcription — including upregulating telomerase. That mechanism is not independently established, and the leap from a four-residue peptide to targeted gene regulation is the specific claim to be skeptical of.",
+      "name" : "Epithalon",
+      "notes" : "Synthetic tetrapeptide studied (mostly in Russian literature) for telomerase/longevity claims. No robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Sold both as an injectable powder and as oral capsules. Almost all of the published work is on the injectable form; oral bioavailability of a tetrapeptide is a real question, not a formality.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tetrapeptide (AEDG) marketed for telomerase and longevity claims.",
+      "timing" : "No characterized human half-life. Protocols are conventionally short cycles rather than continuous use.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Epithalon (also spelled Epitalon) is a synthetic four-amino-acid peptide, Ala-Glu-Asp-Gly. It is the best known of the Khavinson bioregulators and the one most of the longevity claims attach to.",
+      "whatToExpect" : "Reports describe sleep and general wellbeing effects. No controlled trial in humans has demonstrated an effect on lifespan, telomere length, or any hard clinical endpoint."
+    },
+    {
+      "aliases" : [
+        "FS-344",
+        "Follistatin"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community protocols commonly describe 100 mcg daily over short runs. Reported, not recommended — and note that no dose of injected protein has been shown to reproduce the gene-therapy results.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Myostatin limits muscle growth; follistatin binds it, releasing that brake. It also binds activin A, which is part of why untargeted follistatin has effects beyond muscle. The distinction that matters: gene therapy produces the protein continuously inside tissue for months, whereas an injected protein is cleared within hours to days.",
+      "name" : "Follistatin 344",
+      "notes" : "A myostatin-binding protein used to chase muscle growth. Preclinical/gene-therapy research only as an injectable; WADA-prohibited (S4.4, myostatin function); not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous or intramuscular as sold.",
+      "safetyFlag" : "The impressive follistatin results come from GENE THERAPY — a virus delivering the FS-344 gene, producing the protein continuously for months. An injected protein is not that experiment, and results from one do not transfer to the other.",
+      "sideEffectsCommon" : [
+        "Not characterized in humans for the injected protein",
+        "Injection-site reactions"
+      ],
+      "sideEffectsSerious" : [
+        "Broad activin blockade has consequences outside muscle — activin signaling is involved in reproductive, inflammatory and tissue-repair processes; unstudied in this context",
+        "Unregulated muscle growth is not automatically desirable: tendon and connective tissue do not adapt at the same rate, and the mismatch is a plausible injury mechanism",
+        "Purity and identity for a protein this size are far harder to verify than for a short peptide"
+      ],
+      "storageHandling" : "Larger proteins are more fragile than short peptides — sensitive to freeze-thaw, agitation and heat. Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Myostatin-binding protein chased for muscle growth; the research is gene therapy, not this vial.",
+      "timing" : "Circulating half-life of the protein is short (hours), which is precisely why the sustained-expression research does not map onto injecting it.",
+      "wadaProhibited" : true,
+      "whatItIs" : "Follistatin is a naturally occurring protein that binds and neutralizes activins and myostatin. \"FS-344\" is specifically the name of the gene-therapy construct used in research — which is the root of the confusion, because it is also printed on vials of injectable protein.",
+      "whatToExpect" : "Gene-therapy studies in animals — and a small number of human muscular-dystrophy subjects — showed real muscle increases. For an injected protein bought as a peptide, there is no human evidence, and pharmacokinetics argue against reproducing a sustained effect."
+    },
+    {
+      "aliases" : [
+        "FOXO4-DRI senolytic",
+        "ES2"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Community protocols exist and no range is documented here. For a compound whose mechanism is targeted cell death, with no human data at all, repeating an anecdotal number would give it a credibility it has not earned.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Senescent cells stay alive by sequestering p53 through an interaction with FOXO4. The peptide competitively disrupts that interaction, releasing p53 to trigger apoptosis. The selectivity claim rests on senescent cells depending on this mechanism more heavily than normal cells do — a difference of degree, which is a thinner safety margin than a difference in kind.",
+      "name" : "FOXO4-DRI",
+      "notes" : "Experimental senolytic peptide (clears senescent cells) with data only in mice. No human trials; safety and dosing in humans are unknown. Not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous or intravenous in reported use; mouse studies used intraperitoneal or intravenous.",
+      "safetyFlag" : "This is designed to make cells die. That is the mechanism, not a side effect. It has been tested in mice and never in humans, so there is no dose known to be safe and no way to stop the effect once injected.",
+      "sideEffectsCommon" : [
+        "Not characterized in humans — no clinical data of any kind",
+        "Injection-site reactions reported"
+      ],
+      "sideEffectsSerious" : [
+        "The mechanism is apoptosis induction; off-target killing of healthy cells is the central risk and has not been quantified in humans",
+        "No human dose is known to be safe, and there is no way to reverse the effect after administration",
+        "Purity and correct D-amino-acid synthesis are difficult to verify, and a mis-synthesized product has unknown activity"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Experimental senolytic — mouse data only, and designed to kill cells.",
+      "timing" : "Mouse work used intermittent short courses rather than continuous dosing — senolytics are generally framed as hit-and-run rather than daily.",
+      "wadaProhibited" : false,
+      "whatItIs" : "FOXO4-DRI is a synthetic peptide built as a D-amino-acid retro-inverso version of a FOXO4 fragment — the D-isomer construction is there to resist degradation. It is a senolytic: intended to selectively kill senescent (\"zombie\") cells that accumulate with age.",
+      "whatToExpect" : "Nothing established in humans. The landmark result is a 2017 mouse study reporting restored fitness, fur density and kidney function in aged animals. It has not been replicated into any human trial."
+    },
+    {
+      "aliases" : [
+        "Copper peptide",
+        "GHK copper"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Injectable community ranges are often approximately 1–2 mg, with no trial basis and open questions about systemic copper. Reported, not recommended. Topical serums are a distinct and better-supported product.",
+      "evidence" : "precursorOffLabel",
+      "howItWorks" : "GHK-Cu delivers copper and signals skin cells to remodel the extracellular matrix, increasing collagen and elastin and reducing inflammation in topical studies. Whether injection reproduces those localized skin effects systemically is unknown.",
+      "name" : "GHK-Cu (injectable)",
+      "notes" : "Human evidence is largely for TOPICAL GHK-Cu; injectable use is off-label/unstudied.",
+      "regulatory" : "researchOnly",
+      "route" : "The evidence-based route is topical (serums and creams). Injectable subcutaneous use is off-label and can sting and cause copper-blue discoloration at the site.",
+      "sideEffectsCommon" : [
+        "Topical: generally well tolerated, occasional irritation",
+        "Injected: site stinging and blue (copper) discoloration are reported"
+      ],
+      "sideEffectsSerious" : [
+        "Systemic copper load is a theoretical concern with repeated injected dosing"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Copper-binding tripeptide; used for skin, hair, and recovery.",
+      "timing" : "No established injectable schedule; topical is applied daily.",
+      "wadaProhibited" : false,
+      "whatItIs" : "GHK-Cu is a copper-binding tripeptide used in skincare for collagen support, wound healing, and anti-aging. Nearly all the strong human evidence is for topical GHK-Cu; injected use is off-label and largely unstudied.",
+      "whatToExpect" : "Topically: improved skin firmness, texture, and healing in controlled studies. Injected: users report skin, hair, and recovery benefits, but there is no human trial support for the injectable route, and systemic copper dosing carries additional considerations."
+    },
+    {
+      "aliases" : [
+        "Pralmorelin",
+        "KP-102"
+      ],
+      "category" : "GH secretagogue",
+      "dosingCommunity" : "Commonly reported around 100–300 mcg one to three times daily, often with a GHRH analog, timed fasted / pre-bed. Reported, not recommended.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 0.25,
+      "howItWorks" : "Activates the ghrelin / GH-secretagogue receptor to release GH. Less hunger than GHRP-6, but it can nudge prolactin and cortisol more than the cleaner ipamorelin.",
+      "name" : "GHRP-2",
+      "notes" : "GH-releasing peptide (ghrelin mimetic). Used diagnostically as pralmorelin abroad; not FDA-approved for therapy.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, small volume, rotated across abdominal sites.",
+      "sideEffectsCommon" : [
+        "Some hunger (less than GHRP-6)",
+        "Flushing or head-rush",
+        "Water retention"
+      ],
+      "sideEffectsSerious" : [
+        "Can raise prolactin, cortisol, and blood sugar",
+        "Carpal-tunnel-like tingling or joint aches if pushed"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "A growth-hormone-releasing peptide; used diagnostically abroad.",
+      "timing" : "Very short-acting (~15 min) → multiple daily doses, on an empty stomach.",
+      "wadaProhibited" : true,
+      "whatItIs" : "GHRP-2 (pralmorelin) is a ghrelin-mimetic GHRP that triggers a GH pulse. It's used as a diagnostic agent for GH deficiency in some countries; it isn't FDA-approved for therapy.",
+      "whatToExpect" : "Recovery, sleep, and gradual body-composition effects over weeks, with a moderate appetite bump. Indirect, subtler than injected GH."
+    },
+    {
+      "aliases" : [
+        "Growth Hormone Releasing Peptide-6"
+      ],
+      "category" : "GH secretagogue",
+      "dosingCommunity" : "Commonly reported around 100 mcg one to three times daily, often with a GHRH analog and timed fasted / pre-bed. Reported, not recommended.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 2.5,
+      "howItWorks" : "It activates the ghrelin / GH-secretagogue receptor on the pituitary to release GH, and — via the same ghrelin signaling — sharply stimulates appetite. Often paired with a GHRH analog for a larger pulse.",
+      "name" : "GHRP-6",
+      "notes" : "GH-releasing peptide; strongly increases appetite via ghrelin signaling. Not FDA-approved. Human PK (Cabrales 2013) is biphasic: ~8 min distribution, ~2.5 h terminal.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, small volume, rotated across abdominal sites.",
+      "sideEffectsCommon" : [
+        "Strong hunger",
+        "Flushing or head-rush after dosing",
+        "Water retention"
+      ],
+      "sideEffectsSerious" : [
+        "Can raise blood sugar and prolactin/cortisol somewhat",
+        "Carpal-tunnel-like tingling or joint aches if pushed"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "A growth-hormone-releasing peptide that strongly increases appetite.",
+      "timing" : "Human PK is biphasic (~8 min distribution, ~2.5 h terminal) → dosed multiple times daily, on an empty stomach since food blunts the GH pulse.",
+      "wadaProhibited" : true,
+      "whatItIs" : "GHRP-6 is a ghrelin-mimetic (a GHRP) that prompts a growth-hormone pulse. It's known for a pronounced hunger spike, which some use deliberately (e.g. to eat during a bulk) and others find unwanted.",
+      "whatToExpect" : "A strong, fast appetite increase; users report recovery and sleep effects over weeks. GH effects are indirect and subtler than injected GH."
+    },
+    {
+      "aliases" : [
+        "GSH"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Off-label ranges are often approximately 600–2400 mg per session (IV or IM), repeated on a schedule. Reported, not recommended.",
+      "evidence" : "precursorOffLabel",
+      "howItWorks" : "Glutathione neutralizes oxidative stress and supports liver detoxification pathways. The skin-lightening claim is tied to its effect on melanin synthesis, but robust, durable human efficacy data, particularly for injection, are limited.",
+      "name" : "Glutathione",
+      "notes" : "Antioxidant tripeptide (not a signaling peptide). Injected off-label for skin/wellness; robust human efficacy evidence is limited.",
+      "regulatory" : "researchOnly",
+      "route" : "IV, intramuscular, or subcutaneous depending on the protocol.",
+      "sideEffectsCommon" : [
+        "Reported as generally well tolerated",
+        "Injection-site reactions are possible"
+      ],
+      "sideEffectsSerious" : [
+        "Sterility and product quality are the practical risks with off-label injectable use"
+      ],
+      "tagline" : "Antioxidant tripeptide; used off-label for skin and wellness.",
+      "timing" : "No peptide-style half-life driving a schedule; benefits are described as dependent on repeated dosing.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Glutathione (GSH) is a naturally occurring antioxidant tripeptide. It is injected or infused off-label mostly for skin brightening and general detox and wellness use. It is not a signaling peptide like the others in this library.",
+      "whatToExpect" : "Users report skin brightening and a general wellness effect over weeks of repeated dosing. Evidence quality is modest and effects tend to fade after dosing stops."
+    },
+    {
+      "aliases" : [
+        "Examorelin"
+      ],
+      "category" : "GH secretagogue",
+      "dosingCommunity" : "Commonly reported around 100 mcg one to two times daily in short cycles to limit desensitization. Reported, not recommended.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 0.5,
+      "howItWorks" : "A potent ghrelin-receptor agonist driving a large GH pulse. With steady use the receptors down-regulate and the GH bump fades, which is why users cycle it or keep doses modest.",
+      "name" : "Hexarelin",
+      "notes" : "Potent GH-releasing peptide; GH response can desensitize with continued use. Not FDA-approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, small volume.",
+      "sideEffectsCommon" : [
+        "Flushing or head-rush",
+        "Water retention",
+        "Some appetite increase"
+      ],
+      "sideEffectsSerious" : [
+        "Can raise cortisol and prolactin more than cleaner GHRPs",
+        "Desensitization with continuous use",
+        "Carpal-tunnel-like tingling if pushed"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "The most potent GHRP — but the GH response desensitizes.",
+      "timing" : "Short-acting (~30 min) → dosed daily, fasted; cycled to preserve the response.",
+      "wadaProhibited" : true,
+      "whatItIs" : "Hexarelin (examorelin) is the strongest of the common GHRPs at releasing GH. Its catch: continued use blunts the response (desensitization), so it isn't a set-and-forget option.",
+      "whatToExpect" : "A big initial GH pulse; effects diminish with continuous use. Like all secretagogues, physique changes are indirect and slow."
+    },
+    {
+      "aliases" : [
+        "HN",
+        "MT-RNR2 peptide"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Community use is uncommon and ranges are poorly documented. No number is repeated here, because there is nothing to base one on.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "It is described as cytoprotective, acting through a receptor complex to reduce apoptosis and improve insulin sensitivity, with effects reported in models of Alzheimer's, cardiac ischemia and diabetes.",
+      "name" : "Humanin",
+      "notes" : "Mitochondrial-derived peptide studied preclinically for cytoprotection/longevity. No approved human product.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous as sold.",
+      "sideEffectsCommon" : [
+        "Not characterized in humans — no clinical safety data exists",
+        "Injection-site reactions"
+      ],
+      "sideEffectsSerious" : [
+        "Human safety is entirely unstudied",
+        "Broadly anti-apoptotic signaling deserves caution: preventing programmed cell death is not uniformly good, since apoptosis is one of the body's defenses against damaged cells"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Mitochondrial-derived peptide with longevity correlations but no administration trials.",
+      "timing" : "No characterized human half-life.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Humanin is a 24-amino-acid peptide encoded not in nuclear DNA but in mitochondrial DNA — within the MT-RNR2 gene. It was one of the first mitochondrial-derived peptides identified and is a genuinely interesting piece of biology.",
+      "whatToExpect" : "Nothing established in humans. The frequently cited human finding is CORRELATIONAL: higher circulating humanin is associated with longevity, and centenarians' offspring tend to have higher levels. That is an association in observational data, not evidence that raising it does anything."
+    },
+    {
+      "aliases" : [
+        "Long R3 IGF-1"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community ranges are often tens of mcg daily around training. Reported, not recommended — the safety profile is the bigger issue than the dose.",
+      "evidence" : "preclinicalOrFailed",
+      "halfLifeHours" : 20,
+      "howItWorks" : "IGF-1 drives muscle-cell growth and nutrient uptake downstream of growth hormone. The LR3 modification extends its half-life, prolonging that signaling.",
+      "name" : "IGF-1 LR3",
+      "notes" : "Modified IGF-1 with an extended half-life. WADA-prohibited (S2). No approved human product; growth-factor signaling carries theoretical cancer-risk concerns.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous (systemic) or intramuscular; community lore about \"site growth\" from local injection isn't established.",
+      "safetyFlag" : "Growth-factor signaling carries a theoretical cancer-promotion risk (it drives cell growth broadly). Can also cause hypoglycemia (low blood sugar). WADA-prohibited.",
+      "sideEffectsCommon" : [
+        "Hypoglycemia symptoms — shakiness, sweating, hunger (eat carbs around dosing)",
+        "Injection-site reactions"
+      ],
+      "sideEffectsSerious" : [
+        "Theoretical cancer-promotion risk from broad growth-factor signaling",
+        "Organ/tissue growth concerns with sustained use",
+        "Severe hypoglycemia if mishandled"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "A long-acting IGF-1 variant chased for muscle growth — with real cautions.",
+      "timing" : "Extended half-life (~20 h) vs native IGF-1 → typically dosed once daily.",
+      "wadaProhibited" : true,
+      "whatItIs" : "IGF-1 LR3 (Long R3 IGF-1) is a modified version of insulin-like growth factor 1 engineered to resist binding proteins, so it stays active far longer than natural IGF-1. It's used to chase muscle growth; there's no approved human product.",
+      "whatToExpect" : "Users report muscle fullness and growth. Because growth-factor signaling is systemic, the concerns below matter as much as any benefit; human physique evidence is essentially absent."
+    },
+    {
+      "aliases" : [
+        "Ipa"
+      ],
+      "category" : "GH secretagogue",
+      "dosingCommunity" : "Commonly reported at approximately 100–300 mcg, one to three times daily, often combined with CJC-1295 (no DAC) and timed fasted or pre-bed. Reported, not recommended.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 2,
+      "howItWorks" : "It activates the ghrelin/GH-secretagogue receptor on the pituitary to trigger GH release. Combined with a GHRH analog (CJC-1295 no-DAC), the GHRH and GHRP pathways produce a larger pulse than either alone.",
+      "name" : "Ipamorelin",
+      "notes" : "Ghrelin-receptor/GH secretagogue. Per FDA it is 503A Category 1 — a different status than the 12 peptides removed from Category 2 in April 2026.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, small volume, rotated across abdominal sites.",
+      "sideEffectsCommon" : [
+        "Generally well tolerated",
+        "Mild head-rush or flushing after dosing",
+        "Some water retention",
+        "Less appetite stimulation than GHRP-6 or GHRP-2"
+      ],
+      "sideEffectsSerious" : [
+        "Class cautions at higher doses: carpal-tunnel-like tingling, joint aches, blood sugar"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Selective GHRP; low appetite and cortisol effects relative to older GHRPs.",
+      "timing" : "Half-life approximately 2 hours; multiple daily doses in practice, timed to empty-stomach windows since food blunts the GH pulse.",
+      "wadaProhibited" : true,
+      "whatItIs" : "Ipamorelin is a selective ghrelin-receptor agonist (a GHRP) that prompts a GH pulse. Unlike older GHRPs, it has minimal effect on cortisol or prolactin and produces less appetite stimulation.",
+      "whatToExpect" : "Users report improved sleep depth, recovery, and gradual body-composition changes over weeks. As with all secretagogues, effects are indirect and more gradual than injected GH."
+    },
+    {
+      "aliases" : [
+        "Lys-Pro-Val",
+        "α-MSH(11-13)"
+      ],
+      "category" : "Healing / recovery",
+      "dosingCommunity" : "Commonly reported around 200–500 mcg daily (oral/enteric forms are used for gut targets). Anecdotal — reported, not recommended.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Appears to dampen inflammatory signaling inside cells. Much of the work is in animal and cell models of colitis and skin inflammation, not humans.",
+      "name" : "KPV",
+      "notes" : "Tripeptide fragment of α-MSH studied preclinically for anti-inflammatory effects. No approved human product.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, or oral/enteric-coated for gut-specific use.",
+      "sideEffectsCommon" : [
+        "Reported as generally well tolerated"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is unknown"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "An anti-inflammatory tripeptide fragment of α-MSH.",
+      "timing" : "Human half-life isn't established; dosed daily by convention.",
+      "wadaProhibited" : false,
+      "whatItIs" : "KPV is a three-amino-acid fragment (Lys-Pro-Val) of the hormone α-MSH, studied preclinically for anti-inflammatory effects — with particular interest in gut inflammation.",
+      "whatToExpect" : "Used in hopes of calming gut or systemic inflammation; users report gut relief. No controlled human trials confirm this."
+    },
+    {
+      "aliases" : [
+        "Saxenda",
+        "Victoza",
+        "Lira"
+      ],
+      "category" : "GLP-1 / incretin",
+      "dosingStudied" : "Saxenda label: 0.6 mg daily, increasing weekly to 3.0 mg. Victoza ranges to 1.8 mg.",
+      "evidence" : "fdaApproved",
+      "halfLifeHours" : 13,
+      "howItWorks" : "Same GLP-1 mechanism as semaglutide: it slows gastric emptying, reduces appetite, and improves insulin response, but with a much shorter half-life, hence daily dosing.",
+      "name" : "Liraglutide",
+      "notes" : "FDA-approved GLP-1 (T2D/obesity). Dosed once daily, unlike the weekly agents.",
+      "regulatory" : "fdaApproved",
+      "route" : "Subcutaneous, once daily. Rotate abdomen, thigh, and upper arm.",
+      "sideEffectsCommon" : [
+        "Same GI profile as the class (nausea, GI upset)",
+        "Daily dosing means a daily rather than weekly nausea pattern"
+      ],
+      "sideEffectsSerious" : [
+        "Same thyroid C-cell and pancreatitis cautions as the rest of the class"
+      ],
+      "tagline" : "Once-daily GLP-1 receptor agonist; used for weight loss and diabetes.",
+      "timing" : "Half-life approximately 13 hours; once daily. A missed dose has more effect than with weekly agents.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Liraglutide is an FDA-approved GLP-1 agonist (Saxenda for weight, Victoza for diabetes). It was the first GLP-1 agonist approved for obesity and is dosed once daily rather than weekly.",
+      "whatToExpect" : "In trials, approximately 5–8% average weight loss, less than the newer weekly agents. The appetite effect is reported within days."
+    },
+    {
+      "aliases" : [
+        "KEDA",
+        "Lys-Glu-Asp-Ala"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation, with source-literature reports of chromatin decondensation in lymphocytes. Not independently established.",
+      "name" : "Livagen",
+      "notes" : "Khavinson peptide bioregulator (liver/immune). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tetrapeptide (KEDA) aimed at liver and immune claims.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Livagen is Lys-Glu-Asp-Ala, directed at liver function and immune claims. Closely related to Epithalon in the family's own framing.",
+      "whatToExpect" : "No demonstrated effect on liver enzymes, liver function, or immune endpoints in controlled human research."
+    },
+    {
+      "aliases" : [
+        "Cathelicidin",
+        "CAP-18 fragment"
+      ],
+      "category" : "Healing / recovery",
+      "dosingCommunity" : "Community ranges are commonly cited around 100 mcg daily over short courses. Reported, not recommended; the inflammatory profile matters more here than the number.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "It kills microbes by disrupting their membranes directly, and separately acts as a signaling molecule that recruits immune cells and drives inflammatory responses. Both halves are the mechanism, and the second half is why more is not simply better: LL-37 also promotes angiogenesis and, at high local levels, can break tolerance to self-nucleic acids — the accepted link to psoriasis and rosacea.",
+      "name" : "LL-37",
+      "notes" : "Antimicrobial host-defense peptide studied preclinically. No approved human product; injectable use is unstudied.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous as sold.",
+      "safetyFlag" : "This is not a gentle \"immune booster.\" LL-37 is actively pro-inflammatory, and elevated LL-37 is implicated in the pathology of rosacea, psoriasis and some autoimmune conditions. If you have an inflammatory skin or autoimmune condition, more of it is the wrong direction.",
+      "sideEffectsCommon" : [
+        "Injection-site inflammation, redness and pain — expected from a pro-inflammatory peptide, not incidental",
+        "Flu-like feelings reported"
+      ],
+      "sideEffectsSerious" : [
+        "Elevated LL-37 is implicated in rosacea, psoriasis and autoimmune pathology — a plausible mechanism for making an inflammatory condition worse",
+        "It can break immune tolerance to self-nucleic acids at high local concentrations, which is the specific link to autoimmune skin disease",
+        "Long-term human safety is unstudied"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Antimicrobial host-defense peptide — pro-inflammatory, not an immune tonic.",
+      "timing" : "No characterized human half-life; short courses by convention.",
+      "wadaProhibited" : false,
+      "whatItIs" : "LL-37 is the active fragment of human cathelicidin, a natural antimicrobial peptide made by immune cells and epithelium as part of first-line host defense. It is a real and important part of human immunity — which is different from being a useful thing to inject.",
+      "whatToExpect" : "No human trial supports injecting it for infection, healing or immune function. Community reports centre on gut and skin conditions and are difficult to interpret given how commonly those fluctuate on their own."
+    },
+    {
+      "aliases" : [
+        "Matrixyl",
+        "Palmitoyl pentapeptide-4",
+        "Palmitoyl tripeptide-1",
+        "Palmitoyl tetrapeptide-7"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingStudied" : "Typically a few percent by weight in a finished serum — a formulation figure, not an administered dose.",
+      "evidence" : "precursorOffLabel",
+      "howItWorks" : "The peptides are proposed to act as signal fragments resembling collagen breakdown products, prompting fibroblasts to produce more collagen and matrix, with the tetrapeptide additionally described as reducing interleukin-6 signaling.",
+      "name" : "Matrixyl 3000",
+      "notes" : "A TOPICAL cosmetic peptide complex used in anti-aging skincare to signal collagen. Evidence is for topical use only; not an injectable and not a drug.",
+      "regulatory" : "researchOnly",
+      "route" : "Topical, in a finished cosmetic product.",
+      "safetyFlag" : "TOPICAL ONLY. Do not inject. Cosmetic serums are not sterile injectable products.",
+      "sideEffectsCommon" : [
+        "Generally well tolerated topically",
+        "Occasional irritation, usually vehicle-related"
+      ],
+      "sideEffectsSerious" : [
+        "Injecting a cosmetic serum risks infection, abscess and foreign-body reaction"
+      ],
+      "storageHandling" : "Store the finished cosmetic product per its label. Not a lyophilized vial; no reconstitution.",
+      "tagline" : "Topical collagen-signaling peptide complex for skincare.",
+      "timing" : "Once or twice daily; cosmetic trials run 4–12 weeks.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Matrixyl 3000 is a cosmetic complex of two lipid-conjugated peptides — palmitoyl pentapeptide-4 and palmitoyl tetrapeptide-7 — used in anti-aging skincare. The palmitoyl tail is there to help the peptide cross the skin barrier, which is the real formulation problem these ingredients are solving.",
+      "whatToExpect" : "Topical studies report improvements in wrinkle depth and skin firmness over weeks to months. Effects are gradual and modest."
+    },
+    {
+      "aliases" : [
+        "IBI362",
+        "LY3305677"
+      ],
+      "category" : "GLP-1 / incretin",
+      "dosingCommunity" : "Research-only supply; unverified for identity and purity without third-party testing.",
+      "dosingStudied" : "Studied as a titrated once-weekly subcutaneous dose in trials — reported, not a recommendation.",
+      "evidence" : "humanTrialsUnapproved",
+      "howItWorks" : "Like survodutide, it pairs GLP-1 appetite/gastric effects with glucagon-driven energy expenditure and liver-fat mobilization.",
+      "name" : "Mazdutide",
+      "notes" : "INVESTIGATIONAL GLP-1/glucagon dual agonist (GcgR/GLP-1R). Not FDA-approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, once weekly in trials.",
+      "sideEffectsCommon" : [
+        "Class GI effects — nausea, GI upset, worst after dose steps"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is not established",
+        "Glucagon activation can affect heart rate and blood sugar"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Investigational GLP-1/glucagon dual agonist studied for weight loss.",
+      "timing" : "Once-weekly cadence in trials.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Mazdutide (IBI362 / LY3305677) is an experimental GLP-1/glucagon dual agonist, studied largely in China for obesity and diabetes. It is not FDA-approved.",
+      "whatToExpect" : "Meaningful weight loss reported in trials. Investigational, so durability and long-term safety aren't settled."
+    },
+    {
+      "aliases" : [
+        "MT-2",
+        "MT-II"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Community protocols often use a low-dose loading phase (approximately 250–500 mcg) then maintenance, timed with UV exposure. Reported, not recommended; the safety issues below are more significant than the dose.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "It activates multiple melanocortin receptors: MC1R drives melanin production (tanning), while MC4R activity accounts for the libido effect and much of the nausea. Its non-selectivity accounts for its greater side-effect burden compared with PT-141.",
+      "name" : "Melanotan II",
+      "notes" : "Non-selective melanocortin agonist used for tanning/libido; NOT approved. Linked to nausea, darkening/changing moles — dermatologic monitoring is advised in the literature.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous.",
+      "safetyFlag" : "Can darken and change existing moles. New or changing moles are a melanoma warning sign; dermatologists advise skin and mole monitoring during use.",
+      "sideEffectsCommon" : [
+        "Nausea",
+        "Facial flushing",
+        "Appetite loss",
+        "Darkening of existing moles and freckles"
+      ],
+      "sideEffectsSerious" : [
+        "New or changing moles — have skin and moles monitored by a dermatologist, because MT-2 can mask or mimic melanoma warning signs"
+      ],
+      "tagline" : "Non-selective melanocortin agonist; used for tanning and libido.",
+      "timing" : "No well-characterized half-life; dosed in loading and maintenance patterns by convention.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Melanotan II (MT-2) is a non-selective melanocortin agonist used to darken skin and, as a side effect, increase libido. It is not approved in any jurisdiction and is the compound behind most peptide-tanning content.",
+      "whatToExpect" : "Users report noticeable tanning (particularly with UV exposure) within weeks, appetite suppression, and spontaneous erections and increased libido. Nausea and facial flushing are common early on."
+    },
+    {
+      "aliases" : [
+        "Mechano Growth Factor",
+        "IGF-1Ec"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community protocols commonly use 200–400 mcg post-training, often injected near the trained muscle on a localized-action theory. Reported, not recommended; localized growth from systemic injection is not established.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "After muscle damage, MGF expression rises locally and is associated with activating satellite cells — the stem-cell population that repairs and adds muscle fibers. The mechanism is genuinely interesting; the delivery problem is severe, because natural MGF acts locally and transiently while an injection is systemic and brief.",
+      "name" : "MGF",
+      "notes" : "A mechanically-activated IGF-1 splice variant studied preclinically for muscle repair; very short-lived in plasma. WADA-prohibited (S2); no approved human product.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous or intramuscular.",
+      "sideEffectsCommon" : [
+        "Injection-site soreness",
+        "Reported local swelling or pump"
+      ],
+      "sideEffectsSerious" : [
+        "IGF-family signaling promotes cell growth generally; long-term consequences in healthy adults are unstudied",
+        "WADA-prohibited — a sanctionable finding for tested athletes"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "IGF-1 splice variant for muscle repair; gone from plasma in minutes.",
+      "timing" : "Plasma half-life is on the order of minutes — the reason PEG-MGF exists at all. Protocols place it immediately post-training by convention.",
+      "wadaProhibited" : true,
+      "whatItIs" : "MGF (mechano growth factor) is IGF-1Ec — a splice variant of IGF-1 produced by muscle in response to mechanical loading and damage. The peptide sold is usually the unique E-domain portion rather than the full variant.",
+      "whatToExpect" : "No human trial supports the muscle-repair or growth claims. Users report local soreness and a pump; neither indicates satellite-cell activation."
+    },
+    {
+      "aliases" : [
+        "Ibutamoren",
+        "Nutrobal"
+      ],
+      "category" : "GH secretagogue",
+      "dosingCommunity" : "Community use follows 10–25 mg daily, often at night, though the sleep-versus-appetite timing is debated. Oral, so no reconstitution.",
+      "dosingStudied" : "Human trials commonly used 10–25 mg once daily. Reported, not recommended.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 24,
+      "howItWorks" : "It mimics ghrelin at the GH-secretagogue receptor, sustaining elevated GH and IGF-1 across the day. Because the elevation is continuous rather than pulsatile, it departs from the natural GH rhythm more than the injectable secretagogues.",
+      "name" : "MK-677",
+      "notes" : "Orally active ghrelin-receptor agonist (not injected). Studied in humans but never approved; can raise appetite, blood glucose, and water retention. The ~24 h figure is its once-daily duration of action (IGF-1 elevation), not a measured human plasma half-life.",
+      "regulatory" : "researchOnly",
+      "route" : "Oral; taken by mouth once daily. Not injected.",
+      "safetyFlag" : "Can raise blood sugar and reduce insulin sensitivity. Monitor this effect, particularly with prediabetes or when combining with other agents that raise glucose.",
+      "sideEffectsCommon" : [
+        "Increased appetite",
+        "Water retention",
+        "Sometimes lethargy or numb/tingling hands",
+        "Water weight can resemble fat gain"
+      ],
+      "sideEffectsSerious" : [
+        "Can raise blood sugar and lower insulin sensitivity — the most important effect to monitor, especially with prediabetes"
+      ],
+      "tagline" : "Oral ghrelin-receptor agonist; raises GH and IGF-1 throughout the day.",
+      "timing" : "Once daily; effect on IGF-1 lasts approximately 24 hours. Some take it at night for sleep, others in the morning to avoid morning grogginess or appetite.",
+      "wadaProhibited" : true,
+      "whatItIs" : "MK-677 (ibutamoren) is an orally active ghrelin-receptor agonist taken as a pill, not an injection. It raises GH and IGF-1 continuously rather than in pulses.",
+      "whatToExpect" : "Users commonly report increased appetite, deeper sleep, water retention, and gradual body-composition changes over months. It was studied in humans for conditions such as frailty and muscle wasting."
+    },
+    {
+      "aliases" : [
+        "Mitochondrial ORF of the 12S rRNA-c"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Commonly reported at approximately 5–10 mg per week, sometimes split. Anecdotal. Reported, not recommended.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "In animal studies MOTS-c influences metabolic regulators such as AMPK and appears to improve insulin sensitivity and exercise capacity. These mechanisms are characterized mostly in mice and cells.",
+      "name" : "MOTS-c",
+      "notes" : "Mitochondrial-derived peptide studied preclinically for metabolism/exercise. No approved human product.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous.",
+      "sideEffectsCommon" : [
+        "Reported as generally well tolerated at community doses"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is unknown"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Mitochondrial-derived peptide; studied for metabolism and energy.",
+      "timing" : "Human half-life is not established; approximately weekly dosing is convention.",
+      "wadaProhibited" : false,
+      "whatItIs" : "MOTS-c is a small peptide encoded in mitochondrial DNA, studied for its role in metabolism and exercise response. It is marketed for fat loss and metabolic health, but the evidence is preclinical.",
+      "whatToExpect" : "Users report energy and body-composition effects, sometimes described as an exercise mimetic. No controlled human trials support these claims."
+    },
+    {
+      "aliases" : [
+        "Nicotinamide adenine dinucleotide"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Injected or infused doses are large, tens to hundreds of mg, and are given slowly because the infusion rate is what causes discomfort. Reported, not recommended.",
+      "evidence" : "precursorOffLabel",
+      "howItWorks" : "NAD+ is central to mitochondrial energy production and to enzymes (sirtuins, PARPs) involved in DNA repair and aging pathways. Levels decline with age, which is the rationale for supplementation, though whether injected NAD+ meaningfully raises functional cellular NAD+ is debated.",
+      "name" : "NAD+",
+      "notes" : "CORRECTION: NAD+ is a dinucleotide, NOT a peptide. Injected doses are large (tens of mg) and often cause flushing/discomfort if pushed fast.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous or IV infusion. IV is typically administered slowly for tolerability.",
+      "sideEffectsCommon" : [
+        "A wave of flushing, chest or abdominal tightness, and nausea if infused too quickly — uncomfortable but transient",
+        "Slowing the infusion rate reduces it"
+      ],
+      "sideEffectsSerious" : [
+        "Pushing an injection or infusion too fast causes intense flushing, chest and throat tightness, cramping and nausea — the most consistently reported problem with injected NAD+, and the reason clinics infuse it slowly",
+        "Long-term safety of injected NAD+ is unstudied; the rigorous human data is on ORAL precursors (NR, NMN), which are different compounds"
+      ],
+      "tagline" : "Cellular coenzyme (not a peptide); used off-label for energy and longevity.",
+      "timing" : "No peptide-style half-life; dosing is governed by infusion rate rather than schedule.",
+      "wadaProhibited" : false,
+      "whatItIs" : "NAD+ (nicotinamide adenine dinucleotide) is a coenzyme used by every cell for energy production. It is injected or infused off-label for energy, anti-aging, and recovery. It is a dinucleotide, not a peptide.",
+      "whatToExpect" : "Users report energy and mental-clarity effects. The most consistent immediate experience is discomfort from a fast infusion (see below). Robust human longevity outcomes are not established."
+    },
+    {
+      "aliases" : [
+        "EDL",
+        "Glu-Asp-Leu"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation. Not independently established.",
+      "name" : "Ovagen",
+      "notes" : "Khavinson peptide bioregulator (liver/GI). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tripeptide (EDL) aimed at liver and gut claims.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Ovagen is Glu-Asp-Leu, directed at liver and gastrointestinal claims.",
+      "whatToExpect" : "No demonstrated hepatic or GI endpoint in controlled human research."
+    },
+    {
+      "aliases" : [
+        "Pegylated MGF",
+        "PEG mechano growth factor"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community protocols commonly use 200–400 mcg, dosed less frequently than plain MGF because of the longer duration. Reported, not recommended.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Identical proposed mechanism to MGF — satellite-cell activation after muscle damage. PEGylation extends the half-life from minutes to hours or longer, which is the one real advantage it has, and it addresses a delivery problem rather than adding an effect.",
+      "name" : "PEG-MGF",
+      "notes" : "Pegylated form of MGF (an IGF-1 splice variant) marketed for muscle repair; PEGylation extends its action. Preclinical only; WADA-prohibited (S2); not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous or intramuscular.",
+      "sideEffectsCommon" : [
+        "Injection-site soreness",
+        "Reported local swelling"
+      ],
+      "sideEffectsSerious" : [
+        "IGF-family signaling promotes cell growth generally; long-term consequences in healthy adults are unstudied",
+        "Repeated PEGylated-compound exposure raises questions about PEG accumulation and anti-PEG antibodies that are unstudied for these research products",
+        "WADA-prohibited — a sanctionable finding for tested athletes"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "PEGylated MGF — same evidence, longer duration.",
+      "timing" : "PEGylation extends action substantially; protocols typically dose every few days rather than per-session.",
+      "wadaProhibited" : true,
+      "whatItIs" : "PEG-MGF is MGF with a polyethylene-glycol chain attached. The PEG does not change what the peptide does; it slows clearance so the molecule survives long enough to circulate.",
+      "whatToExpect" : "No human trial supports the muscle claims. The longer duration makes systemic exposure more plausible than with plain MGF; whether that produces any benefit is unknown."
+    },
+    {
+      "aliases" : [
+        "EDR",
+        "Glu-Asp-Arg"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Same proposed mechanism as the rest of the family: cell entry and transcriptional regulation. Preclinical reports describe protection against oxidative and hypoxic stress in neural tissue. Not independently established.",
+      "name" : "Pinealon",
+      "notes" : "Khavinson peptide bioregulator (brain/neuro). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tripeptide (EDR) aimed at brain and neuroprotection claims.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Pinealon is Glu-Asp-Arg, a three-amino-acid Khavinson bioregulator whose claims are directed at the brain — neuroprotection and cognition.",
+      "whatToExpect" : "Users report clearer thinking and better sleep. No controlled human cognitive trial supports this."
+    },
+    {
+      "aliases" : [
+        "KEDP",
+        "Lys-Glu-Asp-Pro"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation. No independently established prostate effect.",
+      "name" : "Prostamax",
+      "notes" : "Khavinson peptide bioregulator (prostate). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "safetyFlag" : "Prostate symptoms need a clinical work-up. Urinary changes, and a rising PSA, are how prostate cancer is caught — self-treating around them delays diagnosis.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tetrapeptide (KEDP) aimed at prostate claims.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Prostamax is Lys-Glu-Asp-Pro, directed at prostate claims and marketed for benign prostatic symptoms.",
+      "whatToExpect" : "No demonstrated effect on prostate volume, urinary flow, or PSA in controlled human research."
+    },
+    {
+      "aliases" : [
+        "Bremelanotide",
+        "Vyleesi"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Off-label users often start below 1.75 mg to assess nausea. Reported, not recommended.",
+      "dosingStudied" : "Vyleesi label: 1.75 mg subcutaneous, as needed, no more than one dose per 24 h and ideally no more than 8 doses per month.",
+      "evidence" : "fdaApproved",
+      "halfLifeHours" : 2.7,
+      "howItWorks" : "It activates melanocortin receptors (mainly MC4R) in the central nervous system, influencing sexual desire centrally. Because it is centrally mediated rather than vascular, it works differently from PDE5 inhibitors.",
+      "name" : "PT-141",
+      "notes" : "Melanocortin agonist; FDA-approved as Vyleesi (1.75 mg SC) for premenopausal HSDD. Can transiently raise blood pressure and cause nausea/flushing.",
+      "regulatory" : "fdaApproved",
+      "route" : "Subcutaneous, as needed before activity (abdomen or thigh).",
+      "safetyFlag" : "Can transiently raise blood pressure and lower heart rate. The label cautions against use with uncontrolled hypertension or known cardiovascular disease.",
+      "sideEffectsCommon" : [
+        "Nausea (sometimes significant)",
+        "Facial flushing",
+        "Headache"
+      ],
+      "sideEffectsSerious" : [
+        "Can transiently raise blood pressure and lower heart rate — cautioned against in uncontrolled hypertension or cardiovascular disease",
+        "Prolonged or unwanted erections are possible in men (off-label)"
+      ],
+      "tagline" : "Melanocortin receptor agonist; used for low sexual desire.",
+      "timing" : "Half-life approximately 2.7 h; taken on demand ahead of time, not on a daily schedule.",
+      "wadaProhibited" : false,
+      "whatItIs" : "PT-141 (bremelanotide, brand Vyleesi) is a melanocortin-receptor agonist that acts on central arousal pathways rather than on blood flow. It is FDA-approved for premenopausal women with hypoactive sexual desire disorder (HSDD) and is used off-label more broadly.",
+      "whatToExpect" : "Increased sexual desire and arousal, typically taken before anticipated activity. Onset is approximately within a couple of hours. Nausea and flushing are common."
+    },
+    {
+      "aliases" : [
+        "LY3437943",
+        "Reta"
+      ],
+      "category" : "GLP-1 / incretin",
+      "dosingCommunity" : "As a research-only compound, community dosing is unregulated and product identity and purity are unverifiable without third-party testing. Reported ranges echo the Phase 2 doses but carry no manufacturing guarantees. Reported, not recommended.",
+      "dosingStudied" : "Phase 2 tested 1, 4, 8, and 12 mg once weekly with gradual titration. These are trial doses under monitoring, not a protocol.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 144,
+      "howItWorks" : "It adds glucagon-receptor activation to the GIP and GLP-1 combination. Glucagon signaling can increase energy expenditure and mobilize liver fat, which may account for the larger effect seen in early trials; it also introduces effects such as heart-rate changes that are still being characterized.",
+      "name" : "Retatrutide",
+      "notes" : "INVESTIGATIONAL — not FDA-approved as of 2026-07. Phase 3 TRIUMPH-1 positive topline (May 2026). Any preset is research-only, based on Phase 2 (NCT04881760: 1/4/8/12 mg weekly).",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, once weekly in trials.",
+      "sideEffectsCommon" : [
+        "GI effects as with the rest of the class",
+        "Dose-dependent increases in heart rate reported in trials"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is not established — the unknowns are a significant risk"
+      ],
+      "tagline" : "Triple GIP/GLP-1/glucagon receptor agonist; studied for weight loss.",
+      "timing" : "Half-life approximately 6 days; once-weekly cadence. Long build-up and washout, as with other weekly agents.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Retatrutide is an experimental agonist of the GLP-1, GIP, and glucagon receptors. It is not FDA-approved. Phase 2 data showed weight loss exceeding that of tirzepatide, and Phase 3 (TRIUMPH) is underway.",
+      "whatToExpect" : "In Phase 2, up to approximately 24% average weight loss at 48 weeks at the highest dose, the largest reported for an incretin-class drug to date. Data beyond Phase 2 are still being established; long-term safety is not yet known."
+    },
+    {
+      "aliases" : [
+        "TP-7"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community use is typically intranasal in the several-hundred-microgram-per-day range. Reported, not recommended.",
+      "dosingStudied" : "Russian protocols use intranasal solutions, commonly described around 0.15%–0.3%, over short courses.",
+      "evidence" : "humanTrialsUnapproved",
+      "howItWorks" : "It is described as modulating GABAergic and serotonergic signaling and affecting enkephalin metabolism, producing anxiolysis WITHOUT the sedation, tolerance, or withdrawal associated with benzodiazepines. Its tuftsin lineage also gives it immunomodulatory activity, which is a genuinely unusual combination.",
+      "name" : "Selank",
+      "notes" : "Anxiolytic peptide developed in Russia (human use there); not FDA-approved. Often used intranasally.",
+      "regulatory" : "researchOnly",
+      "route" : "Intranasal is the studied and conventional route.",
+      "sideEffectsCommon" : [
+        "Nasal irritation with the intranasal route",
+        "Reported as generally well tolerated, without sedation"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term safety is not established outside Russian post-marketing experience",
+        "Anxiety that needs treatment deserves a clinical assessment — an unapproved peptide is not a substitute for one, and self-treating anxiety can delay identifying a treatable cause"
+      ],
+      "storageHandling" : "Sold as a nasal solution or lyophilized powder. Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Anxiolytic tuftsin analog used intranasally; Russian-developed, not FDA-approved.",
+      "timing" : "Short-acting; used as needed or in short courses.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Selank (TP-7) is a synthetic heptapeptide based on tuftsin, an immune-active fragment of IgG, developed in Russia as an anxiolytic and registered there. Not FDA-approved.",
+      "whatToExpect" : "Users report reduced anxiety without sedation, often within an hour intranasally. Russian clinical literature reports anxiolytic effect comparable to benzodiazepines in generalized anxiety, without the dependence profile."
+    },
+    {
+      "aliases" : [
+        "Ozempic",
+        "Wegovy",
+        "Rybelsus",
+        "Sema"
+      ],
+      "category" : "GLP-1 / incretin",
+      "dosingCommunity" : "Compounded semaglutide is often dosed to mirror the label titration. Compounded vials are sometimes labeled in \"units\" rather than mg, which has been associated with accidental overdoses; confirm the concentration and calculate the dose (Staxyz's reconstitution calculator supports this). Reported, not recommended.",
+      "dosingStudied" : "The Wegovy label titrates monthly: 0.25 → 0.5 → 1.0 → 1.7 → 2.4 mg once weekly, subcutaneous. Ozempic ranges to 1.0–2.0 mg weekly. The gradual ramp is intended to limit nausea.",
+      "evidence" : "fdaApproved",
+      "halfLifeHours" : 168,
+      "howItWorks" : "It mimics GLP-1, a hormone released by the gut after meals. This slows gastric emptying, increases satiety, and prompts the pancreas to release insulin when blood sugar is elevated. The net effect is reduced appetite, smaller food intake, and improved blood-sugar control.",
+      "name" : "Semaglutide",
+      "notes" : "FDA-approved (T2D/obesity). Compounded versions exist but are no longer covered by shortage enforcement discretion (2025).",
+      "regulatory" : "fdaApproved",
+      "route" : "Subcutaneous injection, once weekly. Rotate between the abdomen (avoiding approximately 2 in around the navel), the front or outer thigh, and the back of the upper arm. Small-volume injection with a short insulin-style needle.",
+      "safetyFlag" : "Boxed warning for thyroid C-cell tumors. Contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2. Seek care for severe, persistent abdominal pain (possible pancreatitis).",
+      "sideEffectsCommon" : [
+        "Nausea",
+        "Reduced appetite",
+        "Constipation or diarrhea",
+        "Burping — usually worst after a dose increase, easing with continued use"
+      ],
+      "sideEffectsSerious" : [
+        "Vomiting with reduced fluid intake, or signs of dehydration",
+        "Severe, persistent upper-abdominal pain radiating to the back (a possible pancreatitis signal)",
+        "Boxed warning for thyroid C-cell tumors (seen in rodents) — contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2"
+      ],
+      "storageHandling" : "Pens: refrigerate before first use; an in-use pen can typically be stored at room temperature for a set number of days per its label. Compounded vials follow standard reconstituted-peptide storage.",
+      "tagline" : "GLP-1 receptor agonist; used for weight loss and type 2 diabetes.",
+      "timing" : "Half-life is approximately 1 week; taken once weekly on the same day. Levels build over the first several weeks and take weeks to clear after discontinuation.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Semaglutide is a GLP-1 receptor agonist, a synthetic analog of a gut hormone released after eating. It is the active drug in Ozempic and Rybelsus (diabetes) and Wegovy (weight loss). It is FDA-approved and supported by large, multi-year human trials.",
+      "whatToExpect" : "In trials, approximately 15% average body-weight loss over about 68 weeks at the top dose (STEP program), with improvements in blood sugar. Appetite suppression is typically reported within the first week or two; weight loss develops over months. Effects are dose-dependent, which is the rationale for gradual titration."
+    },
+    {
+      "aliases" : [
+        "ACTH(4-10) analog"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community use is typically intranasal in the several-hundred-microgram-per-day range. Reported, not recommended.",
+      "dosingStudied" : "Russian clinical protocols use intranasal drops, commonly described in the 0.1%–1% solution range depending on indication.",
+      "evidence" : "humanTrialsUnapproved",
+      "howItWorks" : "It is proposed to raise BDNF and modulate dopaminergic and serotonergic signaling, with neuroprotective effects described in ischemia models. The ACTH fragment used is specifically the portion WITHOUT the peptide's hormonal (cortisol-releasing) activity, which is the point of the design.",
+      "name" : "Semax",
+      "notes" : "Nootropic/neuroprotective peptide developed in Russia (human use there); not FDA-approved. Often used intranasally.",
+      "regulatory" : "researchOnly",
+      "route" : "Intranasal is the studied and conventional route. Injectable use exists in the peptide market and is less documented.",
+      "sideEffectsCommon" : [
+        "Nasal irritation with the intranasal route",
+        "Reported as generally well tolerated",
+        "Occasional headache or irritability"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term safety is not established outside Russian post-marketing experience",
+        "Effects on mood and drive are plausible for a compound acting on dopaminergic signaling; not systematically characterized"
+      ],
+      "storageHandling" : "Sold both as a nasal solution and as a lyophilized powder. Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "ACTH(4-10) analog used intranasally; approved in Russia, not the US.",
+      "timing" : "Short-acting; effects are described over hours, and protocols run short courses rather than continuously.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Semax is a synthetic analog of a fragment of ACTH — residues 4–10, with a stabilizing tail — developed in Russia, where it is registered for stroke recovery and cognitive indications. It is not FDA-approved and has essentially no Western clinical literature.",
+      "whatToExpect" : "Users report improved focus and mental stamina, usually within hours of an intranasal dose. Russian clinical literature reports benefit in stroke recovery. Neither has been replicated in trials Western regulators have accepted."
+    },
+    {
+      "aliases" : [
+        "GRF 1-29",
+        "Geref"
+      ],
+      "category" : "GH secretagogue",
+      "dosingCommunity" : "Historically dosed at approximately 0.2–0.3 mg at night; community physique use follows that range, often combined with a GHRP. Reported, not recommended.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 0.2,
+      "howItWorks" : "It stimulates pulsatile GH release from the pituitary, the same GHRH mechanism as the CJC-1295 family, but with a very short duration.",
+      "name" : "Sermorelin",
+      "notes" : "GHRH(1-29) analog; the branded product Geref was discontinued. Human PK data exist; not currently an approved product.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, typically at bedtime on an empty stomach.",
+      "sideEffectsCommon" : [
+        "Injection-site reactions",
+        "Flushing",
+        "Headache"
+      ],
+      "sideEffectsSerious" : [
+        "GH-class cautions apply at higher doses (tingling, joint aches, blood sugar)"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "GHRH(1-29) analog; stimulates pulsatile GH release.",
+      "timing" : "Half-life approximately 11–12 minutes; dosed daily, usually nightly, to align with the nighttime GH pulse.",
+      "wadaProhibited" : true,
+      "whatItIs" : "Sermorelin is a GHRH(1-29) analog, historically the branded product Geref, used clinically to test GH secretion and in anti-aging clinics. The brand was discontinued, but the molecule has human pharmacokinetic data.",
+      "whatToExpect" : "Users report sleep and recovery benefits over weeks. As a GHRH analog, it preserves the body's feedback control of GH."
+    },
+    {
+      "aliases" : [
+        "Acetyl octapeptide-3",
+        "Acetyl glutamyl heptapeptide-1"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingStudied" : "A few percent by weight in a finished serum — a formulation figure, not a dose.",
+      "evidence" : "precursorOffLabel",
+      "howItWorks" : "Same proposed SNAP-25 interference as Argireline, with the longer sequence claimed to bind more effectively. The same delivery question applies, and applies more strongly: a longer peptide does not cross intact skin more easily.",
+      "name" : "SNAP-8",
+      "notes" : "A TOPICAL cosmetic peptide (a longer Argireline analog) used in anti-wrinkle skincare. Evidence is for topical use only; not an injectable and not a drug.",
+      "regulatory" : "researchOnly",
+      "route" : "Topical, in a finished cosmetic product.",
+      "safetyFlag" : "TOPICAL ONLY. Do not inject. Cosmetic serums are not sterile injectable products.",
+      "sideEffectsCommon" : [
+        "Generally well tolerated topically",
+        "Occasional irritation, usually vehicle-related"
+      ],
+      "sideEffectsSerious" : [
+        "Injecting a cosmetic serum risks infection, abscess and foreign-body reaction"
+      ],
+      "storageHandling" : "Store the finished cosmetic product per its label. Not a lyophilized vial; no reconstitution.",
+      "tagline" : "Topical Argireline analog — a longer peptide, same skincare role.",
+      "timing" : "Once or twice daily.",
+      "wadaProhibited" : false,
+      "whatItIs" : "SNAP-8 is acetyl octapeptide-3, an eight-amino-acid extension of the Argireline sequence, used in the same anti-wrinkle skincare role and marketed as more potent.",
+      "whatToExpect" : "Marketed as outperforming Argireline. Independent head-to-head data supporting that specific claim is thin."
+    },
+    {
+      "aliases" : [
+        "Elamipretide",
+        "MTP-131",
+        "Bendavia"
+      ],
+      "category" : "Metabolic / other",
+      "dosingCommunity" : "Community amounts are typically far below the trial doses. Reported, not recommended — and worth knowing that a fraction of a trial dose has no evidence behind it at all.",
+      "dosingStudied" : "Trials used subcutaneous dosing on the order of 40 mg daily in mitochondrial myopathy. Half-life is roughly 2.5 hours.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 2.5,
+      "howItWorks" : "It binds cardiolipin, a phospholipid found almost exclusively in the inner mitochondrial membrane. Cardiolipin organizes the electron-transport chain, and when it is damaged or mislocalized, respiration becomes inefficient and leaks reactive oxygen species. Elamipretide is proposed to stabilize those cardiolipin–protein interactions — meaning it targets mitochondrial STRUCTURE rather than mopping up free radicals, which is what distinguishes it from an antioxidant.",
+      "name" : "SS-31",
+      "notes" : "Mitochondria-targeting tetrapeptide (cardiolipin-binding). In human trials (e.g. Barth syndrome, mitochondrial myopathy) but NOT FDA-approved as of 2026.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous in trials.",
+      "sideEffectsCommon" : [
+        "Injection-site reactions — the most common finding in trials, and frequent",
+        "Headache"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term safety in healthy adults is unstudied; trial safety data comes from patients with mitochondrial disease",
+        "Not approved anywhere as of 2026 — an unapproved drug in active development, not a supplement"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Mitochondria-targeted peptide (elamipretide) in real, unfinished human trials.",
+      "timing" : "Short half-life (~2.5 h); trials dosed once daily nonetheless.",
+      "wadaProhibited" : false,
+      "whatItIs" : "SS-31 — elamipretide, also MTP-131 or Bendavia — is a four-amino-acid peptide developed by Stealth BioTherapeutics that concentrates in the inner mitochondrial membrane. Of everything in this batch it has the most legitimate clinical programme.",
+      "whatToExpect" : "In the populations studied — Barth syndrome, primary mitochondrial myopathy, dry AMD — results have been mixed, with some endpoints improved and pivotal ones missed. There is no evidence for the general \"cellular energy\" or anti-aging use it is marketed for."
+    },
+    {
+      "aliases" : [
+        "BI 456906"
+      ],
+      "category" : "GLP-1 / incretin",
+      "dosingCommunity" : "Research-only supply; community ranges echo the trials but carry no manufacturing verification.",
+      "dosingStudied" : "Studied as a once-weekly subcutaneous dose titrated up over several weeks in trials — reported, not a protocol.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 150,
+      "howItWorks" : "GLP-1 activation curbs appetite and slows gastric emptying; adding glucagon-receptor activation raises energy expenditure and mobilizes liver fat — the rationale behind the dual design, especially for MASH.",
+      "name" : "Survodutide",
+      "notes" : "INVESTIGATIONAL GLP-1/glucagon dual agonist in Phase 3 (obesity, MASH). Not FDA-approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous, once weekly in trials.",
+      "sideEffectsCommon" : [
+        "GI effects typical of the class — nausea and GI upset, worst after dose increases"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is not established",
+        "Glucagon activation can raise heart rate and affect blood sugar — still being characterized in trials"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Investigational GLP-1/glucagon dual agonist for obesity and fatty-liver disease.",
+      "timing" : "Long half-life supports once-weekly dosing.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Survodutide (BI 456906) is an experimental agent that activates both the GLP-1 and glucagon receptors. It is not approved, and is in Phase 3 for obesity and for MASH (fatty-liver disease).",
+      "whatToExpect" : "In trials: substantial weight loss and improved liver-fat markers. Everything beyond the current trials is unestablished, and long-term safety isn't known."
+    },
+    {
+      "aliases" : [
+        "Thymosin Beta-4 fragment",
+        "TB4 fragment",
+        "Ac-LKKTETQ"
+      ],
+      "category" : "Healing / recovery",
+      "dosingCommunity" : "Commonly reported at approximately 2–2.5 mg once or twice weekly, sometimes with a higher loading phase for the first few weeks. Anecdotal. Reported, not recommended.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "The fragment is thought to influence actin regulation and cell migration, which in theory supports tissue repair and reduced inflammation. As with BPC-157, this is preclinical reasoning, not demonstrated in humans.",
+      "name" : "TB-500",
+      "notes" : "CORRECTION: TB-500 is the synthetic Ac-LKKTETQ fragment, NOT full-length thymosin β-4. Preclinical only. WADA-prohibited.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous or intramuscular, once or twice weekly.",
+      "sideEffectsCommon" : [
+        "Reported as generally well tolerated",
+        "Occasional fatigue or head-rush after dosing"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is unknown"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Thymosin β-4 fragment; used off-label for recovery and tissue repair.",
+      "timing" : "Human half-life is not well established; the low weekly frequency is community convention, not derived from pharmacokinetic data.",
+      "wadaProhibited" : true,
+      "whatItIs" : "TB-500 is a synthetic fragment (Ac-LKKTETQ) of the natural protein thymosin β-4. It is used alongside BPC-157 in recovery stacks. TB-500 is not the full thymosin β-4 protein, though the two are often sold interchangeably.",
+      "whatToExpect" : "Users report improved recovery and reduced injury pain over a few weeks, often combined with BPC-157. No controlled human trials support this."
+    },
+    {
+      "aliases" : [
+        "Egrifta",
+        "Egrifta SV",
+        "Egrifta WR"
+      ],
+      "category" : "GH secretagogue",
+      "dosingStudied" : "Labeled once-daily subcutaneous: Egrifta 2 mg, Egrifta SV 1.4 mg, Egrifta WR 1.28 mg.",
+      "evidence" : "fdaApproved",
+      "halfLifeHours" : 0.5,
+      "howItWorks" : "Like other GHRH analogs, it stimulates pulsatile GH release, which raises IGF-1 and preferentially mobilizes visceral fat. As an approved drug, its pharmacology and safety are better characterized than the research-only secretagogues.",
+      "name" : "Tesamorelin",
+      "notes" : "The ONLY FDA-approved molecule in the peptide stack (HIV-associated lipodystrophy). Labeled once-daily SC: Egrifta 2 mg / Egrifta SV 1.4 mg / Egrifta WR 1.28 mg.",
+      "regulatory" : "fdaApproved",
+      "route" : "Subcutaneous, once daily, into the abdomen; rotate sites.",
+      "sideEffectsCommon" : [
+        "Joint pain",
+        "Swelling in the arms and legs",
+        "Injection-site reactions",
+        "Muscle aches",
+        "Can raise blood sugar and IGF-1"
+      ],
+      "sideEffectsSerious" : [
+        "Monitor for carpal-tunnel-like symptoms",
+        "Not for use in active malignancy"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "GHRH analog; approved to reduce visceral abdominal fat.",
+      "timing" : "Very short half-life (approximately 30 minutes); once-daily dosing, typically at a consistent time.",
+      "wadaProhibited" : true,
+      "whatItIs" : "Tesamorelin (Egrifta) is a stabilized GHRH analog and the only FDA-approved molecule among the injectable peptide-stack compounds. It is approved to reduce excess visceral (deep abdominal) fat in HIV-associated lipodystrophy.",
+      "whatToExpect" : "In trials, a reduction in visceral adipose tissue over approximately 6 months, with IGF-1 rising as expected. Visceral rather than subcutaneous fat is the target."
+    },
+    {
+      "aliases" : [
+        "KEDG",
+        "Lys-Glu-Asp-Gly"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation. Not independently established.",
+      "name" : "Testagen",
+      "notes" : "Khavinson peptide bioregulator (thymus/immune). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "safetyFlag" : "The name suggests testosterone. It has nothing to do with testosterone — it is aimed at the thymus.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tetrapeptide (KEDG) aimed at thymus and immune claims.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Testagen is Lys-Glu-Asp-Gly, directed at thymus and immune claims. The name is a frequent source of confusion.",
+      "whatToExpect" : "No demonstrated immune or endocrine endpoint in controlled human research."
+    },
+    {
+      "aliases" : [
+        "Tα1",
+        "Thymalfasin",
+        "Zadaxin"
+      ],
+      "category" : "Healing / recovery",
+      "dosingCommunity" : "Community use echoes the trial ranges; reported, not recommended.",
+      "dosingStudied" : "Studied around 1.6 mg subcutaneous a couple of times weekly in various trials — reported, not a recommendation.",
+      "evidence" : "humanTrialsUnapproved",
+      "halfLifeHours" : 2,
+      "howItWorks" : "It nudges T-cell maturation and immune signaling, broadly acting as an immune modulator rather than a stimulant or suppressant.",
+      "name" : "Thymosin Alpha-1",
+      "notes" : "Immune-modulating peptide; approved in some countries (Zadaxin) but not FDA-approved. Human trials exist across several indications.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous.",
+      "sideEffectsCommon" : [
+        "Generally well tolerated",
+        "Injection-site reactions"
+      ],
+      "sideEffectsSerious" : [
+        "Being an immune modulator, caution with autoimmune conditions or immunosuppressive therapy — a clinician conversation"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "An immune-modulating peptide; approved in some countries, not the US.",
+      "timing" : "Half-life about 2 hours; dosed a few times weekly in studies.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Thymosin alpha-1 (thymalfasin, brand Zadaxin) is a peptide that modulates the immune system. It's approved in several countries for hepatitis and as a vaccine adjuvant, and has been studied across other indications — but it isn't FDA-approved.",
+      "whatToExpect" : "Used in hopes of immune support and recovery. Human evidence is strongest in its approved indications; broader wellness use is less established."
+    },
+    {
+      "aliases" : [
+        "TB-4",
+        "Tβ4",
+        "TB500 full length"
+      ],
+      "category" : "Healing / recovery",
+      "dosingCommunity" : "Community ranges resemble the TB-500 fragment's; anecdotal — reported, not recommended.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Regulates actin (cell structure and migration) and is studied preclinically for wound healing, blood-vessel growth, and reduced inflammation.",
+      "name" : "Thymosin Beta-4",
+      "notes" : "Full-length 43-aa peptide (distinct from the TB-500 fragment). Preclinical/early-trial only; WADA-prohibited.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous or intramuscular.",
+      "sideEffectsCommon" : [
+        "Reported as generally well tolerated",
+        "Occasional fatigue or head-rush"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is unknown"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "The full-length thymosin β-4 protein — distinct from the TB-500 fragment.",
+      "timing" : "Human half-life isn't well characterized; low weekly frequency is convention.",
+      "wadaProhibited" : true,
+      "whatItIs" : "Thymosin beta-4 is the natural full-length 43-amino-acid protein, studied for tissue repair. It's often confused with TB-500, which is only a synthetic fragment of it.",
+      "whatToExpect" : "Used for recovery like the TB-500 fragment; no controlled human trials support the physique/recovery uses it's marketed for."
+    },
+    {
+      "aliases" : [
+        "Mounjaro",
+        "Zepbound",
+        "Tirz"
+      ],
+      "category" : "GLP-1 / incretin",
+      "dosingCommunity" : "Compounded tirzepatide is common and usually mirrors the label titration. As with semaglutide, mislabeled concentration (\"units\" vs mg) is the main injury risk; verify concentration and calculate the volume each time. Reported, not recommended.",
+      "dosingStudied" : "The Zepbound label starts at 2.5 mg weekly, then steps up every 4 weeks (2.5 → 5 → 7.5 → 10 → 12.5 → 15 mg) as tolerated, subcutaneous. The 2.5 mg dose is a starting dose, not a target.",
+      "evidence" : "fdaApproved",
+      "halfLifeHours" : 120,
+      "howItWorks" : "It is a dual agonist of the GIP and GLP-1 receptors. GLP-1 activation slows gastric emptying and reduces appetite; GIP activation appears to improve handling of fat and glucose and may reduce nausea. Together they produce greater appetite suppression and metabolic effect than a GLP-1 agonist alone.",
+      "name" : "Tirzepatide",
+      "notes" : "GIP/GLP-1 dual agonist. FDA-approved (T2D/obesity).",
+      "regulatory" : "fdaApproved",
+      "route" : "Subcutaneous, once weekly. Rotate abdomen, thigh, and back of upper arm.",
+      "safetyFlag" : "Boxed warning for thyroid C-cell tumors. Contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2. Seek care for severe, persistent abdominal pain (possible pancreatitis).",
+      "sideEffectsCommon" : [
+        "Nausea",
+        "Diarrhea or constipation",
+        "Reduced appetite — worst after dose increases",
+        "Dehydration from GI losses is a practical concern"
+      ],
+      "sideEffectsSerious" : [
+        "Same pancreatitis and thyroid C-cell (rodent) cautions as semaglutide",
+        "Contraindicated with a personal or family history of medullary thyroid carcinoma or MEN 2"
+      ],
+      "storageHandling" : "Pens refrigerated before use. Compounded vials follow standard reconstituted-peptide storage.",
+      "tagline" : "Dual GIP/GLP-1 receptor agonist; used for weight loss and type 2 diabetes.",
+      "timing" : "Half-life approximately 5 days; taken once weekly on the same day. Levels build over the first few weeks.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Tirzepatide activates two gut-hormone receptors, GIP and GLP-1. It is the active drug in Mounjaro (diabetes) and Zepbound (weight loss). In head-to-head data it produces greater weight loss than semaglutide.",
+      "whatToExpect" : "In trials, approximately 20–22% average body-weight loss over about 72 weeks at the top dose (SURMOUNT-1). As with semaglutide, appetite decreases early and weight loss develops over months. Effect scales with dose across the titration."
+    },
+    {
+      "aliases" : [
+        "KED",
+        "Lys-Glu-Asp"
+      ],
+      "category" : "Cosmetic / longevity",
+      "dosingCommunity" : "Vendor and community protocols describe SHORT CYCLES — on the order of 10–30 days, repeated a few times a year — rather than continuous use. Specific amounts vary widely between sources and have no trial basis, so Staxyz does not repeat a number here: an invented range would read as authoritative when nothing supports it. Log what you actually use and treat it as an experiment on yourself.",
+      "evidence" : "preclinicalOrFailed",
+      "howItWorks" : "Proposed transcriptional regulation; described in the source literature as supporting vascular wall health. Not independently established.",
+      "name" : "Vesugen",
+      "notes" : "Khavinson peptide bioregulator (vascular). Studied mainly in Russian literature; no robust independent human evidence; not approved.",
+      "regulatory" : "researchOnly",
+      "route" : "Subcutaneous injection, or oral capsules.",
+      "sideEffectsCommon" : [
+        "Not systematically characterized — no controlled safety study exists",
+        "Generally reported as well tolerated at the amounts commonly sold",
+        "Injection-site redness or stinging with the injectable form"
+      ],
+      "sideEffectsSerious" : [
+        "Long-term human safety is entirely unknown",
+        "Purity and identity depend wholly on the supplier; these are research-only products with no pharmacopoeial standard"
+      ],
+      "storageHandling" : "Supplied as a lyophilized (freeze-dried) powder. Store sealed vials refrigerated, or frozen for long-term storage. Once reconstituted with bacteriostatic water, keep refrigerated (2–8 °C), not frozen, and protected from light. A conservative beyond-use window is approximately 28 days for a reconstituted vial; discard sooner if the solution becomes cloudy or shows particles. Staxyz tracks this window when a vial is logged.",
+      "tagline" : "Tripeptide (KED) aimed at vascular tissue.",
+      "timing" : "No characterized human half-life; conventionally short cycles.",
+      "wadaProhibited" : false,
+      "whatItIs" : "Vesugen is Lys-Glu-Asp, directed at blood-vessel and endothelial claims.",
+      "whatToExpect" : "No demonstrated cardiovascular endpoint in controlled human research."
+    }
+  ]
+}

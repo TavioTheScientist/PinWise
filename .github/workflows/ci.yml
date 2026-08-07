@@ -64,6 +64,26 @@ jobs:
         working-directory: AndroidApp/peptide_kit
         run: dart test
 
+  kb-corpus:
+    name: Natt corpus in sync
+    runs-on: ubuntu-latest          # 1x minutes — PeptideKit is Foundation-only
+    container: swift:6.0
+    steps:
+      - uses: actions/checkout@v4
+      # The corpus Natt retrieves from is GENERATED from `CompoundCatalog`. It used to be a
+      # hand-maintained snapshot with nothing keeping the two in sync, so a compound added to the
+      # app reached users and silently never reached the assistant — with no signal that it hadn't.
+      # This regenerates and diffs: drift fails the build instead of quietly degrading Natt.
+      - name: Regenerate the corpus and fail on drift
+        working-directory: App
+        run: |
+          swift run kb-export > /tmp/corpus.json
+          if ! diff -u ../supabase/kb/corpus.json /tmp/corpus.json; then
+            echo "::error::supabase/kb/corpus.json is stale. Run 'cd App && swift run kb-export > ../supabase/kb/corpus.json' and commit the result."
+            exit 1
+          fi
+          echo "corpus is in sync with CompoundCatalog"
+
   ios-app:
     name: Build iOS app
     # macos-26, raised from macos-15 alongside the iOS 26 deployment target. The macos-15 image
