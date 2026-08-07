@@ -234,7 +234,7 @@ extension SavedProtocol {
     /// would misstate both how far along the user is and when the step-up lands. A protocol with
     /// uneven phases simply falls through to the streak goal, which is always true. Correct-or-silent
     /// beats plausible: this card sits above dosing decisions.
-    var heroTitrationPhase: (week: Int, total: Int)? {
+    var heroTitrationPhase: (week: Int, total: Int, daysSinceStepUp: Int?)? {
         guard hasRampPlan, let start = rampStartDate else { return nil }
         guard rampPhases.allSatisfy({ $0.durationDays == 7 }) else { return nil }
         let cal = Calendar.current
@@ -244,7 +244,11 @@ extension SavedProtocol {
         let index = elapsed / 7
         // Past the last phase the ramp is done — there is no phase left to complete.
         guard index < rampPhases.count else { return nil }
-        return (week: index + 1, total: rampPhases.count)
+        // Days since the CURRENT phase began, i.e. since the last increase. `nil` in phase 1:
+        // starting a ramp is not a step UP, it is the starting dose, and saying "stepped up" of a
+        // first dose would misdescribe it.
+        let sinceStep = index == 0 ? nil : elapsed - (index * 7)
+        return (week: index + 1, total: rampPhases.count, daysSinceStepUp: sinceStep)
     }
 
     /// The ramp dose for `date` (nil when no plan): before start → first phase; inside a phase →
