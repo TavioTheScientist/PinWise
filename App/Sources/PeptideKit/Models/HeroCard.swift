@@ -18,10 +18,15 @@ public enum HeroCard {
     public struct Week: Sendable, Equatable {
         public let logged: Int
         public let scheduled: Int
+        /// How many of this week's slots have actually COME DUE. `nil` means "treat them all as
+        /// due", which keeps the plain two-argument form meaningful for callers that only have
+        /// counts.
+        public let dueSoFar: Int?
 
-        public init(logged: Int, scheduled: Int) {
+        public init(logged: Int, scheduled: Int, dueSoFar: Int? = nil) {
             self.logged = logged
             self.scheduled = scheduled
+            self.dueSoFar = dueSoFar
         }
 
         public var isComplete: Bool { scheduled > 0 && logged >= scheduled }
@@ -33,30 +38,58 @@ public enum HeroCard {
             return min(1, max(0, Double(logged) / Double(scheduled)))
         }
 
-        /// `nil` rather than 0 when nothing was scheduled — a week with no doses due has no
-        /// adherence, and rendering "0%" would report a failure that never had a chance to happen.
+        /// `nil` when there is nothing to judge yet — and that now covers TWO cases.
+        ///
+        /// Nothing scheduled is the obvious one. The second is a week whose slots are all still
+        /// ahead: a single weekly dose due tomorrow rendered "0% · 0 of 1 this week", reporting a
+        /// failure for a dose nobody could have taken yet. The count is still worth stating (it is
+        /// what is owed); the percentage is not, because no slot has come due to be judged.
         public var percent: Int? {
             guard scheduled > 0 else { return nil }
+            if let dueSoFar, dueSoFar == 0 { return nil }
             return Int(((Double(logged) / Double(scheduled)) * 100).rounded())
         }
     }
 
-    /// Counts this week's scheduled slots and how many were taken.
+    /// Counts this week's SCHEDULED slots and how many of them were taken.
+    ///
+    /// **Takes expected dates, not `StreakCalculator.DoseEvent`s — and that distinction was a real
+    /// bug.** This used to accept the event array, which structurally EXCLUDES anything not yet
+    /// resolved: its own source drops `day > today` as "not due" and `day == today && !taken` as
+    /// "pending". Correct for a streak — you cannot have missed a dose that is not due yet — and
+    /// wrong here, where the question is how the week is going.
+    ///
+    /// The consequence was not a slightly-off number. A protocol whose only remaining slot this week
+    /// lay in the FUTURE contributed zero events, so `scheduled` was 0, so the adherence line, the
+    /// progress rail and the insight row all suppressed together and the bottom half of the hero card
+    /// went blank. Reported as "the hero card went empty" after narrowing a protocol from several
+    /// weekdays to one — which moved its remaining slot forward past today.
+    ///
+    /// Expected dates come from `AdherenceCalculator`, so a slot counts the moment it is scheduled,
+    /// whether or not it has come due. Mid-week now reads "1 of 3", which is the honest statement of
+    /// a week in progress rather than a week that has not started.
     ///
     /// The week runs from the calendar's own `firstWeekday`, so it starts on Monday or Sunday
-    /// according to the user's locale rather than a hardcoded choice. Slots later in the week are
-    /// counted as scheduled but obviously not as logged — so mid-week the line reads "3 of 7", which
-    /// is the honest statement of a week in progress, not a 43% failure.
+    /// according to the user's locale rather than a hardcoded choice.
     public static func week(
-        from events: [StreakCalculator.DoseEvent],
+        expectedDates: [Date],
+        takenDates: [Date],
         asOf now: Date = Date(),
         calendar: Calendar = .current
     ) -> Week {
         guard let interval = calendar.dateInterval(of: .weekOfYear, for: now) else {
             return Week(logged: 0, scheduled: 0)
         }
-        let inWeek = events.filter { interval.contains($0.date) }
-        return Week(logged: inWeek.filter(\.taken).count, scheduled: inWeek.count)
+        // Day-granular on both sides: a slot scheduled for 09:00 and logged at 21:40 is the same
+        // dose, and comparing instants would count it as scheduled-but-not-taken.
+        let taken = Set(takenDates.map { calendar.startOfDay(for: $0) })
+        let scheduled = expectedDates.filter { interval.contains($0) }.map { calendar.startOfDay(for: $0) }
+        let today = calendar.startOfDay(for: now)
+        // "Come due" includes today: a slot scheduled for this morning is judgeable this evening.
+        let due = scheduled.filter { $0 <= today }.count
+        return Week(logged: scheduled.filter { taken.contains($0) }.count,
+                    scheduled: scheduled.count,
+                    dueSoFar: due)
     }
 
     /// The adherence line: `87% · 6 of 7 this week`, or `5 of 5 logged this week` when the week is
@@ -66,8 +99,12 @@ public enum HeroCard {
     /// twice, and the spec offers the shorter form for exactly this. `nil` when nothing was
     /// scheduled, so the caller omits the line rather than printing a hollow zero.
     public static func adherenceLine(_ week: Week) -> String? {
-        guard let percent = week.percent else { return nil }
+        guard week.scheduled > 0 else { return nil }
         if week.isComplete { return "\(week.logged) of \(week.scheduled) logged this week" }
+        // No slot has come due yet — state what is owed, judge nothing.
+        guard let percent = week.percent else {
+            return "\(week.logged) of \(week.scheduled) this week"
+        }
         return "\(percent)% · \(week.logged) of \(week.scheduled) this week"
     }
 

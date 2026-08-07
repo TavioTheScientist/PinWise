@@ -1,4 +1,3 @@
-import '../calculators/streak_calculator.dart';
 import '../internal/calendar_math.dart';
 
 /// This week's scheduled slots versus the ones taken.
@@ -6,10 +5,17 @@ import '../internal/calendar_math.dart';
 /// Both counts are kept, not just the ratio: "6 of 7" is checkable and "86%" alone is not — the
 /// same reason the adherence ring carries its denominator.
 class HeroWeek {
-  const HeroWeek({required this.logged, required this.scheduled});
+  const HeroWeek({
+    required this.logged,
+    required this.scheduled,
+    this.dueSoFar,
+  });
 
   final int logged;
   final int scheduled;
+
+  /// How many of this week's slots have actually COME DUE. Null means "treat them all as due".
+  final int? dueSoFar;
 
   bool get isComplete => scheduled > 0 && logged >= scheduled;
   int get remaining => (scheduled - logged) < 0 ? 0 : scheduled - logged;
@@ -22,10 +28,12 @@ class HeroWeek {
     return f < 0 ? 0 : (f > 1 ? 1 : f);
   }
 
-  /// `null` rather than 0 when nothing was scheduled — a week with no doses due has no adherence,
-  /// and rendering "0%" reports a failure that never had a chance to happen.
+  /// Null when there is nothing to judge yet — which covers TWO cases. Nothing scheduled is the
+  /// obvious one; the second is a week whose slots are all still ahead. A single weekly dose due
+  /// tomorrow rendered "0% · 0 of 1 this week", reporting a failure nobody could have avoided.
   int? get percent {
     if (scheduled <= 0) return null;
+    if (dueSoFar == 0) return null;
     return (logged / scheduled * 100).round();
   }
 
@@ -57,24 +65,40 @@ class HeroCard {
   /// The progress rail survived, rebound to [HeroWeek.fraction]: a bar showing 1 of 3 doses this
   /// week is self-monitoring of a real commitment, which is one of the classes that does work.
 
-  /// Counts this week's scheduled slots and how many were taken.
+  /// Counts this week's SCHEDULED slots and how many of them were taken.
   ///
-  /// The week runs from the locale's own first weekday. Slots later in the week count as scheduled
-  /// but not as logged, so mid-week reads "3 of 7" — a week in progress, not a 43% failure.
-  static HeroWeek week(List<StreakDoseEvent> events, {DateTime? asOf}) {
+  /// **Takes expected dates, not `StreakDoseEvent`s.** The event list structurally excludes anything
+  /// unresolved — future slots, and today when not yet taken — which is right for a streak and wrong
+  /// here. A protocol whose only remaining slot this week lay AHEAD contributed zero events, so
+  /// `scheduled` was 0, and the adherence line, progress rail and insight row all suppressed
+  /// together, blanking the bottom half of the hero card.
+  ///
+  /// The week runs from the locale's first weekday. Both sides are day-granular: a slot scheduled at
+  /// 09:00 and logged at 21:40 is the same dose.
+  static HeroWeek week({
+    required List<DateTime> expectedDates,
+    required List<DateTime> takenDates,
+    DateTime? asOf,
+  }) {
     final now = asOf ?? DateTime.now();
-    // Start of the containing week. `DateTime.weekday` is 1 = Monday … 7 = Sunday, and Foundation's
-    // default `firstWeekday` in en_US is SUNDAY — so the offset back is `weekday % 7`, which maps
-    // Sunday (7) to 0 and Monday (1) to 1. Getting this wrong shifts every count by a day, which is
-    // the same class of silent error as the weekday-numbering trap in `foundationWeekday`.
+    // `DateTime.weekday` is 1 = Monday … 7 = Sunday, and Foundation's default `firstWeekday` in
+    // en_US is SUNDAY — so the offset back is `weekday % 7`, mapping Sunday (7) to 0.
     final start = addDays(startOfDay(now), -(now.weekday % 7));
     final end = addDays(start, 7);
-    final inWeek = events
-        .where((e) => !e.date.isBefore(start) && e.date.isBefore(end))
+    final taken = takenDates
+        .map((d) => startOfDay(d).microsecondsSinceEpoch)
+        .toSet();
+    final scheduled = expectedDates
+        .where((d) => !d.isBefore(start) && d.isBefore(end))
+        .map((d) => startOfDay(d).microsecondsSinceEpoch)
         .toList();
+    final today = startOfDay(now).microsecondsSinceEpoch;
+    // "Come due" includes today: a slot scheduled this morning is judgeable this evening.
+    final due = scheduled.where((d) => d <= today).length;
     return HeroWeek(
-      logged: inWeek.where((e) => e.taken).length,
-      scheduled: inWeek.length,
+      logged: scheduled.where(taken.contains).length,
+      scheduled: scheduled.length,
+      dueSoFar: due,
     );
   }
 
@@ -83,10 +107,14 @@ class HeroCard {
   /// The complete case drops the percentage on purpose — "100% · 5 of 5" states the same fact
   /// twice. `null` when nothing was scheduled, so the caller omits the line.
   static String? adherenceLine(HeroWeek week) {
-    final percent = week.percent;
-    if (percent == null) return null;
+    if (week.scheduled <= 0) return null;
     if (week.isComplete) {
       return '${week.logged} of ${week.scheduled} logged this week';
+    }
+    final percent = week.percent;
+    // No slot has come due yet — state what is owed, judge nothing.
+    if (percent == null) {
+      return '${week.logged} of ${week.scheduled} this week';
     }
     return '$percent% · ${week.logged} of ${week.scheduled} this week';
   }
