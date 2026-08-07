@@ -66,9 +66,20 @@ jobs:
 
   ios-app:
     name: Build iOS app
-    runs-on: macos-15               # 10× minutes — unavoidable (needs Xcode + iOS SDK)
+    # macos-26, raised from macos-15 alongside the iOS 26 deployment target. The macos-15 image
+    # ships Xcode 16.4 — the iOS 18 SDK — which cannot compile `glassEffect`, `Tab(…, role:)` or
+    # `tabBarMinimizeBehavior`, so it failed the moment the app adopted Liquid Glass. The Xcode
+    # selection is EXPLICIT rather than left to the image default: a runner-image update that moves
+    # the default would otherwise change the SDK under the build silently.
+    runs-on: macos-26               # 10× minutes — unavoidable (needs Xcode + iOS SDK)
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode 26
+        run: |
+          ls /Applications | grep -i '^Xcode' || true
+          sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i 'iphonesimulator' || true
       - name: Cache SwiftPM
         uses: actions/cache@v4
         with:
