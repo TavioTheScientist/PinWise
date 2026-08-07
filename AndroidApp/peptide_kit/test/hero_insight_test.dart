@@ -25,12 +25,16 @@ void main() {
     expect(
       HeroInsight.line(
         InsightInput(
-          supply: const InsightSupply(wholeDosesLeft: 2, daysOfSupply: 2),
+          supply: const InsightSupply(
+            name: 'GLOW',
+            wholeDosesLeft: 2,
+            daysOfSupply: 2,
+          ),
           phase: ph(3, 4, up: 2),
           adherence: adh(5, 7),
         ),
       ),
-      'About 2 days of supply left',
+      'About 2 days of GLOW left',
     );
   });
 
@@ -38,7 +42,11 @@ void main() {
     expect(
       HeroInsight.line(
         InsightInput(
-          supply: const InsightSupply(wholeDosesLeft: 6, daysOfSupply: 42),
+          supply: const InsightSupply(
+            name: 'GLOW',
+            wholeDosesLeft: 6,
+            daysOfSupply: 42,
+          ),
           phase: ph(3, 4, up: 5),
         ),
       ),
@@ -106,15 +114,23 @@ void main() {
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 3, daysOfSupply: 3),
+          supply: InsightSupply(
+            name: 'GLOW',
+            wholeDosesLeft: 3,
+            daysOfSupply: 3,
+          ),
         ),
       ),
-      'About 3 days of supply left',
+      'About 3 days of GLOW left',
     );
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 3, daysOfSupply: 21),
+          supply: InsightSupply(
+            name: 'GLOW',
+            wholeDosesLeft: 3,
+            daysOfSupply: 21,
+          ),
         ),
       ),
       isNull,
@@ -127,26 +143,31 @@ void main() {
       HeroInsight.line(
         const InsightInput(
           supply: InsightSupply(
+            name: 'GLOW',
             wholeDosesLeft: 20,
             daysOfSupply: 140,
             daysToExpiry: 4,
           ),
         ),
       ),
-      'Vial expires in 4 days',
+      'GLOW expires in 4 days',
     );
   });
 
   test('as-needed falls back to doses', () {
     expect(
       HeroInsight.line(
-        const InsightInput(supply: InsightSupply(wholeDosesLeft: 3)),
+        const InsightInput(
+          supply: InsightSupply(name: 'GLOW', wholeDosesLeft: 3),
+        ),
       ),
-      'About 3 doses left',
+      'About 3 doses of GLOW left',
     );
     expect(
       HeroInsight.line(
-        const InsightInput(supply: InsightSupply(wholeDosesLeft: 8)),
+        const InsightInput(
+          supply: InsightSupply(name: 'GLOW', wholeDosesLeft: 8),
+        ),
       ),
       isNull,
     );
@@ -156,34 +177,50 @@ void main() {
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 0, daysOfSupply: 0),
+          supply: InsightSupply(
+            name: 'GLOW',
+            wholeDosesLeft: 0,
+            daysOfSupply: 0,
+          ),
         ),
       ),
-      'Vial empty',
+      'GLOW is empty',
     );
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 1, daysOfSupply: 7),
+          supply: InsightSupply(
+            name: 'GLOW',
+            wholeDosesLeft: 1,
+            daysOfSupply: 7,
+          ),
         ),
       ),
-      'Less than 2 doses left',
+      'Less than 2 doses of GLOW left',
     );
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 3, daysOfSupply: 3),
+          supply: InsightSupply(
+            name: 'GLOW',
+            wholeDosesLeft: 3,
+            daysOfSupply: 3,
+          ),
         ),
       ),
-      'About 3 days of supply left',
+      'About 3 days of GLOW left',
     );
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 9, daysOfSupply: 9),
+          supply: InsightSupply(
+            name: 'GLOW',
+            wholeDosesLeft: 9,
+            daysOfSupply: 9,
+          ),
         ),
       ),
-      'About 9 days of supply left',
+      'About 9 days of GLOW left',
     );
   });
 
@@ -243,13 +280,13 @@ void main() {
     ];
     final inputs = <InsightInput>[
       const InsightInput(
-        supply: InsightSupply(wholeDosesLeft: 0, daysOfSupply: 0),
+        supply: InsightSupply(name: 'GLOW', wholeDosesLeft: 0, daysOfSupply: 0),
       ),
       const InsightInput(
-        supply: InsightSupply(wholeDosesLeft: 3, daysOfSupply: 3),
+        supply: InsightSupply(name: 'GLOW', wholeDosesLeft: 3, daysOfSupply: 3),
       ),
       const InsightInput(
-        supply: InsightSupply(wholeDosesLeft: 9, daysOfSupply: 9),
+        supply: InsightSupply(name: 'GLOW', wholeDosesLeft: 9, daysOfSupply: 9),
       ),
       InsightInput(phase: ph(2, 4, up: 3)),
       InsightInput(phase: ph(2, 4, since: 2)),
