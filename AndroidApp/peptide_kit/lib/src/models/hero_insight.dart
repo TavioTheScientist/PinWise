@@ -1,13 +1,25 @@
 import 'hero_card.dart';
 
 /// Remaining supply for the vial backing the next dose.
+///
+/// **Carries DAYS, not just doses.** Three doses left is three days on a daily protocol and three
+/// WEEKS on a weekly one — a dose-count threshold reads as "act now" in one case and "ignore me" in
+/// the other. `InventoryEstimator` projects `daysOfSupply` against the protocol's cadence, which is
+/// the only figure that tells them apart.
 class InsightSupply {
   const InsightSupply({
     required this.wholeDosesLeft,
-    required this.endsThisWeek,
+    this.daysOfSupply,
+    this.daysToExpiry,
   });
   final int wholeDosesLeft;
-  final bool endsThisWeek;
+
+  /// Days the vial covers at this protocol's cadence. Null for as-needed protocols, where there is
+  /// no cadence to project against and doses are the only honest unit.
+  final int? daysOfSupply;
+
+  /// Days until a user-set expiration ends the vial, when expiry binds before dose run-out.
+  final int? daysToExpiry;
 }
 
 /// Position in a titration ramp.
@@ -59,9 +71,17 @@ class InsightInput {
 class HeroInsight {
   const HeroInsight._();
 
-  /// At or below this many whole doses, supply becomes the most important thing on the card. Six
-  /// doses is a status; two is a decision, because reordering takes days.
-  static const int supplyRiskDoses = 3;
+  /// Days of remaining supply at which reordering becomes the most important thing on the card.
+  ///
+  /// **The one free parameter in the whole selector.** Every other trigger compares two real
+  /// quantities and has nothing to tune; this one encodes a judgement about reorder lead time. The
+  /// right thing to revisit against real usage, and the wrong thing to quietly become six
+  /// coefficients.
+  static const int reorderLeadDays = 10;
+
+  /// Doses at which supply is urgent regardless of cadence — one dose left is a decision whether the
+  /// protocol is daily or weekly.
+  static const int criticalDoses = 2;
 
   /// Days on either side of a dose increase that count as the escalation window. Seven, because
   /// the ramp steps this app supports are weekly — a wider window would still be open when the next
@@ -74,14 +94,29 @@ class HeroInsight {
   /// Picks the single line, in priority order: actionable supply risk → a phase with a deadline →
   /// cycle position → a specific adherence fact → a quiet steady state.
   static String? line(InsightInput input) {
+    // Doses answer "can I take the next one"; DAYS answer "do I need to order", and ordering is
+    // the decision with a lead time.
     final supply = input.supply;
     if (supply != null) {
       if (supply.wholeDosesLeft <= 0) return 'Vial empty';
-      if (supply.wholeDosesLeft < 2) return 'Less than 2 doses left';
-      if (supply.wholeDosesLeft <= supplyRiskDoses) {
+      if (supply.wholeDosesLeft < criticalDoses) {
+        return 'Less than 2 doses left';
+      }
+      // Expiry first when it binds: a vial with plenty of doses that expires on Friday is a
+      // different problem, and days-of-supply would overstate what is usable.
+      final expiry = supply.daysToExpiry;
+      if (expiry != null && expiry <= reorderLeadDays) {
+        if (expiry <= 0) return 'Vial expired';
+        return 'Vial expires in $expiry ${expiry == 1 ? 'day' : 'days'}';
+      }
+      final days = supply.daysOfSupply;
+      if (days != null && days <= reorderLeadDays) {
+        return 'About $days ${days == 1 ? 'day' : 'days'} of supply left';
+      }
+      // As-needed protocols have no cadence to project against, so doses are the only honest unit.
+      if (days == null && supply.wholeDosesLeft <= 3) {
         return 'About ${supply.wholeDosesLeft} doses left';
       }
-      if (supply.endsThisWeek) return 'Current vial ends this week';
     }
 
     // The escalation window, in either direction. AFTER is checked first: a step that already

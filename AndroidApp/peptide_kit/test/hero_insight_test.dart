@@ -25,12 +25,12 @@ void main() {
     expect(
       HeroInsight.line(
         InsightInput(
-          supply: const InsightSupply(wholeDosesLeft: 2, endsThisWeek: true),
+          supply: const InsightSupply(wholeDosesLeft: 2, daysOfSupply: 2),
           phase: ph(3, 4, up: 2),
           adherence: adh(5, 7),
         ),
       ),
-      'About 2 doses left',
+      'About 2 days of supply left',
     );
   });
 
@@ -38,7 +38,7 @@ void main() {
     expect(
       HeroInsight.line(
         InsightInput(
-          supply: const InsightSupply(wholeDosesLeft: 6, endsThisWeek: false),
+          supply: const InsightSupply(wholeDosesLeft: 6, daysOfSupply: 42),
           phase: ph(3, 4, up: 5),
         ),
       ),
@@ -100,11 +100,63 @@ void main() {
     );
   });
 
+  /// Three doses left is three DAYS on a daily protocol and three WEEKS on a weekly one. The old
+  /// dose-count rule fired identically for both — far too late for one, absurdly early for the other.
+  test('the same dose count means opposite things at different cadences', () {
+    expect(
+      HeroInsight.line(
+        const InsightInput(
+          supply: InsightSupply(wholeDosesLeft: 3, daysOfSupply: 3),
+        ),
+      ),
+      'About 3 days of supply left',
+    );
+    expect(
+      HeroInsight.line(
+        const InsightInput(
+          supply: InsightSupply(wholeDosesLeft: 3, daysOfSupply: 21),
+        ),
+      ),
+      isNull,
+      reason: 'Three weeks of supply is not a reorder decision.',
+    );
+  });
+
+  test('expiry outranks days of supply when it binds first', () {
+    expect(
+      HeroInsight.line(
+        const InsightInput(
+          supply: InsightSupply(
+            wholeDosesLeft: 20,
+            daysOfSupply: 140,
+            daysToExpiry: 4,
+          ),
+        ),
+      ),
+      'Vial expires in 4 days',
+    );
+  });
+
+  test('as-needed falls back to doses', () {
+    expect(
+      HeroInsight.line(
+        const InsightInput(supply: InsightSupply(wholeDosesLeft: 3)),
+      ),
+      'About 3 doses left',
+    );
+    expect(
+      HeroInsight.line(
+        const InsightInput(supply: InsightSupply(wholeDosesLeft: 8)),
+      ),
+      isNull,
+    );
+  });
+
   test('supply rungs escalate', () {
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 0, endsThisWeek: true),
+          supply: InsightSupply(wholeDosesLeft: 0, daysOfSupply: 0),
         ),
       ),
       'Vial empty',
@@ -112,7 +164,7 @@ void main() {
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 1, endsThisWeek: true),
+          supply: InsightSupply(wholeDosesLeft: 1, daysOfSupply: 7),
         ),
       ),
       'Less than 2 doses left',
@@ -120,18 +172,18 @@ void main() {
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 3, endsThisWeek: false),
+          supply: InsightSupply(wholeDosesLeft: 3, daysOfSupply: 3),
         ),
       ),
-      'About 3 doses left',
+      'About 3 days of supply left',
     );
     expect(
       HeroInsight.line(
         const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 9, endsThisWeek: true),
+          supply: InsightSupply(wholeDosesLeft: 9, daysOfSupply: 9),
         ),
       ),
-      'Current vial ends this week',
+      'About 9 days of supply left',
     );
   });
 
@@ -191,13 +243,13 @@ void main() {
     ];
     final inputs = <InsightInput>[
       const InsightInput(
-        supply: InsightSupply(wholeDosesLeft: 0, endsThisWeek: true),
+        supply: InsightSupply(wholeDosesLeft: 0, daysOfSupply: 0),
       ),
       const InsightInput(
-        supply: InsightSupply(wholeDosesLeft: 3, endsThisWeek: false),
+        supply: InsightSupply(wholeDosesLeft: 3, daysOfSupply: 3),
       ),
       const InsightInput(
-        supply: InsightSupply(wholeDosesLeft: 9, endsThisWeek: true),
+        supply: InsightSupply(wholeDosesLeft: 9, daysOfSupply: 9),
       ),
       InsightInput(phase: ph(2, 4, up: 3)),
       InsightInput(phase: ph(2, 4, since: 2)),

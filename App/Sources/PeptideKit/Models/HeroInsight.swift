@@ -44,13 +44,24 @@ public enum HeroInsight {
     // MARK: - Signals
 
     /// Remaining supply for the vial backing the next dose.
+    ///
+    /// **Carries DAYS, not just doses, and that distinction was a real defect.** The first version
+    /// fired on `wholeDosesLeft <= 3`, which means three days on a daily protocol and three WEEKS on
+    /// a weekly one — the same threshold reading as "act now" in one case and "ignore me" in the
+    /// other. `InventoryEstimator.Projection` has computed `daysOfSupply` ("days of supply given the
+    /// protocol cadence") all along; this simply uses it.
     public struct Supply: Sendable, Equatable {
         public let wholeDosesLeft: Int
-        public let endsThisWeek: Bool
+        /// Days the vial covers at this protocol's cadence. `nil` for as-needed protocols, where
+        /// there is no cadence to project against and doses are the only honest unit.
+        public let daysOfSupply: Int?
+        /// Days until a user-set expiration ends the vial, when expiry binds before dose run-out.
+        public let daysToExpiry: Int?
 
-        public init(wholeDosesLeft: Int, endsThisWeek: Bool) {
+        public init(wholeDosesLeft: Int, daysOfSupply: Int?, daysToExpiry: Int?) {
             self.wholeDosesLeft = wholeDosesLeft
-            self.endsThisWeek = endsThisWeek
+            self.daysOfSupply = daysOfSupply
+            self.daysToExpiry = daysToExpiry
         }
     }
 
@@ -105,11 +116,19 @@ public enum HeroInsight {
 
     // MARK: - Thresholds
 
-    /// At or below this many whole doses, supply becomes the most important thing on the card.
+    /// Days of remaining supply at which reordering becomes the most important thing on the card.
     ///
-    /// The rule is "actionable supply RISK", which "About 6 doses left" is not — six doses is a
-    /// status, two is a decision, because reordering has a lead time.
-    public static let supplyRiskDoses = 3
+    /// **This is the one free parameter in the whole selector, and naming it as such is deliberate.**
+    /// Every other trigger compares two real quantities — days since a step against the escalation
+    /// window, doses logged against doses scheduled — and has nothing to tune. This one encodes a
+    /// judgement about reorder lead time: long enough to cover ordering and delivery, short enough
+    /// that the line is not lit for a month. Ten days is the estimate; it is the right thing to
+    /// revisit against real usage, and the wrong thing to quietly turn into six coefficients.
+    public static let reorderLeadDays = 10
+
+    /// Doses at which supply is urgent regardless of cadence. One dose left is a decision whether
+    /// the protocol is daily or weekly, so this floor survives the days-based rule.
+    public static let criticalDoses = 2
 
     /// Days on either side of a dose increase that count as the escalation window.
     ///
@@ -132,14 +151,25 @@ public enum HeroInsight {
     ///
     /// Returns `nil` when there is genuinely nothing to say, and the caller drops the row.
     public static func line(_ input: Input) -> String? {
-        // 1 — supply, but only while it is a RISK.
+        // 1 — supply, but only while it is a RISK. Doses answer "can I take the next one";
+        // DAYS answer "do I need to order", and ordering is the decision with a lead time.
         if let supply = input.supply {
             if supply.wholeDosesLeft <= 0 { return "Vial empty" }
-            if supply.wholeDosesLeft < 2 { return "Less than 2 doses left" }
-            if supply.wholeDosesLeft <= supplyRiskDoses {
+            if supply.wholeDosesLeft < criticalDoses { return "Less than 2 doses left" }
+            // Expiry first when it binds: a vial with plenty of doses that expires on Friday is a
+            // different problem, and "days of supply" would quietly overstate what is usable.
+            if let expiry = supply.daysToExpiry, expiry <= reorderLeadDays {
+                if expiry <= 0 { return "Vial expired" }
+                return "Vial expires in \(expiry) \(expiry == 1 ? "day" : "days")"
+            }
+            if let days = supply.daysOfSupply, days <= reorderLeadDays {
+                return "About \(days) \(days == 1 ? "day" : "days") of supply left"
+            }
+            // As-needed protocols have no cadence to project against, so doses are the only honest
+            // unit — and without a schedule there is no lead time to compare against either.
+            if supply.daysOfSupply == nil, supply.wholeDosesLeft <= 3 {
                 return "About \(supply.wholeDosesLeft) doses left"
             }
-            if supply.endsThisWeek { return "Current vial ends this week" }
         }
 
         // 2 — the escalation window, in either direction. AFTER is checked first: a step-up that

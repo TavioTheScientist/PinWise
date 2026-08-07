@@ -757,15 +757,25 @@ struct HomeView: View {
         let cal = Calendar.current
 
         // ── Supply, from the vial actually backing the next dose ──────────────────────────
+        //
+        // Passes DAYS as well as doses. `daysOfSupply` is cadence-aware — the estimator projects it
+        // against the protocol's schedule — which is the only figure that can tell "three days left"
+        // apart from "three weeks left" when both read as three doses.
         if let up = nextUp,
            let item = up.proto.items.first,
            let vial = vials.first(where: { $0.id == item.vialID }) {
             let projection = vial.projection(schedule: up.proto.schedule, referenceDate: now)
-            let endsThisWeek = projection.effectiveEndDate.map { end in
-                cal.dateInterval(of: .weekOfYear, for: now)?.contains(end) ?? false
-            } ?? false
+            // Only when expiry is the binding limit — otherwise the vial runs out of doses first and
+            // its expiration date is not the thing to act on.
+            let daysToExpiry: Int? = projection.limitingFactor == .expiration
+                ? projection.effectiveEndDate.flatMap {
+                    cal.dateComponents([.day], from: cal.startOfDay(for: now),
+                                       to: cal.startOfDay(for: $0)).day
+                  }
+                : nil
             input.supply = .init(wholeDosesLeft: projection.usableWholeDoses,
-                                 endsThisWeek: endsThisWeek)
+                                 daysOfSupply: projection.daysOfSupply.map { Int($0.rounded(.down)) },
+                                 daysToExpiry: daysToExpiry)
         }
 
         // ── Titration phase, with the distance to the nearest step in BOTH directions ─────
