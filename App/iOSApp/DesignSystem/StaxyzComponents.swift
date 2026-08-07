@@ -442,10 +442,17 @@ struct TagChip: View {
 }
 
 /// Frosted category badge for imagery (the Fitness+ register) — the ONE sanctioned on-image
-/// badge, for photographs only, where real pixels pass beneath the blur. The black 0.6 tint
-/// in front of the material bounds white text at >=4.5:1 even over a pure-white photo region
-/// through the LIGHT-mode material (0.4 measured ~2.9-3.2:1 there — the light plate passes
-/// white straight through). Never use on flat surfaces: material over a solid fill is fake glass.
+/// badge, for photographs only, where real pixels pass beneath it. Never use on flat surfaces:
+/// glass over a solid fill is fake glass with a GPU cost.
+///
+/// **Real `glassEffect`, not `.ultraThinMaterial`.** This is the only place in the app outside the
+/// tab bar where a surface sits over genuinely varying content, so it is the only place the real
+/// material has anything to refract. The tint is carried by `Glass.tint(_:)` rather than by a
+/// separate fill in front, because Liquid Glass composites the tint INTO the material — a black
+/// plate stacked in front of it would flatten exactly the lensing that distinguishes it.
+///
+/// The tint stays black at 0.5 for the same reason the old plate was 0.6: white text over a
+/// pure-white photo region needs the backdrop bounded, and light mode passes more through.
 struct FrostedTagChip: View {
     let text: String
     var body: some View {
@@ -455,8 +462,7 @@ struct FrostedTagChip: View {
             .padding(.horizontal, Space.sm)
             .padding(.vertical, Space.xs)
             .foregroundStyle(.white)
-            .background(Color.black.opacity(0.6), in: Capsule())
-            .background { GlassMaterial().clipShape(Capsule()) }
+            .glassEffect(.regular.tint(.black.opacity(0.5)), in: .capsule)
     }
 }
 
@@ -948,6 +954,14 @@ private struct DisplayTracking: ViewModifier {
 }
 
 /// `.ultraThinMaterial`, unless the user has asked for less transparency — then an opaque surface.
+///
+/// **This is deliberately NOT Liquid Glass, and the remaining call sites are deliberate.** It backs
+/// the side menu and the assistant drawer — full-height CONTENT panels. Apple's guidance puts Liquid
+/// Glass in the navigation and control layer, not across large content surfaces, and the contrast
+/// maths here says the same thing: these panels already need a 0.92 tint in light mode to hold
+/// `textSecondary` at 4.5:1 through `.ultraThinMaterial`, and real glass is MORE transparent, so it
+/// would push them to a tint so heavy the glass stops being glass. Chrome gets the real material
+/// (the tab bar, `FrostedTagChip`); panels that carry paragraphs do not.
 ///
 /// Apple lists Reduce Transparency alongside Reduce Motion as an INDEPENDENT accessibility signal, and
 /// the app read it nowhere: all five glass surfaces (the floating tab bar, chips, both drawers, and the

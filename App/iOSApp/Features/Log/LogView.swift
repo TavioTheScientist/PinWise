@@ -258,8 +258,9 @@ struct LogView: View {
                     .background(BrandColor.surfaceElevated, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
                     .overlay(Capsule().strokeBorder(BrandColor.stroke, lineWidth: 1))
                     .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
-                    // Clear the floating tab bar (~90pt reserved, see tabBarClearance) plus a gap.
-                    .padding(.bottom, 108)
+                    // Was 108 — hand-clearing the old overlay bar. The native tab bar contributes a
+                    // real safe-area inset, so this only needs to lift the toast off the bar's edge.
+                    .padding(.bottom, Space.md)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
