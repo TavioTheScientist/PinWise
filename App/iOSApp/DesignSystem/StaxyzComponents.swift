@@ -1138,6 +1138,9 @@ private final class EntranceLedger {
     private var played: Set<String> = []
     /// True only the first time this key is claimed in this process.
     func claim(_ key: String) -> Bool { played.insert(key).inserted }
+    /// Non-mutating read, safe to call from a `@State` initialiser. Separate from ``claim(_:)``
+    /// precisely because that one has a side effect and must never run during view construction.
+    func hasPlayed(_ key: String) -> Bool { played.contains(key) }
 }
 
 /// One-shot staggered entrance for list/section arrivals: fade + 12pt rise, delayed by
@@ -1151,10 +1154,27 @@ struct Entrance: ViewModifier {
     let index: Int
     let group: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    // A literal initialiser, deliberately: per CLAUDE.md, `@State private var x = <expr>` re-evaluates
-    // `<expr>` on every re-init of the struct, so the ledger claim must NOT live here — it would fire
-    // repeatedly and the "once" guarantee would be a lie.
-    @State private var shown = false
+
+    /// **Starts visible when the entrance has already played this launch.**
+    ///
+    /// This was `= false` unconditionally, which meant every instance rendered at `opacity(0)` and
+    /// depended on `.onAppear` firing to become visible. That makes INVISIBLE the default state of
+    /// the app's primary card, recoverable only by an event — and `.onAppear` does not fire in every
+    /// situation where SwiftUI rebuilds a view. Any such case leaves a card that is present, laid
+    /// out, occupying space, and completely blank. A reported "the hero card went empty" is exactly
+    /// what that looks like.
+    ///
+    /// Seeding from the ledger removes the whole class: after the first play, the content is at rest
+    /// from its first frame and no event is required. `hasPlayed` is a non-mutating READ — the
+    /// CLAIM still happens in `.onAppear`, because per CLAUDE.md a `@State` initialiser expression
+    /// re-evaluates on every re-init of the struct and a side effect there would fire repeatedly.
+    @State private var shown: Bool
+
+    init(index: Int, group: String) {
+        self.index = index
+        self.group = group
+        _shown = State(initialValue: EntranceLedger.shared.hasPlayed("\(group)#\(index)"))
+    }
 
     func body(content: Content) -> some View {
         content

@@ -31,6 +31,37 @@ void main() {
 
   /// The rail survived the goal line's removal, rebound to the WEEK — self-monitoring of a real
   /// commitment rather than progress toward an invented milestone.
+  /// The regression this signature exists for: a slot still AHEAD this week must count, or the
+  /// card's whole lower half blanks.
+  test('a slot still ahead this week still counts', () {
+    final now = DateTime(2026, 8, 5, 9);
+    final ahead = DateTime(2026, 8, 7, 9);
+    final w = HeroCard.week(expectedDates: [ahead], takenDates: [], asOf: now);
+    expect(w.scheduled, 1);
+    expect(w.logged, 0);
+    expect(HeroCard.adherenceLine(w), '0 of 1 this week');
+  });
+
+  test('a slot is satisfied by any log on the same day', () {
+    final now = DateTime(2026, 8, 5, 9);
+    final w = HeroCard.week(
+      expectedDates: [DateTime(2026, 8, 5, 9)],
+      takenDates: [DateTime(2026, 8, 5, 21, 40)],
+      asOf: now,
+    );
+    expect(w.logged, 1);
+    expect(w.scheduled, 1);
+  });
+
+  test('a week with nothing due yet is not zero percent', () {
+    const ahead = HeroWeek(logged: 0, scheduled: 1, dueSoFar: 0);
+    expect(ahead.percent, isNull);
+    expect(HeroCard.adherenceLine(ahead), '0 of 1 this week');
+    const due = HeroWeek(logged: 0, scheduled: 1, dueSoFar: 1);
+    expect(due.percent, 0);
+    expect(HeroCard.adherenceLine(due), '0% · 0 of 1 this week');
+  });
+
   test('week fraction drives the rail', () {
     expect(const HeroWeek(logged: 1, scheduled: 3).fraction, 1 / 3);
     expect(const HeroWeek(logged: 3, scheduled: 3).fraction, 1);

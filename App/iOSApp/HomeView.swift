@@ -272,7 +272,7 @@ struct HomeView: View {
         // CELEBRATION below — marking something that happened is a different job from setting a
         // target, and only the second one lacks evidence.
         let events = doseEvents
-        let week = HeroCard.week(from: events)
+        let week = heroWeek
         let up = nextUp
         let presentation = up.map {
             ProtocolPresentation($0.proto, vials: vials, todaysLogs: todaysLogs,
@@ -291,7 +291,9 @@ struct HomeView: View {
             // than day-granular (`DoseDuePhrase.heroTiming`).
             VStack(alignment: .leading, spacing: Space.lg) {
                 VStack(alignment: .leading, spacing: Space.xxs) {
-                    MicroLabel("Next")
+                    // "NEXT" only when there IS one. With nothing scheduled the label is a promise
+                    // the card cannot keep, and it sat above two identical sentences.
+                    MicroLabel(up == nil ? "Your protocol" : "Next")
                     Text(heroPrimaryLine(presentation))
                         .font(Typo.numberMD)
                         .foregroundStyle(BrandColor.textPrimary)
@@ -300,10 +302,16 @@ struct HomeView: View {
                     // two headlines rather than a headline and its answer — the eye had nowhere to
                     // land first. Size AND colour now separate them, so the compound reads as the
                     // subject and the timing as what is being said about it.
-                    Text(DoseDuePhrase.heroTiming(for: up?.date))
-                        .font(Typo.headline)
-                        .foregroundStyle(BrandColor.textSecondary)
-                        .lineLimit(1).minimumScaleFactor(0.7)
+                    // **Omitted entirely when there is no next dose.** Both this line and the one
+                    // above resolve to "No dose scheduled" in that state, so the card printed the
+                    // same sentence twice — which reads as a rendering fault rather than as a
+                    // state. The primary line now carries the explanation and this one steps aside.
+                    if up != nil {
+                        Text(DoseDuePhrase.heroTiming(for: up?.date))
+                            .font(Typo.headline)
+                            .foregroundStyle(BrandColor.textSecondary)
+                            .lineLimit(1).minimumScaleFactor(0.7)
+                    }
                 }
 
                 Divider().overlay(BrandColor.stroke)
@@ -739,8 +747,36 @@ struct HomeView: View {
     /// sanctioned owner of protocol wording, and a compound/dose phrase derived in a view is one that
     /// drifts from the Stack card showing the same protocol. Same expression the card itself uses.
     private func heroPrimaryLine(_ presentation: ProtocolPresentation?) -> String {
-        guard let presentation else { return "No dose scheduled" }
+        // Says what to DO about it, rather than restating the absence. "No dose scheduled" was both
+        // lines of the card at once; this one is the only line, and it points somewhere.
+        guard let presentation else { return "No upcoming dose — check its schedule" }
         return presentation.perShot ?? "\(presentation.contents) · \(presentation.doseText)"
+    }
+
+    /// This week's scheduled slots and how many were taken, across every active protocol.
+    ///
+    /// Built from `AdherenceCalculator.expectedDates` rather than from `doseEvents`. The event array
+    /// drops anything not yet resolved — future slots and an un-taken today — because that is what a
+    /// STREAK needs. Feeding it here made a week whose remaining slot lay in the future count as
+    /// zero scheduled, which silently blanked the adherence line, the rail and the insight together.
+    private var heroWeek: HeroCard.Week {
+        let cal = Calendar.current
+        let now = Date()
+        guard let interval = cal.dateInterval(of: .weekOfYear, for: now) else {
+            return .init(logged: 0, scheduled: 0)
+        }
+        var expected: [Date] = []
+        var taken: [Date] = []
+        for p in activeProtocols {
+            // The whole week, both directions — `expectedDates` is asked for the week itself rather
+            // than for "up to now", which is precisely the slice the old input was missing.
+            expected += AdherenceCalculator.expectedDates(schedule: p.schedule,
+                                                         start: max(interval.start, cal.startOfDay(for: p.startDate)),
+                                                         end: interval.end,
+                                                         calendar: cal)
+            taken += p.ownedLogDates(in: recent)
+        }
+        return HeroCard.week(expectedDates: expected, takenDates: taken, asOf: now, calendar: cal)
     }
 
     /// Assembles the hero's intelligence line from whatever the app can actually compute.
