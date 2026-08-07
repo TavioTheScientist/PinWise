@@ -114,6 +114,20 @@ struct HeroTimingTests {
         #expect(!out.contains("Next"))
     }
 
+    /// **A midnight slot has no time and must not claim one.** A protocol with no reminder time
+    /// schedules at start-of-day, and appending the clock rendered "Sat · 12:00 AM" — which reads as
+    /// a dose deliberately set for midnight rather than as a day with no time attached.
+    @Test func aMidnightSlotRendersTheDayAlone() {
+        let satMidnight = DateComponents(calendar: cal, timeZone: cal.timeZone,
+                                         year: 2026, month: 8, day: 8).date!
+        #expect(phrase(satMidnight) == "Sat")
+        #expect(!phrase(satMidnight).contains("12:00"))
+
+        let tomorrowMidnight = DateComponents(calendar: cal, timeZone: cal.timeZone,
+                                              year: 2026, month: 8, day: 7).date!
+        #expect(phrase(tomorrowMidnight) == "Tomorrow")
+    }
+
     // MARK: - Overdue
 
     @Test func overdueCountsUpAndStaysInsideTheActionableWindow() {

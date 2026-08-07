@@ -136,20 +136,25 @@ abstract final class DoseDuePhrase {
     if (seconds < 3600) return 'Due in $minutes min';
     if (seconds < 6 * 3600) return 'Due in ${(seconds / 3600).floor()}h';
 
-    final time = _formatted(date, locale, (l) => DateFormat.jm(l));
+    // A midnight slot has no time and must not claim one — a protocol with no reminder time
+    // schedules at start-of-day, and "Sat · 12:00 AM" reads as a dose set for midnight.
+    final hasTimeOfDay = date.hour != 0 || date.minute != 0 || date.second != 0;
+    final time = hasTimeOfDay
+        ? ' · ${_formatted(date, locale, (l) => DateFormat.jm(l))}'
+        : '';
     final days = daysAway(date, asOf: now);
     if (days == null) return noDoseScheduledText;
-    if (days <= 0) return 'Today · $time';
-    if (days == 1) return 'Tomorrow · $time';
+    if (days <= 0) return 'Today$time';
+    if (days == 1) return 'Tomorrow$time';
     if (days <= weekdayHorizonDays) {
-      return '${_formatted(date, locale, (l) => DateFormat.E(l))} · $time';
+      return '${_formatted(date, locale, (l) => DateFormat.E(l))}$time';
     }
     if (days <= nextWeekHorizonDays) {
       // The "Next" prefix is what makes a weekday safe past +6: "Next Tue" cannot be misread as
       // today the way a bare "Tue" can when today IS Tuesday.
-      return 'Next ${_formatted(date, locale, (l) => DateFormat.E(l))} · $time';
+      return 'Next ${_formatted(date, locale, (l) => DateFormat.E(l))}$time';
     }
-    return '${_formatted(date, locale, (l) => DateFormat.MMMd(l))} · $time';
+    return '${_formatted(date, locale, (l) => DateFormat.MMMd(l))}$time';
   }
 
   /// Whole calendar days from `asOf`'s start-of-day to `date`'s start-of-day.

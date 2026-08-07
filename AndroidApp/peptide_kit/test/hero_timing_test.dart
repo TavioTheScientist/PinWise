@@ -57,6 +57,14 @@ void main() {
     },
   );
 
+  test('a midnight slot renders the day alone', () {
+    // A protocol with no reminder time schedules at start-of-day; "Sat · 12:00 AM" would read as a
+    // dose deliberately set for midnight.
+    expect(phrase(DateTime(2026, 8, 8)), 'Sat');
+    expect(phrase(DateTime(2026, 8, 8)), isNot(contains('12:00')));
+    expect(phrase(DateTime(2026, 8, 7)), 'Tomorrow');
+  });
+
   test('overdue counts up and stops at the 18h actionable window', () {
     expect(phrase(at(const Duration(hours: -2))), 'Overdue · 2h');
     expect(phrase(at(const Duration(minutes: -40))), 'Overdue · 40 min');

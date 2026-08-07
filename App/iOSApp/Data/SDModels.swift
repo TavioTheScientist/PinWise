@@ -227,6 +227,26 @@ extension SavedProtocol {
     /// True when a ramp-up plan is attached and active.
     var hasRampPlan: Bool { !rampPhases.isEmpty && rampStartDate != nil }
 
+    /// Which ramp phase is running, as `(week:total:)`, for the hero card's goal line.
+    ///
+    /// **`nil` unless every phase is exactly 7 days.** `RampPhase.durationDays` defaults to 7 but is
+    /// user-editable, and "Complete week 3 of 4" is a lie on a plan built from 10-day steps — it
+    /// would misstate both how far along the user is and when the step-up lands. A protocol with
+    /// uneven phases simply falls through to the streak goal, which is always true. Correct-or-silent
+    /// beats plausible: this card sits above dosing decisions.
+    var heroTitrationPhase: (week: Int, total: Int)? {
+        guard hasRampPlan, let start = rampStartDate else { return nil }
+        guard rampPhases.allSatisfy({ $0.durationDays == 7 }) else { return nil }
+        let cal = Calendar.current
+        let elapsed = cal.dateComponents([.day], from: cal.startOfDay(for: start),
+                                         to: cal.startOfDay(for: Date())).day ?? 0
+        guard elapsed >= 0 else { return nil }
+        let index = elapsed / 7
+        // Past the last phase the ramp is done — there is no phase left to complete.
+        guard index < rampPhases.count else { return nil }
+        return (week: index + 1, total: rampPhases.count)
+    }
+
     /// The ramp dose for `date` (nil when no plan): before start → first phase; inside a phase →
     /// that phase's dose; past the final phase → hold the last dose.
     func rampDose(on date: Date = Date(), calendar: Calendar = .current) -> Mass? {
