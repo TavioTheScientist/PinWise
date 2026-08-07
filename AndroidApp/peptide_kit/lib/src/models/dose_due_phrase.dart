@@ -2,6 +2,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
 import '../internal/calendar_math.dart';
+import 'dose_policy.dart';
 
 /// The single canonical way the app says "when is the next dose due."
 ///
@@ -88,6 +89,67 @@ abstract final class DoseDuePhrase {
       return _formatted(date, locale, (l) => DateFormat.E(l));
     }
     return _formatted(date, locale, (l) => DateFormat.MMMd(l));
+  }
+
+  // ── The hero timing line ────────────────────────────────────────────────────────────────
+
+  /// Minutes on either side of the scheduled time that read as **"Due now"** rather than a
+  /// countdown. Distinct from `DoseLateness.dueWindowMinutes` (60), which answers a STATUS
+  /// question; this one is about phrasing.
+  static const int dueNowWindowMinutes = 15;
+
+  /// Beyond this many days a weekday name is a lie even with a "Next" prefix — for a dose three
+  /// Tuesdays out, "Next Tue" names the wrong day. Same failure [weekdayHorizonDays] prevents,
+  /// one week further along.
+  static const int nextWeekHorizonDays = 13;
+
+  /// Shown when nothing is scheduled. Distinct from [asNeededText]: an as-needed protocol has no
+  /// schedule by design, this is a scheduled one with nothing left on it.
+  static const String noDoseScheduledText = 'No dose scheduled';
+
+  /// The hero card's timing line — specific at every distance, never "Soon" or "Later".
+  ///
+  /// Mirrors `DoseDuePhrase.heroTiming` in the Swift core label-for-label. **Hour rules outrank
+  /// day rules**: a dose at 02:00 when it is 23:00 is three hours away and also "tomorrow", and
+  /// the countdown is the answer to the question actually being asked.
+  ///
+  /// Separate from [phrase], which stays day-granular and time-free because it feeds the CSV
+  /// export and the assistant's context.
+  static String heroTiming(DateTime? date, {DateTime? asOf, String? locale}) {
+    if (date == null) return noDoseScheduledText;
+    final now = asOf ?? DateTime.now();
+    final seconds = date.difference(now).inSeconds;
+    final absSeconds = seconds.abs();
+    final minutes = (absSeconds / 60).round();
+
+    if (seconds < 0) {
+      final hoursLate = absSeconds / 3600;
+      if (hoursLate >= DoseLateness.overdueWindowHours) {
+        return noDoseScheduledText;
+      }
+      if (minutes <= dueNowWindowMinutes) return 'Due now';
+      if (absSeconds < 3600) return 'Overdue · $minutes min';
+      return 'Overdue · ${hoursLate.floor()}h';
+    }
+
+    if (minutes <= dueNowWindowMinutes) return 'Due now';
+    if (seconds < 3600) return 'Due in $minutes min';
+    if (seconds < 6 * 3600) return 'Due in ${(seconds / 3600).floor()}h';
+
+    final time = _formatted(date, locale, (l) => DateFormat.jm(l));
+    final days = daysAway(date, asOf: now);
+    if (days == null) return noDoseScheduledText;
+    if (days <= 0) return 'Today · $time';
+    if (days == 1) return 'Tomorrow · $time';
+    if (days <= weekdayHorizonDays) {
+      return '${_formatted(date, locale, (l) => DateFormat.E(l))} · $time';
+    }
+    if (days <= nextWeekHorizonDays) {
+      // The "Next" prefix is what makes a weekday safe past +6: "Next Tue" cannot be misread as
+      // today the way a bare "Tue" can when today IS Tuesday.
+      return 'Next ${_formatted(date, locale, (l) => DateFormat.E(l))} · $time';
+    }
+    return '${_formatted(date, locale, (l) => DateFormat.MMMd(l))} · $time';
   }
 
   /// Whole calendar days from `asOf`'s start-of-day to `date`'s start-of-day.
