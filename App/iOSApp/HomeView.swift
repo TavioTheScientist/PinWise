@@ -271,7 +271,7 @@ struct HomeView: View {
         let week = HeroCard.week(from: events)
         let goal = HeroCard.goal(week: week,
                                  streak: run.current,
-                                 titration: nextUp?.proto.heroTitrationPhase)
+                                 titration: nextUp?.proto.heroTitrationPhase.map { ($0.week, $0.total) })
         let up = nextUp
         let presentation = up.map {
             ProtocolPresentation($0.proto, vials: vials, todaysLogs: todaysLogs,
@@ -770,44 +770,30 @@ struct HomeView: View {
                                  endsThisWeek: endsThisWeek)
         }
 
-        // ── Titration phase. Same accurate-or-silent rule as the goal line ────────────────
+        // ── Titration phase, with the distance to the nearest step in BOTH directions ─────
+        //
+        // The step already taken matters more than the one coming: pooled STEP 1–3 data puts GI
+        // adverse events "during/shortly after dose escalation", so a step two days back is what
+        // explains how someone feels today. Same accurate-or-silent rule as the goal line — `nil`
+        // unless every ramp phase is exactly 7 days.
         if let up = nextUp, let phase = up.proto.heroTitrationPhase {
-            let days = up.proto.nextRampIncrease(after: now, calendar: cal).map {
+            let daysToStepUp = up.proto.nextRampIncrease(after: now, calendar: cal).map {
                 max(0, cal.dateComponents([.day], from: cal.startOfDay(for: now),
                                           to: cal.startOfDay(for: $0.date)).day ?? 0)
             }
-            input.phase = .init(week: phase.week, total: phase.total, daysToStepUp: days)
+            input.phase = .init(week: phase.week, total: phase.total,
+                                daysToStepUp: daysToStepUp,
+                                daysSinceStepUp: phase.daysSinceStepUp)
         }
 
-        // ── Cycle position, for compounds dosed less often than daily ─────────────────────
-        //
-        // Skipped entirely on daily protocols: the level never meaningfully falls between doses, so
-        // the phrase would be constant and a constant phrase carries no information.
-        if let up = nextUp, up.proto.schedule.kind != .daily,
-           let previous = up.proto.ownedLogDates(in: recent).filter({ $0 <= now }).max() {
-            let span = up.date.timeIntervalSince(previous)
-            if span > 0 {
-                let elapsed = now.timeIntervalSince(previous) / span
-                input.cycle = elapsed < 0.15 ? .rising
-                    : (elapsed < 0.4 ? .nearPeak : (elapsed < 0.85 ? .easing : .trough))
-            }
-        }
-
-        // ── Adherence facts ──────────────────────────────────────────────────────────────
-        let missedThisWeek = HeroCard.week(from: events.filter { !$0.taken }, asOf: now).scheduled
+        // ── Adherence feedback. Forward-looking only — no old-miss reporting ──────────────
         let lastMiss = events.filter { !$0.taken && $0.date <= now }.map(\.date).max()
         input.adherence = .init(
             week: week,
-            missedThisWeek: missedThisWeek,
             daysSinceLastMiss: lastMiss.flatMap {
                 cal.dateComponents([.day], from: cal.startOfDay(for: $0),
                                    to: cal.startOfDay(for: now)).day
             })
-
-        // ── Stack context: the OTHER doses due today, excluding the one on the card ───────
-        if let up = nextUp {
-            input.otherDosesDueToday = actionableNow.filter { $0.id != up.proto.id }.count
-        }
 
         return input
     }

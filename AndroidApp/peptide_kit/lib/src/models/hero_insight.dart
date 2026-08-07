@@ -1,18 +1,5 @@
 import 'hero_card.dart';
 
-/// Where the compound sits in its own dose cycle. Meaningful only for compounds dosed less often
-/// than daily — on a daily protocol the level never meaningfully falls, so the phrase would be
-/// constant and a constant phrase carries no information.
-enum CyclePosition {
-  rising('Levels still rising'),
-  nearPeak('Near peak'),
-  easing('Levels easing'),
-  trough('Lowest before next dose');
-
-  const CyclePosition(this.phrase);
-  final String phrase;
-}
-
 /// Remaining supply for the vial backing the next dose.
 class InsightSupply {
   const InsightSupply({
@@ -29,41 +16,35 @@ class InsightPhase {
     required this.week,
     required this.total,
     this.daysToStepUp,
+    this.daysSinceStepUp,
   });
   final int week;
   final int total;
+
+  /// Days until the next increase. Null at the final dose.
   final int? daysToStepUp;
+
+  /// Days since the most recent increase. Null before the first one.
+  final int? daysSinceStepUp;
 
   bool get isFinal => daysToStepUp == null;
 }
 
 /// Adherence facts drawn from the last 7–14 days.
+/// Adherence facts. Deliberately forward-looking: what is still owed, and what is intact.
 class InsightAdherence {
-  const InsightAdherence({
-    required this.week,
-    required this.missedThisWeek,
-    this.daysSinceLastMiss,
-  });
+  const InsightAdherence({required this.week, this.daysSinceLastMiss});
   final HeroWeek week;
-  final int missedThisWeek;
   final int? daysSinceLastMiss;
 }
 
 /// Everything the line can be built from. Absent signals are null, never zero — a zero would be a
 /// claim, and "absence of data is a visible state" applies to derivations too.
 class InsightInput {
-  const InsightInput({
-    this.supply,
-    this.phase,
-    this.cycle,
-    this.adherence,
-    this.otherDosesDueToday,
-  });
+  const InsightInput({this.supply, this.phase, this.adherence});
   final InsightSupply? supply;
   final InsightPhase? phase;
-  final CyclePosition? cycle;
   final InsightAdherence? adherence;
-  final int? otherDosesDueToday;
 }
 
 /// The hero card's **intelligence line** — one concrete, referential sentence.
@@ -78,8 +59,13 @@ class HeroInsight {
   /// doses is a status; two is a decision, because reordering takes days.
   static const int supplyRiskDoses = 3;
 
-  /// A step-up inside this many days is imminent enough to outrank cycle position and adherence.
-  static const int stepUpHorizonDays = 7;
+  /// Days on either side of a dose increase that count as the escalation window. Seven, because
+  /// the ramp steps this app supports are weekly — a wider window would still be open when the next
+  /// step lands, and the line would never turn off.
+  static const int escalationWindowDays = 7;
+
+  /// Days without a missed dose before that becomes worth stating.
+  static const int cleanRunDays = 14;
 
   /// Picks the single line, in priority order: actionable supply risk → a phase with a deadline →
   /// cycle position → a specific adherence fact → a quiet steady state.
@@ -94,45 +80,38 @@ class HeroInsight {
       if (supply.endsThisWeek) return 'Current vial ends this week';
     }
 
+    // The escalation window, in either direction. AFTER is checked first: a step that already
+    // happened explains how someone feels TODAY, while one still coming is a plan.
     final phase = input.phase;
     if (phase != null) {
-      final days = phase.daysToStepUp;
-      if (days != null && days <= stepUpHorizonDays) {
-        final unit = days == 1 ? 'day' : 'days';
-        return 'Week ${phase.week} of ${phase.total} · step-up in $days $unit';
+      final since = phase.daysSinceStepUp;
+      if (since != null && since <= escalationWindowDays) {
+        if (since == 0) return 'Dose stepped up today';
+        return 'Dose stepped up $since ${since == 1 ? 'day' : 'days'} ago';
+      }
+      final until = phase.daysToStepUp;
+      if (until != null && until <= escalationWindowDays) {
+        if (until == 0) return 'Dose steps up today';
+        return 'Dose steps up in $until ${until == 1 ? 'day' : 'days'}';
       }
       if (phase.isFinal) return 'Final week at this dose';
       return 'Week ${phase.week} of ${phase.total} on this dose';
     }
 
-    final cycle = input.cycle;
-    if (cycle != null) return cycle.phrase;
-
     final a = input.adherence;
     if (a != null) {
       if (a.week.scheduled > 0) {
         if (a.week.remaining == 1) return 'One dose left this week';
-        if (a.week.isComplete && a.missedThisWeek == 0) {
-          return 'All doses logged this week';
-        }
-      }
-      if (a.missedThisWeek == 1) return 'Missed one earlier this week';
-      if (a.missedThisWeek > 1) {
-        return 'Missed ${a.missedThisWeek} earlier this week';
+        if (a.week.isComplete) return 'All doses logged this week';
       }
       // Stated as an absence, which is the factual form — a record, not a compliment.
       final since = a.daysSinceLastMiss;
-      if (since != null && since >= 14) return 'No miss in the last 14 days';
+      if (since != null && since >= cleanRunDays) {
+        return 'No miss in the last $cleanRunDays days';
+      }
     }
 
-    final others = input.otherDosesDueToday;
-    if (others != null) {
-      if (others == 0) return 'Next is the only dose today';
-      if (others == 1) return 'One more dose today';
-      return '$others more doses today';
-    }
-
-    if (input.adherence == null) return null;
-    return 'On plan';
+    // Nothing worth the user's attention. The row disappears rather than holding space.
+    return null;
   }
 }

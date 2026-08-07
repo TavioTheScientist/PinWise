@@ -1,72 +1,94 @@
 import 'package:peptide_kit/peptide_kit.dart';
 import 'package:test/test.dart';
 
-/// Mirrors `HeroInsightTests` in the Swift core. The PRIORITY is the feature — any one phrase is
-/// trivial; choosing between five competing true statements is the part that breaks.
+/// Mirrors `HeroInsightTests` in the Swift core.
+///
+/// Three categories were cut against published evidence rather than taste: dose-cycle position (no
+/// evidence, and it over-claimed against the app's own PK disclaimer), old-miss reporting (contra
+/// the standing no-nagging rule, and real-world GLP-1 discontinuation is often non-permanent), and
+/// the "On plan" filler. The escalation window was added because pooled STEP 1–3 data puts GI
+/// adverse events "during/shortly after dose escalation".
 void main() {
-  InsightAdherence adh(
-    int logged,
-    int scheduled, {
-    int missed = 0,
-    int? sinceMiss,
-  }) => InsightAdherence(
-    week: HeroWeek(logged: logged, scheduled: scheduled),
-    missedThisWeek: missed,
-    daysSinceLastMiss: sinceMiss,
+  InsightPhase ph(int week, int total, {int? up, int? since}) => InsightPhase(
+    week: week,
+    total: total,
+    daysToStepUp: up,
+    daysSinceStepUp: since,
   );
+  InsightAdherence adh(int logged, int scheduled, {int? sinceMiss}) =>
+      InsightAdherence(
+        week: HeroWeek(logged: logged, scheduled: scheduled),
+        daysSinceLastMiss: sinceMiss,
+      );
 
   test('actionable supply outranks every other signal', () {
     expect(
       HeroInsight.line(
         InsightInput(
           supply: const InsightSupply(wholeDosesLeft: 2, endsThisWeek: true),
-          phase: const InsightPhase(week: 3, total: 4, daysToStepUp: 2),
-          cycle: CyclePosition.easing,
-          adherence: adh(5, 7, missed: 2),
+          phase: ph(3, 4, up: 2),
+          adherence: adh(5, 7),
         ),
       ),
       'About 2 doses left',
     );
   });
 
-  /// Six doses is a status, not a risk — it must not displace a step-up the user has to plan for.
   test('comfortable supply does not outrank a step-up', () {
     expect(
       HeroInsight.line(
-        const InsightInput(
-          supply: InsightSupply(wholeDosesLeft: 6, endsThisWeek: false),
-          phase: InsightPhase(week: 3, total: 4, daysToStepUp: 5),
+        InsightInput(
+          supply: const InsightSupply(wholeDosesLeft: 6, endsThisWeek: false),
+          phase: ph(3, 4, up: 5),
         ),
       ),
-      'Week 3 of 4 · step-up in 5 days',
+      'Dose steps up in 5 days',
     );
   });
 
-  test('a phase outranks cycle position and adherence', () {
+  /// A step that already happened explains how the user feels TODAY; one still coming is a plan.
+  test('a step that happened outranks one still coming', () {
     expect(
-      HeroInsight.line(
-        InsightInput(
-          phase: const InsightPhase(week: 2, total: 4, daysToStepUp: 20),
-          cycle: CyclePosition.nearPeak,
-          adherence: adh(7, 7),
-        ),
-      ),
+      HeroInsight.line(InsightInput(phase: ph(2, 4, up: 5, since: 2))),
+      'Dose stepped up 2 days ago',
+    );
+  });
+
+  test('the escalation window closes after a week', () {
+    expect(
+      HeroInsight.line(InsightInput(phase: ph(2, 4, up: 30, since: 7))),
+      'Dose stepped up 7 days ago',
+    );
+    expect(
+      HeroInsight.line(InsightInput(phase: ph(2, 4, up: 30, since: 8))),
       'Week 2 of 4 on this dose',
     );
   });
 
-  test('cycle position outranks adherence', () {
+  test('escalation pluralises and handles today', () {
     expect(
-      HeroInsight.line(
-        InsightInput(cycle: CyclePosition.easing, adherence: adh(7, 7)),
-      ),
-      'Levels easing',
+      HeroInsight.line(InsightInput(phase: ph(1, 4, since: 0))),
+      'Dose stepped up today',
+    );
+    expect(
+      HeroInsight.line(InsightInput(phase: ph(1, 4, since: 1))),
+      'Dose stepped up 1 day ago',
+    );
+    expect(
+      HeroInsight.line(InsightInput(phase: ph(1, 4, up: 1))),
+      'Dose steps up in 1 day',
+    );
+    expect(
+      HeroInsight.line(InsightInput(phase: ph(1, 4, up: 0))),
+      'Dose steps up today',
     );
   });
 
-  test('quiet state is the floor, not the default', () {
-    expect(HeroInsight.line(const InsightInput()), isNull);
-    expect(HeroInsight.line(InsightInput(adherence: adh(3, 9))), 'On plan');
+  test('a final dose has no step to name', () {
+    expect(
+      HeroInsight.line(InsightInput(phase: ph(4, 4))),
+      'Final week at this dose',
+    );
   });
 
   test('supply rungs escalate', () {
@@ -104,62 +126,43 @@ void main() {
     );
   });
 
-  test('step-up pluralises correctly', () {
+  test('what is still owed comes first', () {
     expect(
-      HeroInsight.line(
-        const InsightInput(
-          phase: InsightPhase(week: 1, total: 4, daysToStepUp: 1),
-        ),
-      ),
-      'Week 1 of 4 · step-up in 1 day',
-    );
-    expect(
-      HeroInsight.line(
-        const InsightInput(
-          phase: InsightPhase(week: 1, total: 4, daysToStepUp: 2),
-        ),
-      ),
-      'Week 1 of 4 · step-up in 2 days',
-    );
-  });
-
-  test('what is still owed outranks what was missed', () {
-    expect(
-      HeroInsight.line(InsightInput(adherence: adh(6, 7, missed: 1))),
+      HeroInsight.line(InsightInput(adherence: adh(6, 7))),
       'One dose left this week',
     );
-  });
-
-  test('a complete clean week says so', () {
     expect(
       HeroInsight.line(InsightInput(adherence: adh(7, 7))),
       'All doses logged this week',
     );
-  });
-
-  test('a long clean run is stated as an absence', () {
     expect(
       HeroInsight.line(InsightInput(adherence: adh(3, 9, sinceMiss: 21))),
       'No miss in the last 14 days',
     );
   });
 
-  test('stack context counts only the other doses', () {
-    expect(
-      HeroInsight.line(const InsightInput(otherDosesDueToday: 0)),
-      'Next is the only dose today',
-    );
-    expect(
-      HeroInsight.line(const InsightInput(otherDosesDueToday: 1)),
-      'One more dose today',
-    );
-    expect(
-      HeroInsight.line(const InsightInput(otherDosesDueToday: 3)),
-      '3 more doses today',
-    );
+  /// No line ever reports an old miss — contra the no-nagging rule, and a gap is a pause more often
+  /// than a failure.
+  test('no line ever reports an old miss', () {
+    for (final i in [
+      InsightInput(adherence: adh(2, 7)),
+      InsightInput(adherence: adh(0, 7)),
+      InsightInput(adherence: adh(5, 7, sinceMiss: 1)),
+    ]) {
+      final line = HeroInsight.line(i) ?? '';
+      expect(
+        !line.toLowerCase().contains('miss') || line.startsWith('No miss'),
+        isTrue,
+      );
+    }
   });
 
-  /// The spec's two hard bans, asserted directly across every reachable line.
+  /// Nothing worth saying means no line at all, not filler.
+  test('there is no filler line', () {
+    expect(HeroInsight.line(const InsightInput()), isNull);
+    expect(HeroInsight.line(InsightInput(adherence: adh(3, 9))), isNull);
+  });
+
   test('no line is ever vague or judgmental', () {
     const banned = [
       'looking good',
@@ -174,6 +177,8 @@ void main() {
       'soon',
       'later',
       'amazing',
+      'on plan',
+      'steady',
     ];
     final inputs = <InsightInput>[
       const InsightInput(
@@ -185,18 +190,13 @@ void main() {
       const InsightInput(
         supply: InsightSupply(wholeDosesLeft: 9, endsThisWeek: true),
       ),
-      const InsightInput(
-        phase: InsightPhase(week: 2, total: 4, daysToStepUp: 3),
-      ),
-      const InsightInput(phase: InsightPhase(week: 4, total: 4)),
-      for (final c in CyclePosition.values) InsightInput(cycle: c),
+      InsightInput(phase: ph(2, 4, up: 3)),
+      InsightInput(phase: ph(2, 4, since: 2)),
+      InsightInput(phase: ph(4, 4)),
+      InsightInput(phase: ph(2, 4, up: 40)),
       InsightInput(adherence: adh(7, 7)),
       InsightInput(adherence: adh(6, 7)),
-      InsightInput(adherence: adh(2, 7, missed: 3)),
       InsightInput(adherence: adh(3, 9, sinceMiss: 21)),
-      InsightInput(adherence: adh(3, 9)),
-      const InsightInput(otherDosesDueToday: 0),
-      const InsightInput(otherDosesDueToday: 2),
     ];
     for (final i in inputs) {
       final line = HeroInsight.line(i);
