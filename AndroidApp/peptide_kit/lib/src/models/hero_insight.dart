@@ -83,7 +83,10 @@ class HeroInsight {
   /// quantities and has nothing to tune; this one encodes a judgement about reorder lead time. The
   /// right thing to revisit against real usage, and the wrong thing to quietly become six
   /// coefficients.
-  static const int reorderLeadDays = 10;
+  /// **14, raised from 10 — the first number was a pharmacy assumption.** Ten days fits a
+  /// prescription collected locally; this app's users order from vendors where shipping is measured
+  /// in weeks, so at ten days someone can be told to reorder only after it is too late to arrive.
+  static const int reorderLeadDays = 14;
 
   /// Doses at which supply is urgent regardless of cadence — one dose left is a decision whether the
   /// protocol is daily or weekly.

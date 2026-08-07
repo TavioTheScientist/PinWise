@@ -128,9 +128,16 @@ public enum HeroInsight {
     /// Every other trigger compares two real quantities — days since a step against the escalation
     /// window, doses logged against doses scheduled — and has nothing to tune. This one encodes a
     /// judgement about reorder lead time: long enough to cover ordering and delivery, short enough
-    /// that the line is not lit for a month. Ten days is the estimate; it is the right thing to
-    /// revisit against real usage, and the wrong thing to quietly turn into six coefficients.
-    public static let reorderLeadDays = 10
+    /// that the line is not lit for a month. It is the right thing to revisit against real usage,
+    /// and the wrong thing to quietly turn into six coefficients.
+    ///
+    /// **14, raised from 10 — the first number was a pharmacy assumption.** Ten days is about right
+    /// for a prescription you collect locally. This app's users order research peptides from vendors,
+    /// where shipping is measured in weeks and is not reliable: at ten days someone can be told to
+    /// reorder only after it is already too late to arrive. Caught on device, where a real protocol
+    /// sat at ELEVEN days of supply and the card said nothing — a one-day miss on a threshold that
+    /// was mis-sized for the actual use case rather than mis-tuned by a day.
+    public static let reorderLeadDays = 14
 
     /// Doses at which supply is urgent regardless of cadence. One dose left is a decision whether
     /// the protocol is daily or weekly, so this floor survives the days-based rule.
