@@ -26,6 +26,13 @@ let package = Package(
             name: "pk-verify",
             dependencies: ["PeptideKit"]
         ),
+        // Emits the Natt knowledge-base corpus (`swift run kb-export`). The catalog is the SOURCE
+        // and `supabase/kb/corpus.json` is OUTPUT — CI regenerates and diffs so drift fails the
+        // build instead of quietly degrading the assistant.
+        .executableTarget(
+            name: "kb-export",
+            dependencies: ["PeptideKit"]
+        ),
         .testTarget(
             name: "PeptideKitTests",
             dependencies: ["PeptideKit"]
