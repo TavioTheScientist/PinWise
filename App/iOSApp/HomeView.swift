@@ -191,8 +191,18 @@ struct HomeView: View {
             }
 
             VStack(alignment: .leading, spacing: Space.xs) {
-                // The date is the header. Permanently.
-                MicroLabel(Date.now.formatted(.dateTime.weekday(.wide).month().day()))
+                // The date is the header. Permanently — and now at a size that says so.
+                //
+                // It was `MicroLabel`: 11pt, uppercase, secondary. That made the one piece of pure
+                // ORIENTING information on Home the smallest text on the screen, under a card whose
+                // own primary line is 22pt. `Typo.headline` roughly doubles it and drops the
+                // uppercase — a date is a phrase, not an instrument label. Deliberately NOT larger
+                // than that: at `Typo.title` the date would outrank the card's own subject, and Home
+                // is not a calendar.
+                Text(Date.now.formatted(.dateTime.weekday(.wide).month().day()))
+                    .font(Typo.headline)
+                    .foregroundStyle(BrandColor.textSecondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
                 // The positioning line shows ONLY until the first dose is logged, then never again.
                 //
                 // "Track your protocol. Know the science." earns its place while the app is still
@@ -258,77 +268,73 @@ struct HomeView: View {
         // `AdherenceCalculator.expectedDates` per render.
         let events = doseEvents
         let run = StreakCalculator.compute(events: events)
-        let fraction = Self.adherence(of: events)
-        // The number of scheduled doses the ring ACTUALLY judged, which is not the constant: a member
-        // eight doses into a protocol would otherwise be told the figure covers 22 of them. A
-        // denominator is only worth surfacing if it is the true one.
-        let judged = min(events.count, Self.adherenceWindow)
+        let week = HeroCard.week(from: events)
+        let goal = HeroCard.goal(week: week,
+                                 streak: run.current,
+                                 titration: nextUp?.proto.heroTitrationPhase)
+        let up = nextUp
+        let presentation = up.map {
+            ProtocolPresentation($0.proto, vials: vials, todaysLogs: todaysLogs,
+                                 overdueSince: $0.proto.lastOverdueDose(in: recent, skips: skips))
+        }
 
         return Card(style: .hero, padding: Space.xl) {
-            // ONE dominant fact, then one quiet supporting line. Nothing else.
+            // ── WHAT, then WHEN. ────────────────────────────────────────────────────────────
             //
-            // This card previously carried adherence, next pin, streak, "your best", the judged
-            // denominator and a milestone bar — six signals at similar weight, which is not a
-            // hierarchy, it is a list. Apple's Deference principle is the relevant one: the interface
-            // should serve the content rather than compete with it, and six competing modules make
-            // the card itself the loudest thing on screen.
-            //
-            // The question Home answers is "when is my next dose, and am I on track". So: WHEN is the
-            // hero, ON TRACK is the supporting line, and everything else moved or left.
+            // The card used to lead with the day ("Sat" at 48pt) and demote the compound to a
+            // subtitle. That answers the second question first: someone opening the app knows what
+            // they are on and wants to know when — but a card that says only "Sat" cannot be acted
+            // on without a second look, and on a multi-compound stack it does not even say which
+            // dose Saturday refers to. Leading with "Semaglutide 1 mg" makes the card
+            // self-sufficient, and the timing line beneath it is now SPECIFIC to the minute rather
+            // than day-granular (`DoseDuePhrase.heroTiming`).
             VStack(alignment: .leading, spacing: Space.lg) {
                 VStack(alignment: .leading, spacing: Space.xxs) {
-                    MicroLabel("Next pin")
-                    Text(nextDoseText(nextDoseDate))
-                        .font(Typo.numberHero).displayTracking()
+                    MicroLabel("Next")
+                    Text(heroPrimaryLine(presentation))
+                        .font(Typo.numberMD)
                         .foregroundStyle(BrandColor.textPrimary)
-                        .lineLimit(2).minimumScaleFactor(0.5)
-                    if let sub = nextDoseSubtitle {
-                        Text(sub)
-                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                    }
+                        .lineLimit(2).minimumScaleFactor(0.6)
+                    // Secondary ink, not primary. Both lines were white at 22pt and 20pt, which is
+                    // two headlines rather than a headline and its answer — the eye had nowhere to
+                    // land first. Size AND colour now separate them, so the compound reads as the
+                    // subject and the timing as what is being said about it.
+                    Text(DoseDuePhrase.heroTiming(for: up?.date))
+                        .font(Typo.headline)
+                        .foregroundStyle(BrandColor.textSecondary)
+                        .lineLimit(1).minimumScaleFactor(0.7)
                 }
 
                 Divider().overlay(BrandColor.stroke)
 
-                // The supporting line. The ring survives at a fraction of its size because it is the
-                // app's signature instrument and a percentage alone reads as a spreadsheet — but it
-                // is now context for the hero rather than a second hero.
-                HStack(alignment: .center, spacing: Space.md) {
-                    AdherenceRing(fraction: fraction, size: Self.ringSizeCompact)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("\(Int((fraction * 100).rounded()))% adherence")
+                // ── How the week is going, then the ONE thing to aim at. ────────────────────
+                //
+                // This replaces a ring + percentage + denominator + streak flame arranged across
+                // one row — four signals at one weight, which is a list rather than a hierarchy.
+                // The week line is checkable ("6 of 7"), the goal line is actionable, and the bar
+                // is the goal made visible. Adherence keeps its denominator for the same reason it
+                // always has: a percentage with a hidden sample is a number you must take on faith.
+                VStack(alignment: .leading, spacing: Space.sm) {
+                    if let line = HeroCard.adherenceLine(week) {
+                        Text(line)
+                            .font(Typo.footnote)
+                            .foregroundStyle(BrandColor.textSecondary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                    if let goal {
+                        Text(goal.text)
                             .font(Typo.caption.weight(.semibold))
                             .foregroundStyle(BrandColor.textPrimary)
                             .lineLimit(1).minimumScaleFactor(0.8)
-                        // The denominator DEMOTED rather than deleted. A percentage with no visible
-                        // denominator is a number you have to take on faith, and this app's whole
-                        // position is that it does not ask for faith. It is quiet now, not gone.
-                        Text(judged > 0 ? "Last \(judged) doses" : "No doses due yet")
-                            .font(Typo.caption).foregroundStyle(BrandColor.textSecondary)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                    }
-                    Spacer(minLength: Space.sm)
-                    // ONE supporting progress signal, not two. The streak stays because it answers
-                    // "am I on track" directly; the milestone bar was progress toward a reward, which
-                    // is a different and lesser question for a daily surface. "Your best" left with
-                    // it — a comparison against your own record is tertiary at a glance.
-                    if run.current > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "flame.fill")
-                                .font(Typo.microCaption)
-                                .foregroundStyle(BrandColor.warning)
-                            Text("\(run.current)")
-                                .font(Typo.numberSM)
-                                .foregroundStyle(BrandColor.textPrimary)
+                        // Hidden at a complete goal: a full bar under "Hold 120 clean doses" is
+                        // decoration, since there is no remaining distance for it to show.
+                        if goal.fraction < 1 {
+                            GoalProgressBar(fraction: goal.fraction)
+                                .accessibilityHidden(true)
                         }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Dose streak")
-                        .accessibilityValue("\(run.current) in a row")
                     }
                 }
-                .accessibilityElement(children: .contain)
+
             }
         }
         // A crossed milestone celebrates once (per run): a solid flame chip springs in, a
@@ -714,6 +720,34 @@ struct HomeView: View {
     }
 
     private func nextDoseText(_ date: Date?) -> String { DoseDuePhrase.phrase(for: date) }
+
+    /// The hero's primary line: **what the next dose is**, e.g. "Semaglutide 1 mg".
+    ///
+    /// Reads `ProtocolPresentation` rather than assembling the string here — that type is the single
+    /// sanctioned owner of protocol wording, and a compound/dose phrase derived in a view is one that
+    /// drifts from the Stack card showing the same protocol. Same expression the card itself uses.
+    private func heroPrimaryLine(_ presentation: ProtocolPresentation?) -> String {
+        guard let presentation else { return "No dose scheduled" }
+        return presentation.perShot ?? "\(presentation.contents) · \(presentation.doseText)"
+    }
+
+    /// The protocol whose next dose lands soonest, paired with that date.
+    ///
+    /// The hero's primary line is now **what** rather than **when** — "Semaglutide 1 mg" over
+    /// "Sat" — so it needs the protocol itself, not just the minimum date. Ties break on whichever
+    /// `min(by:)` reaches first; with two doses at the same instant either is a truthful answer and
+    /// the protocols list below names them both.
+    private var nextUp: (proto: SavedProtocol, date: Date)? {
+        // Same today-scoped slice `nextDoseDate` uses — `loggedToday(in:)` scans whatever array it
+        // is handed, and `recent` grows without bound.
+        let logs = todaysLogs
+        return activeProtocols
+            .compactMap { p -> (proto: SavedProtocol, date: Date)? in
+                guard let d = p.upcomingDose(loggedToday: p.loggedToday(in: logs)) else { return nil }
+                return (p, d)
+            }
+            .min { $0.date < $1.date }
+    }
 }
 
 /// A unified health snapshot — the top card on Home. Merges connector metrics (Apple Health:

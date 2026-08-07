@@ -168,19 +168,26 @@ public enum DoseDuePhrase {
         if seconds < 3600 { return "Due in \(minutes) min" }
         if seconds < 6 * 3600 { return "Due in \(Int(seconds / 3600))h" }
 
-        let time = formatted(date, template: "jmm", calendar: calendar, locale: locale)
+        // **A midnight slot has no time, and must not claim one.** A protocol with no reminder time
+        // schedules at start-of-day, so appending the clock rendered "Sat · 12:00 AM" — which reads
+        // as a dose set for midnight rather than as a day with no time attached. The spec's table
+        // assumes a real time-of-day; where there is none, the day alone is the whole truth.
+        let hasTimeOfDay = calendar.startOfDay(for: date) != date
+        let time = hasTimeOfDay
+            ? " · " + formatted(date, template: "jmm", calendar: calendar, locale: locale)
+            : ""
         guard let days = daysAway(date, asOf: now, calendar: calendar) else { return noDoseScheduledText }
         switch days {
-        case ...0: return "Today · \(time)"
-        case 1: return "Tomorrow · \(time)"
+        case ...0: return "Today\(time)"
+        case 1: return "Tomorrow\(time)"
         case 2...weekdayHorizonDays:
-            return "\(formatted(date, template: "EEE", calendar: calendar, locale: locale)) · \(time)"
+            return "\(formatted(date, template: "EEE", calendar: calendar, locale: locale))\(time)"
         case (weekdayHorizonDays + 1)...nextWeekHorizonDays:
             // The "Next" prefix is what makes a weekday safe past +6: "Next Tue" cannot be misread
             // as today the way a bare "Tue" can when today IS Tuesday.
-            return "Next \(formatted(date, template: "EEE", calendar: calendar, locale: locale)) · \(time)"
+            return "Next \(formatted(date, template: "EEE", calendar: calendar, locale: locale))\(time)"
         default:
-            return "\(formatted(date, template: "MMMd", calendar: calendar, locale: locale)) · \(time)"
+            return "\(formatted(date, template: "MMMd", calendar: calendar, locale: locale))\(time)"
         }
     }
 

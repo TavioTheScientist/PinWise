@@ -650,6 +650,32 @@ struct DisclosureChevron: View {
     }
 }
 
+/// A hairline progress rail for the hero card's short-term goal.
+///
+/// Deliberately thin and unlabelled. The goal line above it already states the numbers ("3 more to
+/// 10 clean doses"), so a thicker bar with its own label would say the same thing twice — this only
+/// has to make the remaining distance FELT at a glance. Neutral fill, not the accent: it is a
+/// progress readout, not a brand moment, and the card already spends its one accent elsewhere.
+struct GoalProgressBar: View {
+    let fraction: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(BrandColor.stroke.opacity(0.5))
+                Capsule()
+                    .fill(BrandColor.textSecondary)
+                    // A floor so a just-started goal still reads as a bar rather than as nothing —
+                    // at 1/14 a hairline rail would otherwise render sub-pixel and look broken.
+                    .frame(width: max(3, geo.size.width * min(1, max(0, fraction))))
+            }
+        }
+        .frame(height: 3)
+        .animation(Motion.gated(Motion.emphasis, reduceMotion), value: fraction)
+    }
+}
+
 /// The one empty / unavailable state: a muted SF Symbol, a title, and an optional line of
 /// guidance, centered. Replaces the ad-hoc `Card`+`Text` and `ContentUnavailableView` forks so
 /// every "nothing here yet" reads the same. Drop it inside a `Card` (or bare) as the caller needs.
