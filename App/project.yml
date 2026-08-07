@@ -7,7 +7,11 @@ name: Staxyz
 options:
   bundleIdPrefix: com.staxyz
   deploymentTarget:
-    iOS: "18.0"
+    # 26.0, raised from 18.0 with the Liquid Glass adoption. Liquid Glass renders only on iOS 26+,
+    # and the app is unshipped with no installed base to strand. Raising it means no `if #available`
+    # gating anywhere and no second visual language to maintain — the alternative was every glass
+    # surface carrying an iOS 18 fallback forever.
+    iOS: "26.0"
   createIntermediateGroups: true
 
 packages:

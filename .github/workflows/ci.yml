@@ -66,9 +66,27 @@ jobs:
 
   ios-app:
     name: Build iOS app
-    runs-on: macos-15               # 10× minutes — unavoidable (needs Xcode + iOS SDK)
+    # macos-26, raised from macos-15 alongside the iOS 26 deployment target. The macos-15 image
+    # ships Xcode 16.4 — the iOS 18 SDK — which cannot compile `glassEffect`, `Tab(…, role:)` or
+    # `tabBarMinimizeBehavior`, so it failed the moment the app adopted Liquid Glass. The Xcode
+    # selection is EXPLICIT rather than left to the image default: a runner-image update that moves
+    # the default would otherwise change the SDK under the build silently.
+    runs-on: macos-26               # 10× minutes — unavoidable (needs Xcode + iOS SDK)
     steps:
       - uses: actions/checkout@v4
+      # Pins the MAJOR version (26 = the iOS 26 SDK, which is what Liquid Glass needs) while
+      # tolerating point-release churn in the runner image. A hardcoded `Xcode_26.app` does not
+      # exist — the image ships `Xcode_26.0.app` … `Xcode_26.3.app` — and `set -e` turned that
+      # missing path into an unexplained step failure. Resolving the newest 26.x and PRINTING it
+      # means a future mismatch names itself in the log rather than arriving as compile errors.
+      - name: Select the newest Xcode 26.x
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          test -n "$XC" || { echo "::error::No Xcode 26.x on this runner"; ls /Applications | grep -i xcode; exit 1; }
+          echo "Selected $XC"
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i 'iphonesimulator' || true
       - name: Cache SwiftPM
         uses: actions/cache@v4
         with:
