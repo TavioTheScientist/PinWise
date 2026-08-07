@@ -114,6 +114,24 @@ struct HeroInsightTests {
         #expect(weekly == nil, "Three weeks of supply is not a reorder decision.")
     }
 
+    /// **The case that exposed the threshold.** A real protocol on device sat at eleven days of
+    /// supply and the card said nothing, because the lead time was ten — a pharmacy assumption. The
+    /// users of this app order from vendors where shipping is measured in weeks, so at ten days
+    /// someone is told to reorder only once it is too late for it to arrive.
+    @Test func elevenDaysOfSupplyIsAReorderDecision() {
+        #expect(HeroInsight.line(input(
+            supply: .init(name: "Semaglutide", wholeDosesLeft: 6,
+                          daysOfSupply: 11, daysToExpiry: nil)))
+                == "About 11 days of Semaglutide left")
+    }
+
+    /// The ceiling still holds — three weeks of supply is not a decision.
+    @Test func aMonthOfSupplyStaysQuiet() {
+        #expect(HeroInsight.line(input(
+            supply: .init(name: "GLOW", wholeDosesLeft: 30, daysOfSupply: 30, daysToExpiry: nil)))
+                == nil)
+    }
+
     @Test func supplyRungsEscalate() {
         #expect(HeroInsight.line(input(supply: .init(name: "GLOW", wholeDosesLeft: 0, daysOfSupply: 0, daysToExpiry: nil)))
                 == "GLOW is empty")
