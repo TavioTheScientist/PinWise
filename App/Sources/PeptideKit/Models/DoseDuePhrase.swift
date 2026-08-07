@@ -84,6 +84,106 @@ public enum DoseDuePhrase {
         }
     }
 
+    // MARK: - The hero timing line
+
+    /// Minutes on either side of the scheduled time that read as **"Due now"** rather than a
+    /// countdown. Distinct from ``DoseLateness/dueWindowMinutes`` (60), which answers a different
+    /// question — how long a dose still counts as `due` rather than `late` for STATUS purposes.
+    /// This one is about PHRASING: past ~15 minutes a countdown ("Due in 42 min") is more useful
+    /// than "now", but inside it a countdown would be false precision on a dose you should take.
+    public static let dueNowWindowMinutes = 15
+
+    /// Beyond this many days a weekday name is a lie, even with a "Next" prefix.
+    ///
+    /// The spec's table ends at "next week or later → `Next Tue`", which is right up to a point and
+    /// wrong past it: for a dose 20 days out, "Next Tue" names a Tuesday that is two Tuesdays too
+    /// early. That is the SAME failure ``weekdayHorizonDays`` exists to prevent, one week further
+    /// along — so the horizon extends rather than disappears, and past it the phrase switches to an
+    /// explicit month + day.
+    public static let nextWeekHorizonDays = 13
+
+    /// Shown when nothing is scheduled. Distinct from ``asNeededText`` on purpose: an as-needed
+    /// protocol HAS no schedule by design, while this is a scheduled protocol with nothing left on
+    /// it — the hero should not tell someone their weekly protocol is "As needed".
+    public static let noDoseScheduledText = "No dose scheduled"
+
+    /// The hero card's timing line: **specific at every distance**, never "Soon" or "Later".
+    ///
+    /// | Distance | Renders |
+    /// |---|---|
+    /// | overdue, inside the 18h window | `Overdue · 2h` (`· 40 min` under an hour) |
+    /// | within ±15 min | `Due now` |
+    /// | under 1 hour | `Due in 42 min` |
+    /// | 1–6 hours | `Due in 3h` |
+    /// | later today | `Today · 8:00 PM` |
+    /// | tomorrow | `Tomorrow · 2:00 PM` |
+    /// | 2–6 days | `Sat · 2:00 PM` |
+    /// | 7–13 days | `Next Tue · 9:00 AM` |
+    /// | 14+ days | `Aug 26 · 9:00 AM` |
+    /// | nothing scheduled | `No dose scheduled` |
+    ///
+    /// **Hour rules outrank day rules, deliberately.** A dose at 2 AM when it is 11 PM is three
+    /// hours away and also "tomorrow"; "Due in 3h" is the answer to the question actually being
+    /// asked. The elapsed-time branches are therefore tested before any calendar-day branch.
+    ///
+    /// **Separate from ``phrase(for:asOf:calendar:locale:)``, which is unchanged.** That one feeds
+    /// Home's protocol rows, the Stack cards, the Log picker subtitle, the CSV export and the
+    /// assistant's context, and it is deliberately day-granular and time-free — a CSV column reading
+    /// "Due in 3h" would be meaningless the moment the file is opened. Widening the shared phrase
+    /// would have reached five surfaces to serve one, which is exactly how the weekday regression
+    /// happened. This is additive.
+    ///
+    /// - Parameters:
+    ///   - date: The next dose's scheduled instant, or `nil` when nothing is scheduled.
+    ///   - now: Reference instant. Injected so tests and the harness stay deterministic.
+    ///   - calendar: Used for every day-boundary and time-of-day decision.
+    ///   - locale: Decides time format (12h vs 24h) and month/day field order.
+    /// - Returns: A display-ready line. Never empty, never vague.
+    public static func heroTiming(
+        for date: Date?,
+        asOf now: Date = Date(),
+        calendar: Calendar = .current,
+        locale: Locale = .autoupdatingCurrent
+    ) -> String {
+        guard let date else { return noDoseScheduledText }
+
+        let seconds = date.timeIntervalSince(now)
+        let minutes = Int((abs(seconds) / 60).rounded())
+
+        // ── Past the scheduled time ────────────────────────────────────────────────────────
+        if seconds < 0 {
+            // Only inside the actionable window. Past it the dose has LAPSED and the hero must
+            // stop nagging — the card shows the next dose instead, per the 18-hour rule.
+            let hoursLate = abs(seconds) / 3600
+            guard hoursLate < Double(DoseLateness.overdueWindowHours) else {
+                return noDoseScheduledText
+            }
+            if minutes <= dueNowWindowMinutes { return "Due now" }
+            if abs(seconds) < 3600 { return "Overdue · \(minutes) min" }
+            return "Overdue · \(Int(hoursLate))h"
+        }
+
+        // ── Ahead of the scheduled time ────────────────────────────────────────────────────
+        if minutes <= dueNowWindowMinutes { return "Due now" }
+        if seconds < 3600 { return "Due in \(minutes) min" }
+        if seconds < 6 * 3600 { return "Due in \(Int(seconds / 3600))h" }
+
+        let time = formatted(date, template: "jmm", calendar: calendar, locale: locale)
+        guard let days = daysAway(date, asOf: now, calendar: calendar) else { return noDoseScheduledText }
+        switch days {
+        case ...0: return "Today · \(time)"
+        case 1: return "Tomorrow · \(time)"
+        case 2...weekdayHorizonDays:
+            return "\(formatted(date, template: "EEE", calendar: calendar, locale: locale)) · \(time)"
+        case (weekdayHorizonDays + 1)...nextWeekHorizonDays:
+            // The "Next" prefix is what makes a weekday safe past +6: "Next Tue" cannot be misread
+            // as today the way a bare "Tue" can when today IS Tuesday.
+            return "Next \(formatted(date, template: "EEE", calendar: calendar, locale: locale)) · \(time)"
+        default:
+            return "\(formatted(date, template: "MMMd", calendar: calendar, locale: locale)) · \(time)"
+        }
+    }
+
     /// Whole calendar days from `now`'s start-of-day to `date`'s start-of-day.
     ///
     /// Negative when `date` is in the past, `0` for today, `nil` when `date` is `nil`. Counting
