@@ -756,26 +756,45 @@ struct HomeView: View {
         let now = Date()
         let cal = Calendar.current
 
-        // ── Supply, from the vial actually backing the next dose ──────────────────────────
+        // ── Supply, scanned across the WHOLE STACK ────────────────────────────────────────
         //
-        // Passes DAYS as well as doses. `daysOfSupply` is cadence-aware — the estimator projects it
-        // against the protocol's schedule — which is the only figure that can tell "three days left"
-        // apart from "three weeks left" when both read as three doses.
-        if let up = nextUp,
-           let item = up.proto.items.first,
-           let vial = vials.first(where: { $0.id == item.vialID }) {
-            let projection = vial.projection(schedule: up.proto.schedule, referenceDate: now)
-            // Only when expiry is the binding limit — otherwise the vial runs out of doses first and
-            // its expiration date is not the thing to act on.
-            let daysToExpiry: Int? = projection.limitingFactor == .expiration
-                ? projection.effectiveEndDate.flatMap {
-                    cal.dateComponents([.day], from: cal.startOfDay(for: now),
-                                       to: cal.startOfDay(for: $0)).day
-                  }
-                : nil
-            input.supply = .init(wholeDosesLeft: projection.usableWholeDoses,
-                                 daysOfSupply: projection.daysOfSupply.map { Int($0.rounded(.down)) },
-                                 daysToExpiry: daysToExpiry)
+        // **This used to look at one vial: `nextUp.proto.items.first`.** Two scope bugs hid in that
+        // line. A stack protocol with three compounds only ever had its FIRST vial checked, and —
+        // worse — a vial belonging to any protocol other than the soonest-due one was invisible.
+        // So a user mid-titration on Semaglutide could be four days from running out of GLOW and
+        // the card would calmly report "Step 2 of 4 on this dose". Supply was already tier 1 and
+        // would have won; the selector was never told the vial existed.
+        //
+        // Supply is the one STACK-WIDE signal on this card. Every other line is about the next dose,
+        // but running out is running out whichever protocol it belongs to, and the lead time to fix
+        // it does not care which dose happens to be due first. So every active protocol × every item
+        // is projected, and the most urgent wins.
+        let supplyCandidates: [HeroInsight.Supply] = activeProtocols.flatMap { proto in
+            proto.items.compactMap { item -> HeroInsight.Supply? in
+                guard let vial = vials.first(where: { $0.id == item.vialID }) else { return nil }
+                let projection = vial.projection(schedule: proto.schedule, referenceDate: now)
+                // Only when expiry is the binding limit — otherwise the vial runs out of doses
+                // first and its expiration date is not the thing to act on.
+                let daysToExpiry: Int? = projection.limitingFactor == .expiration
+                    ? projection.effectiveEndDate.flatMap {
+                        cal.dateComponents([.day], from: cal.startOfDay(for: now),
+                                           to: cal.startOfDay(for: $0)).day
+                      }
+                    : nil
+                return .init(name: vial.displayName,
+                             wholeDosesLeft: projection.usableWholeDoses,
+                             daysOfSupply: projection.daysOfSupply.map { Int($0.rounded(.down)) },
+                             daysToExpiry: daysToExpiry)
+            }
+        }
+        // Most urgent = fewest days until the vial stops being usable, by either limit. An
+        // as-needed vial has no projected days at all, so it sorts last on days and is compared on
+        // doses instead — it can still win when it is nearly empty.
+        input.supply = supplyCandidates.min { a, b in
+            let aDays = [a.daysOfSupply, a.daysToExpiry].compactMap { $0 }.min() ?? Int.max
+            let bDays = [b.daysOfSupply, b.daysToExpiry].compactMap { $0 }.min() ?? Int.max
+            if aDays != bDays { return aDays < bDays }
+            return a.wholeDosesLeft < b.wholeDosesLeft
         }
 
         // ── Titration phase, with the distance to the nearest step in BOTH directions ─────

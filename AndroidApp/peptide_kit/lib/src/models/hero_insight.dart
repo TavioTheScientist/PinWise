@@ -8,10 +8,16 @@ import 'hero_card.dart';
 /// the only figure that tells them apart.
 class InsightSupply {
   const InsightSupply({
+    required this.name,
     required this.wholeDosesLeft,
     this.daysOfSupply,
     this.daysToExpiry,
   });
+
+  /// What is running out. **Named, because supply is a STACK-WIDE concern**: the vial about to
+  /// empty is often not the one backing the dose the card is about, and an unnamed line sends the
+  /// user to check the wrong vial.
+  final String name;
   final int wholeDosesLeft;
 
   /// Days the vial covers at this protocol's cadence. Null for as-needed protocols, where there is
@@ -98,24 +104,24 @@ class HeroInsight {
     // the decision with a lead time.
     final supply = input.supply;
     if (supply != null) {
-      if (supply.wholeDosesLeft <= 0) return 'Vial empty';
+      if (supply.wholeDosesLeft <= 0) return '${supply.name} is empty';
       if (supply.wholeDosesLeft < criticalDoses) {
-        return 'Less than 2 doses left';
+        return 'Less than 2 doses of ${supply.name} left';
       }
       // Expiry first when it binds: a vial with plenty of doses that expires on Friday is a
       // different problem, and days-of-supply would overstate what is usable.
       final expiry = supply.daysToExpiry;
       if (expiry != null && expiry <= reorderLeadDays) {
-        if (expiry <= 0) return 'Vial expired';
-        return 'Vial expires in $expiry ${expiry == 1 ? 'day' : 'days'}';
+        if (expiry <= 0) return '${supply.name} has expired';
+        return '${supply.name} expires in $expiry ${expiry == 1 ? 'day' : 'days'}';
       }
       final days = supply.daysOfSupply;
       if (days != null && days <= reorderLeadDays) {
-        return 'About $days ${days == 1 ? 'day' : 'days'} of supply left';
+        return 'About $days ${days == 1 ? 'day' : 'days'} of ${supply.name} left';
       }
       // As-needed protocols have no cadence to project against, so doses are the only honest unit.
       if (days == null && supply.wholeDosesLeft <= 3) {
-        return 'About ${supply.wholeDosesLeft} doses left';
+        return 'About ${supply.wholeDosesLeft} doses of ${supply.name} left';
       }
     }
 

@@ -51,6 +51,11 @@ public enum HeroInsight {
     /// other. `InventoryEstimator.Projection` has computed `daysOfSupply` ("days of supply given the
     /// protocol cadence") all along; this simply uses it.
     public struct Supply: Sendable, Equatable {
+        /// What is running out. **Named, because supply is a STACK-WIDE concern**: the vial about to
+        /// empty is very often not the one backing the dose the card is about, and "About 4 days of
+        /// supply left" sends the user to check the wrong vial. Every other line on this card is
+        /// about the next dose; this one is the exception, so it has to say what it means.
+        public let name: String
         public let wholeDosesLeft: Int
         /// Days the vial covers at this protocol's cadence. `nil` for as-needed protocols, where
         /// there is no cadence to project against and doses are the only honest unit.
@@ -58,7 +63,8 @@ public enum HeroInsight {
         /// Days until a user-set expiration ends the vial, when expiry binds before dose run-out.
         public let daysToExpiry: Int?
 
-        public init(wholeDosesLeft: Int, daysOfSupply: Int?, daysToExpiry: Int?) {
+        public init(name: String, wholeDosesLeft: Int, daysOfSupply: Int?, daysToExpiry: Int?) {
+            self.name = name
             self.wholeDosesLeft = wholeDosesLeft
             self.daysOfSupply = daysOfSupply
             self.daysToExpiry = daysToExpiry
@@ -154,21 +160,23 @@ public enum HeroInsight {
         // 1 — supply, but only while it is a RISK. Doses answer "can I take the next one";
         // DAYS answer "do I need to order", and ordering is the decision with a lead time.
         if let supply = input.supply {
-            if supply.wholeDosesLeft <= 0 { return "Vial empty" }
-            if supply.wholeDosesLeft < criticalDoses { return "Less than 2 doses left" }
+            if supply.wholeDosesLeft <= 0 { return "\(supply.name) is empty" }
+            if supply.wholeDosesLeft < criticalDoses {
+                return "Less than 2 doses of \(supply.name) left"
+            }
             // Expiry first when it binds: a vial with plenty of doses that expires on Friday is a
             // different problem, and "days of supply" would quietly overstate what is usable.
             if let expiry = supply.daysToExpiry, expiry <= reorderLeadDays {
-                if expiry <= 0 { return "Vial expired" }
-                return "Vial expires in \(expiry) \(expiry == 1 ? "day" : "days")"
+                if expiry <= 0 { return "\(supply.name) has expired" }
+                return "\(supply.name) expires in \(expiry) \(expiry == 1 ? "day" : "days")"
             }
             if let days = supply.daysOfSupply, days <= reorderLeadDays {
-                return "About \(days) \(days == 1 ? "day" : "days") of supply left"
+                return "About \(days) \(days == 1 ? "day" : "days") of \(supply.name) left"
             }
             // As-needed protocols have no cadence to project against, so doses are the only honest
             // unit — and without a schedule there is no lead time to compare against either.
             if supply.daysOfSupply == nil, supply.wholeDosesLeft <= 3 {
-                return "About \(supply.wholeDosesLeft) doses left"
+                return "About \(supply.wholeDosesLeft) doses of \(supply.name) left"
             }
         }
 

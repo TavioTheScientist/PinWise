@@ -32,15 +32,15 @@ struct HeroInsightTests {
     /// Supply outranks everything, because reordering has a lead time nothing else does.
     @Test func actionableSupplyOutranksEveryOtherSignal() {
         #expect(HeroInsight.line(input(
-            supply: .init(wholeDosesLeft: 2, daysOfSupply: 2, daysToExpiry: nil),
+            supply: .init(name: "GLOW", wholeDosesLeft: 2, daysOfSupply: 2, daysToExpiry: nil),
             phase: phase(3, 4, up: 2),
-            adherence: adherence(logged: 5, scheduled: 7))) == "About 2 days of supply left")
+            adherence: adherence(logged: 5, scheduled: 7))) == "About 2 days of GLOW left")
     }
 
     /// **Six doses left is a status, not a risk.** A comfortable vial must not displace a step-up.
     @Test func comfortableSupplyDoesNotOutrankAStepUp() {
         #expect(HeroInsight.line(input(
-            supply: .init(wholeDosesLeft: 6, daysOfSupply: 42, daysToExpiry: nil),
+            supply: .init(name: "GLOW", wholeDosesLeft: 6, daysOfSupply: 42, daysToExpiry: nil),
             phase: phase(3, 4, up: 5))) == "Dose steps up in 5 days")
     }
 
@@ -91,48 +91,58 @@ struct HeroInsightTests {
 
     // MARK: - Supply is measured in DAYS, because that is what reordering needs
 
+    /// **Supply names what is running out, because it is the one STACK-WIDE line on this card.**
+    /// The vial about to empty is very often not the one backing the dose the card is about — a user
+    /// mid-titration on Semaglutide can be four days from running out of GLOW — so an unnamed
+    /// "About 4 days of supply left" sends them to check the wrong vial.
+    @Test func supplyNamesWhatIsRunningOut() {
+        let line = HeroInsight.line(input(
+            supply: .init(name: "GLOW", wholeDosesLeft: 4, daysOfSupply: 4, daysToExpiry: nil)))
+        #expect(line == "About 4 days of GLOW left")
+    }
+
     /// **The defect this replaced.** Three doses left is three DAYS on a daily protocol and three
     /// WEEKS on a weekly one. The old rule fired identically for both — far too late for one and
     /// absurdly early for the other. Same dose count, opposite meanings, and only the cadence-aware
     /// figure can tell them apart.
     @Test func theSameDoseCountMeansOppositeThingsAtDifferentCadences() {
         let daily = HeroInsight.line(input(
-            supply: .init(wholeDosesLeft: 3, daysOfSupply: 3, daysToExpiry: nil)))
+            supply: .init(name: "GLOW", wholeDosesLeft: 3, daysOfSupply: 3, daysToExpiry: nil)))
         let weekly = HeroInsight.line(input(
-            supply: .init(wholeDosesLeft: 3, daysOfSupply: 21, daysToExpiry: nil)))
-        #expect(daily == "About 3 days of supply left")
+            supply: .init(name: "GLOW", wholeDosesLeft: 3, daysOfSupply: 21, daysToExpiry: nil)))
+        #expect(daily == "About 3 days of GLOW left")
         #expect(weekly == nil, "Three weeks of supply is not a reorder decision.")
     }
 
     @Test func supplyRungsEscalate() {
-        #expect(HeroInsight.line(input(supply: .init(wholeDosesLeft: 0, daysOfSupply: 0, daysToExpiry: nil)))
-                == "Vial empty")
-        #expect(HeroInsight.line(input(supply: .init(wholeDosesLeft: 1, daysOfSupply: 7, daysToExpiry: nil)))
-                == "Less than 2 doses left")
-        #expect(HeroInsight.line(input(supply: .init(wholeDosesLeft: 9, daysOfSupply: 9, daysToExpiry: nil)))
-                == "About 9 days of supply left")
-        #expect(HeroInsight.line(input(supply: .init(wholeDosesLeft: 9, daysOfSupply: 1, daysToExpiry: nil)))
-                == "About 1 day of supply left")
+        #expect(HeroInsight.line(input(supply: .init(name: "GLOW", wholeDosesLeft: 0, daysOfSupply: 0, daysToExpiry: nil)))
+                == "GLOW is empty")
+        #expect(HeroInsight.line(input(supply: .init(name: "GLOW", wholeDosesLeft: 1, daysOfSupply: 7, daysToExpiry: nil)))
+                == "Less than 2 doses of GLOW left")
+        #expect(HeroInsight.line(input(supply: .init(name: "GLOW", wholeDosesLeft: 9, daysOfSupply: 9, daysToExpiry: nil)))
+                == "About 9 days of GLOW left")
+        #expect(HeroInsight.line(input(supply: .init(name: "GLOW", wholeDosesLeft: 9, daysOfSupply: 1, daysToExpiry: nil)))
+                == "About 1 day of GLOW left")
     }
 
     /// A vial with plenty of doses that expires on Friday is a different problem, and days-of-supply
     /// would overstate what is usable — so expiry is checked first when it binds.
     @Test func expiryOutranksDaysOfSupplyWhenItBindsFirst() {
         #expect(HeroInsight.line(input(
-            supply: .init(wholeDosesLeft: 20, daysOfSupply: 140, daysToExpiry: 4)))
-                == "Vial expires in 4 days")
+            supply: .init(name: "GLOW", wholeDosesLeft: 20, daysOfSupply: 140, daysToExpiry: 4)))
+                == "GLOW expires in 4 days")
         #expect(HeroInsight.line(input(
-            supply: .init(wholeDosesLeft: 20, daysOfSupply: 140, daysToExpiry: 0)))
-                == "Vial expired")
+            supply: .init(name: "GLOW", wholeDosesLeft: 20, daysOfSupply: 140, daysToExpiry: 0)))
+                == "GLOW has expired")
     }
 
     /// As-needed protocols have no cadence to project against, so doses are the only honest unit.
     @Test func asNeededFallsBackToDoses() {
         #expect(HeroInsight.line(input(
-            supply: .init(wholeDosesLeft: 3, daysOfSupply: nil, daysToExpiry: nil)))
-                == "About 3 doses left")
+            supply: .init(name: "GLOW", wholeDosesLeft: 3, daysOfSupply: nil, daysToExpiry: nil)))
+                == "About 3 doses of GLOW left")
         #expect(HeroInsight.line(input(
-            supply: .init(wholeDosesLeft: 8, daysOfSupply: nil, daysToExpiry: nil))) == nil)
+            supply: .init(name: "GLOW", wholeDosesLeft: 8, daysOfSupply: nil, daysToExpiry: nil))) == nil)
     }
 
     // MARK: - Adherence feedback
@@ -179,10 +189,10 @@ struct HeroInsightTests {
                       "you missed", "again", "oops", "sorry", "soon", "later", "amazing",
                       "on plan", "steady"]
         let inputs: [HeroInsight.Input] = [
-            input(supply: .init(wholeDosesLeft: 0, daysOfSupply: 0, daysToExpiry: nil)),
-            input(supply: .init(wholeDosesLeft: 1, daysOfSupply: 7, daysToExpiry: nil)),
-            input(supply: .init(wholeDosesLeft: 3, daysOfSupply: 3, daysToExpiry: nil)),
-            input(supply: .init(wholeDosesLeft: 9, daysOfSupply: 9, daysToExpiry: nil)),
+            input(supply: .init(name: "GLOW", wholeDosesLeft: 0, daysOfSupply: 0, daysToExpiry: nil)),
+            input(supply: .init(name: "GLOW", wholeDosesLeft: 1, daysOfSupply: 7, daysToExpiry: nil)),
+            input(supply: .init(name: "GLOW", wholeDosesLeft: 3, daysOfSupply: 3, daysToExpiry: nil)),
+            input(supply: .init(name: "GLOW", wholeDosesLeft: 9, daysOfSupply: 9, daysToExpiry: nil)),
             input(phase: phase(2, 4, up: 3)), input(phase: phase(2, 4, since: 2)),
             input(phase: phase(4, 4)), input(phase: phase(2, 4, up: 40)),
             input(adherence: adherence(logged: 7, scheduled: 7)),
@@ -202,7 +212,7 @@ struct HeroInsightTests {
     /// Exactly one idea. A line carrying two separators is two facts wearing one sentence.
     @Test func everyLineCarriesOneIdea() {
         let inputs: [HeroInsight.Input] = [
-            input(supply: .init(wholeDosesLeft: 2, daysOfSupply: 2, daysToExpiry: nil)),
+            input(supply: .init(name: "GLOW", wholeDosesLeft: 2, daysOfSupply: 2, daysToExpiry: nil)),
             input(phase: phase(3, 4, up: 5)), input(phase: phase(3, 4, since: 3)),
             input(adherence: adherence(logged: 7, scheduled: 7)),
         ]
