@@ -33,6 +33,7 @@ export 'src/models/blend.dart';
 export 'src/models/compound.dart';
 export 'src/models/dose_due_phrase.dart';
 export 'src/models/hero_card.dart';
+export 'src/models/hero_insight.dart';
 export 'src/models/dose_follow_up.dart';
 export 'src/models/dose_log.dart';
 export 'src/models/dose_policy.dart';

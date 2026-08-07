@@ -333,6 +333,20 @@ struct HomeView: View {
                                 .accessibilityHidden(true)
                         }
                     }
+                    // ── The intelligence line. ONE concrete fact, or nothing. ──────────────
+                    //
+                    // Set apart from the goal above it because it answers a different kind of
+                    // question — not "what should I aim at" but "what is true about this protocol
+                    // right now that I would otherwise have to go looking for". `HeroInsight`
+                    // returns nil when nothing is worth saying, and the row disappears rather than
+                    // holding space for a placeholder.
+                    if let insight = HeroInsight.line(heroInsightInput(events: events, week: week)) {
+                        Text(insight)
+                            .font(Typo.caption)
+                            .foregroundStyle(BrandColor.textSecondary)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                            .padding(.top, Space.xxs)
+                    }
                 }
 
             }
@@ -729,6 +743,73 @@ struct HomeView: View {
     private func heroPrimaryLine(_ presentation: ProtocolPresentation?) -> String {
         guard let presentation else { return "No dose scheduled" }
         return presentation.perShot ?? "\(presentation.contents) · \(presentation.doseText)"
+    }
+
+    /// Assembles the hero's intelligence line from whatever the app can actually compute.
+    ///
+    /// Each signal is optional by design: `HeroInsight` skips what it is not given, so a category
+    /// whose data plumbing does not exist yet simply never wins — no placeholder, no guess. Two of
+    /// the spec's eight categories are deliberately absent here and named in the doc on
+    /// `HeroInsight.Input`: time-of-day habits ("Usually taken in the evening") and log-versus-slot
+    /// drift ("Moved 1 day later last time") both need a history analysis the app does not do yet.
+    private func heroInsightInput(events: [StreakCalculator.DoseEvent],
+                                  week: HeroCard.Week) -> HeroInsight.Input {
+        var input = HeroInsight.Input()
+        let now = Date()
+        let cal = Calendar.current
+
+        // ── Supply, from the vial actually backing the next dose ──────────────────────────
+        if let up = nextUp,
+           let item = up.proto.items.first,
+           let vial = vials.first(where: { $0.id == item.vialID }) {
+            let projection = vial.projection(schedule: up.proto.schedule, referenceDate: now)
+            let endsThisWeek = projection.effectiveEndDate.map { end in
+                cal.dateInterval(of: .weekOfYear, for: now)?.contains(end) ?? false
+            } ?? false
+            input.supply = .init(wholeDosesLeft: projection.usableWholeDoses,
+                                 endsThisWeek: endsThisWeek)
+        }
+
+        // ── Titration phase. Same accurate-or-silent rule as the goal line ────────────────
+        if let up = nextUp, let phase = up.proto.heroTitrationPhase {
+            let days = up.proto.nextRampIncrease(after: now, calendar: cal).map {
+                max(0, cal.dateComponents([.day], from: cal.startOfDay(for: now),
+                                          to: cal.startOfDay(for: $0.date)).day ?? 0)
+            }
+            input.phase = .init(week: phase.week, total: phase.total, daysToStepUp: days)
+        }
+
+        // ── Cycle position, for compounds dosed less often than daily ─────────────────────
+        //
+        // Skipped entirely on daily protocols: the level never meaningfully falls between doses, so
+        // the phrase would be constant and a constant phrase carries no information.
+        if let up = nextUp, up.proto.schedule.kind != .daily,
+           let previous = up.proto.ownedLogDates(in: recent).filter({ $0 <= now }).max() {
+            let span = up.date.timeIntervalSince(previous)
+            if span > 0 {
+                let elapsed = now.timeIntervalSince(previous) / span
+                input.cycle = elapsed < 0.15 ? .rising
+                    : (elapsed < 0.4 ? .nearPeak : (elapsed < 0.85 ? .easing : .trough))
+            }
+        }
+
+        // ── Adherence facts ──────────────────────────────────────────────────────────────
+        let missedThisWeek = HeroCard.week(from: events.filter { !$0.taken }, asOf: now).scheduled
+        let lastMiss = events.filter { !$0.taken && $0.date <= now }.map(\.date).max()
+        input.adherence = .init(
+            week: week,
+            missedThisWeek: missedThisWeek,
+            daysSinceLastMiss: lastMiss.flatMap {
+                cal.dateComponents([.day], from: cal.startOfDay(for: $0),
+                                   to: cal.startOfDay(for: now)).day
+            })
+
+        // ── Stack context: the OTHER doses due today, excluding the one on the card ───────
+        if let up = nextUp {
+            input.otherDosesDueToday = actionableNow.filter { $0.id != up.proto.id }.count
+        }
+
+        return input
     }
 
     /// The protocol whose next dose lands soonest, paired with that date.
