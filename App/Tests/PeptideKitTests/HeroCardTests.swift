@@ -69,69 +69,21 @@ struct HeroCardTests {
         #expect(w.scheduled == 1)
     }
 
-    // MARK: - Goal selection
+    // MARK: - The rail the goal line left behind
 
-    /// The spec's own boundary: a 5-of-7 week (71%) fixes the week; a 6-of-7 week (87%) looks further.
-    @Test func aBehindWeekOutranksEveryLongerRangeGoal() {
-        let g = HeroCard.goal(week: .init(logged: 5, scheduled: 7), streak: 5,
-                              titration: (week: 3, total: 4))
-        #expect(g?.text == "2 more to finish this week")
-        #expect(g?.current == 5)
-        #expect(g?.target == 7)
+    /// The progress rail survived the goal line's removal, rebound to the WEEK. A bar showing 1 of
+    /// 3 doses is self-monitoring of a real commitment — one of the intervention classes with
+    /// demonstrated effect — rather than progress toward an invented milestone.
+    @Test func weekFractionDrivesTheRail() {
+        #expect(HeroCard.Week(logged: 1, scheduled: 3).fraction == 1.0 / 3.0)
+        #expect(HeroCard.Week(logged: 3, scheduled: 3).fraction == 1)
+        #expect(HeroCard.Week(logged: 0, scheduled: 3).fraction == 0)
     }
 
-    @Test func anOnTrackWeekLooksPastItself() {
-        let g = HeroCard.goal(week: .init(logged: 6, scheduled: 7), streak: 7)
-        #expect(g?.text == "3 more to 10 clean doses")
-        #expect(g?.current == 7)
-        #expect(g?.target == 10)
-    }
-
-    /// Titration carries a deadline the user does not control, so it outranks the streak.
-    @Test func titrationOutranksTheStreak() {
-        let g = HeroCard.goal(week: .init(logged: 5, scheduled: 5), streak: 12,
-                              titration: (week: 3, total: 4))
-        #expect(g?.text == "Complete week 3 of 4")
-        #expect(g?.fraction == 0.75)
-    }
-
-    @Test func theNextRungIsTheNearestOneAbove() {
-        #expect(HeroCard.goal(week: .init(logged: 7, scheduled: 7), streak: 12)?.text
-                == "2 more to 14 clean doses")
-        #expect(HeroCard.goal(week: .init(logged: 7, scheduled: 7), streak: 13)?.text
-                == "1 more to 14 clean doses")
-    }
-
-    /// Past the top rung there is nothing left to reach, so the goal becomes keeping it.
-    @Test func pastTheLadderTheGoalIsToHold() {
-        let g = HeroCard.goal(week: .init(logged: 7, scheduled: 7), streak: 120)
-        #expect(g?.text == "Hold 120 clean doses")
-        #expect(g?.fraction == 1)
-    }
-
-    @Test func noStreakAndNothingScheduledYieldsNoGoal() {
-        #expect(HeroCard.goal(week: .init(logged: 0, scheduled: 0), streak: 0) == nil)
-    }
-
-    // MARK: - The phrasing correction, stated as a test
-
-    /// **The streak counts DOSES, not days.** The spec wrote "14-day run", which is only true on a
-    /// daily protocol — on a weekly one a 14-dose streak is fourteen WEEKS, so that phrasing would
-    /// be wrong by a factor of seven on exactly the protocols this app exists for. If a future
-    /// change wants "day" back, it has to delete this test and answer for the weekly case.
-    @Test func goalNeverClaimsDaysForWhatIsCountedInDoses() {
-        for streak in [0, 3, 8, 13, 20, 44] {
-            let text = HeroCard.goal(week: .init(logged: 5, scheduled: 5), streak: streak)?.text ?? ""
-            #expect(!text.contains("day"))
-            #expect(text.contains("clean doses"))
-        }
-    }
-
-    // MARK: - Progress is always drawable
-
-    @Test func fractionIsAlwaysClampedAndFinite() {
-        #expect(HeroCard.Goal(text: "", current: 15, target: 10).fraction == 1)
-        #expect(HeroCard.Goal(text: "", current: -2, target: 10).fraction == 0)
-        #expect(HeroCard.Goal(text: "", current: 5, target: 0).fraction == 0)
+    @Test func weekFractionIsClampedAndSafe() {
+        // Nothing scheduled: no bar, not a divide by zero.
+        #expect(HeroCard.Week(logged: 0, scheduled: 0).fraction == 0)
+        // A double-logged day cannot overflow the rail.
+        #expect(HeroCard.Week(logged: 5, scheduled: 3).fraction == 1)
     }
 }

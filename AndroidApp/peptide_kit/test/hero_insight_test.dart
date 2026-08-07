@@ -9,8 +9,8 @@ import 'package:test/test.dart';
 /// the "On plan" filler. The escalation window was added because pooled STEP 1–3 data puts GI
 /// adverse events "during/shortly after dose escalation".
 void main() {
-  InsightPhase ph(int week, int total, {int? up, int? since}) => InsightPhase(
-    week: week,
+  InsightPhase ph(int step, int total, {int? up, int? since}) => InsightPhase(
+    step: step,
     total: total,
     daysToStepUp: up,
     daysSinceStepUp: since,
@@ -61,7 +61,7 @@ void main() {
     );
     expect(
       HeroInsight.line(InsightInput(phase: ph(2, 4, up: 30, since: 8))),
-      'Week 2 of 4 on this dose',
+      'Step 2 of 4 on this dose',
     );
   });
 
@@ -84,10 +84,19 @@ void main() {
     );
   });
 
+  /// "Step", never "week" — a ramp can be built from 10-day phases.
+  test('phase wording never claims weeks', () {
+    for (final p in [ph(1, 4, up: 40), ph(2, 4, up: 40), ph(4, 4)]) {
+      final line = HeroInsight.line(InsightInput(phase: p)) ?? '';
+      expect(line.toLowerCase(), isNot(contains('week')));
+      expect(line.toLowerCase(), contains('step'));
+    }
+  });
+
   test('a final dose has no step to name', () {
     expect(
       HeroInsight.line(InsightInput(phase: ph(4, 4))),
-      'Final week at this dose',
+      'Final step at this dose',
     );
   });
 

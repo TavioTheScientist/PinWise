@@ -10,15 +10,19 @@ class InsightSupply {
   final bool endsThisWeek;
 }
 
-/// Position in a titration ramp. [daysToStepUp] is null at the final dose.
+/// Position in a titration ramp.
+///
+/// **"Step", never "week".** `RampPhase.durationDays` is user-editable, so a plan can be built from
+/// 10-day steps — calling one a week misstates both progress and when the next increase lands. A
+/// step is a step at any length, so the wording is true for every plan.
 class InsightPhase {
   const InsightPhase({
-    required this.week,
+    required this.step,
     required this.total,
     this.daysToStepUp,
     this.daysSinceStepUp,
   });
-  final int week;
+  final int step;
   final int total;
 
   /// Days until the next increase. Null at the final dose.
@@ -94,8 +98,8 @@ class HeroInsight {
         if (until == 0) return 'Dose steps up today';
         return 'Dose steps up in $until ${until == 1 ? 'day' : 'days'}';
       }
-      if (phase.isFinal) return 'Final week at this dose';
-      return 'Week ${phase.week} of ${phase.total} on this dose';
+      if (phase.isFinal) return 'Final step at this dose';
+      return 'Step ${phase.step} of ${phase.total} on this dose';
     }
 
     final a = input.adherence;

@@ -263,15 +263,16 @@ struct HomeView: View {
     /// stop a streak reading as decoration: visible progress toward a milestone, and the grading rule
     /// behind the count.
     private var heroActive: some View {
-        // ONE pass over `doseEvents` feeds the ring, the streak, and the milestone bar. Each used to
+        // ONE pass over `doseEvents` feeds the week line, the rail and the insight. Each used to
         // re-derive it — `streakStat` alone read `streak` five times, i.e. five walks of
         // `AdherenceCalculator.expectedDates` per render.
+        //
+        // The streak is no longer read here at all: it left the hero with the goal line, which an
+        // adherence meta-review found unsupported. `StreakCalculator` still drives the milestone
+        // CELEBRATION below — marking something that happened is a different job from setting a
+        // target, and only the second one lacks evidence.
         let events = doseEvents
-        let run = StreakCalculator.compute(events: events)
         let week = HeroCard.week(from: events)
-        let goal = HeroCard.goal(week: week,
-                                 streak: run.current,
-                                 titration: nextUp?.proto.heroTitrationPhase.map { ($0.week, $0.total) })
         let up = nextUp
         let presentation = up.map {
             ProtocolPresentation($0.proto, vials: vials, todaysLogs: todaysLogs,
@@ -321,17 +322,14 @@ struct HomeView: View {
                             .foregroundStyle(BrandColor.textSecondary)
                             .lineLimit(1).minimumScaleFactor(0.8)
                     }
-                    if let goal {
-                        Text(goal.text)
-                            .font(Typo.caption.weight(.semibold))
-                            .foregroundStyle(BrandColor.textPrimary)
-                            .lineLimit(1).minimumScaleFactor(0.8)
-                        // Hidden at a complete goal: a full bar under "Hold 120 clean doses" is
-                        // decoration, since there is no remaining distance for it to show.
-                        if goal.fraction < 1 {
-                            GoalProgressBar(fraction: goal.fraction)
-                                .accessibilityHidden(true)
-                        }
+                    // The rail is bound to the WEEK, not to a streak milestone. It used to sit
+                    // under "3 more to 10 clean doses" — a goal line removed after an adherence
+                    // meta-review found goal setting showed little evidence of effect while
+                    // self-monitoring did. Same pixels, now measuring the commitment the line above
+                    // it states rather than an invented target.
+                    if week.scheduled > 0 && !week.isComplete {
+                        GoalProgressBar(fraction: week.fraction)
+                            .accessibilityHidden(true)
                     }
                     // ── The intelligence line. ONE concrete fact, or nothing. ──────────────
                     //
@@ -776,14 +774,14 @@ struct HomeView: View {
         // adverse events "during/shortly after dose escalation", so a step two days back is what
         // explains how someone feels today. Same accurate-or-silent rule as the goal line — `nil`
         // unless every ramp phase is exactly 7 days.
-        if let up = nextUp, let phase = up.proto.heroTitrationPhase {
+        if let up = nextUp, let ramp = up.proto.heroRampStep {
             let daysToStepUp = up.proto.nextRampIncrease(after: now, calendar: cal).map {
                 max(0, cal.dateComponents([.day], from: cal.startOfDay(for: now),
                                           to: cal.startOfDay(for: $0.date)).day ?? 0)
             }
-            input.phase = .init(week: phase.week, total: phase.total,
+            input.phase = .init(step: ramp.step, total: ramp.total,
                                 daysToStepUp: daysToStepUp,
-                                daysSinceStepUp: phase.daysSinceStepUp)
+                                daysSinceStepUp: ramp.daysSinceStepUp)
         }
 
         // ── Adherence feedback. Forward-looking only — no old-miss reporting ──────────────

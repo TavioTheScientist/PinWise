@@ -55,16 +55,21 @@ public enum HeroInsight {
     }
 
     /// Position in a titration ramp, and the distance to the nearest step in either direction.
+    ///
+    /// **"Step", never "week".** `RampPhase.durationDays` is user-editable, so a plan can be built
+    /// from 10-day steps — and calling one a week misstates both how far along the user is and when
+    /// the next increase lands. A step is a step at any length, so the wording is true for every
+    /// plan rather than only the common one.
     public struct Phase: Sendable, Equatable {
-        public let week: Int
+        public let step: Int
         public let total: Int
         /// Days until the next increase. `nil` at the final dose.
         public let daysToStepUp: Int?
         /// Days since the most recent increase. `nil` before the first one.
         public let daysSinceStepUp: Int?
 
-        public init(week: Int, total: Int, daysToStepUp: Int?, daysSinceStepUp: Int?) {
-            self.week = week
+        public init(step: Int, total: Int, daysToStepUp: Int?, daysSinceStepUp: Int?) {
+            self.step = step
             self.total = total
             self.daysToStepUp = daysToStepUp
             self.daysSinceStepUp = daysSinceStepUp
@@ -149,8 +154,8 @@ public enum HeroInsight {
                 return "Dose steps up in \(until) \(until == 1 ? "day" : "days")"
             }
             // 3 — no step nearby, so the phase states position instead of urgency.
-            if phase.isFinal { return "Final week at this dose" }
-            return "Week \(phase.week) of \(phase.total) on this dose"
+            if phase.isFinal { return "Final step at this dose" }
+            return "Step \(phase.step) of \(phase.total) on this dose"
         }
 
         // 4 — adherence feedback. Forward-looking only: what is still owed, then what is intact.

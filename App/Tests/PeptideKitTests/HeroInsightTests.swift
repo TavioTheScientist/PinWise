@@ -17,9 +17,9 @@ struct HeroInsightTests {
         .init(supply: supply, phase: phase, adherence: adherence)
     }
 
-    private func phase(_ week: Int, _ total: Int,
+    private func phase(_ step: Int, _ total: Int,
                        up: Int? = nil, since: Int? = nil) -> HeroInsight.Phase {
-        .init(week: week, total: total, daysToStepUp: up, daysSinceStepUp: since)
+        .init(step: step, total: total, daysToStepUp: up, daysSinceStepUp: since)
     }
 
     private func adherence(logged: Int, scheduled: Int,
@@ -58,7 +58,7 @@ struct HeroInsightTests {
                 == "Dose stepped up 7 days ago")
         // Outside it, the phase states position rather than urgency.
         #expect(HeroInsight.line(input(phase: phase(2, 4, up: 30, since: 8)))
-                == "Week 2 of 4 on this dose")
+                == "Step 2 of 4 on this dose")
     }
 
     @Test func escalationPluralisesAndHandlesToday() {
@@ -68,14 +68,25 @@ struct HeroInsightTests {
         #expect(HeroInsight.line(input(phase: phase(1, 4, up: 0))) == "Dose steps up today")
     }
 
+    /// **"Step", never "week".** A ramp can be built from 10-day phases, and calling one a week
+    /// misstates both progress and when the next increase lands. This wording is true for every
+    /// plan; the old one was true only for the common case, and silent otherwise.
+    @Test func phaseWordingNeverClaimsWeeks() {
+        for p in [phase(1, 4, up: 40), phase(2, 4, up: 40), phase(4, 4)] {
+            let line = HeroInsight.line(input(phase: p)) ?? ""
+            #expect(!line.lowercased().contains("week"))
+            #expect(line.lowercased().contains("step"))
+        }
+    }
+
     @Test func aFinalDoseHasNoStepToName() {
-        #expect(HeroInsight.line(input(phase: phase(4, 4))) == "Final week at this dose")
+        #expect(HeroInsight.line(input(phase: phase(4, 4))) == "Final step at this dose")
     }
 
     @Test func aPhaseOutranksAdherence() {
         #expect(HeroInsight.line(input(phase: phase(2, 4, up: 30),
                                        adherence: adherence(logged: 7, scheduled: 7)))
-                == "Week 2 of 4 on this dose")
+                == "Step 2 of 4 on this dose")
     }
 
     // MARK: - Supply rungs
