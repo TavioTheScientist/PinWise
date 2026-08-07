@@ -14,6 +14,14 @@ class HeroWeek {
   bool get isComplete => scheduled > 0 && logged >= scheduled;
   int get remaining => (scheduled - logged) < 0 ? 0 : scheduled - logged;
 
+  /// Progress through the week, for the rail beneath the adherence line. Clamped so a
+  /// double-logged day cannot overflow the bar.
+  double get fraction {
+    if (scheduled <= 0) return 0;
+    final f = logged / scheduled;
+    return f < 0 ? 0 : (f > 1 ? 1 : f);
+  }
+
   /// `null` rather than 0 when nothing was scheduled — a week with no doses due has no adherence,
   /// and rendering "0%" reports a failure that never had a chance to happen.
   int? get percent {
@@ -31,37 +39,6 @@ class HeroWeek {
   int get hashCode => Object.hash(logged, scheduled);
 }
 
-/// One thing to aim at, with the numbers behind it so a bar can be drawn.
-class HeroGoal {
-  const HeroGoal({
-    required this.text,
-    required this.current,
-    required this.target,
-  });
-
-  final String text;
-  final int current;
-  final int target;
-
-  /// Clamped, because a streak can exceed the rung it is measured against between recomputes and a
-  /// progress bar past 1.0 renders as an overflowing rectangle.
-  double get fraction {
-    if (target <= 0) return 0;
-    final f = current / target;
-    return f < 0 ? 0 : (f > 1 ? 1 : f);
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      other is HeroGoal &&
-      other.text == text &&
-      other.current == current &&
-      other.target == target;
-
-  @override
-  int get hashCode => Object.hash(text, current, target);
-}
-
 /// Derivations for Home's hero card, below the timing line.
 ///
 /// Mirrors `HeroCard` in the Swift core. `DoseDuePhrase.heroTiming` owns the "when" line; this owns
@@ -69,16 +46,16 @@ class HeroGoal {
 class HeroCard {
   const HeroCard._();
 
-  /// Near-term rungs for the streak goal — **deliberately not `StreakCalculator.milestones`**.
+  /// **There is no goal line, and this note is the reason.**
   ///
-  /// That ladder is 7 / 30 / 90 and drives CELEBRATION. This one answers a different question —
-  /// what is the next reachable thing — and a celebration ladder is bad at it, because someone at 8
-  /// doses would be told to aim at 30. The two share 7, 30 and 90, so every celebration still
-  /// coincides with a goal being met.
-  static const List<int> streakLadder = [7, 10, 14, 21, 30, 45, 60, 90];
-
-  /// Below this weekly adherence, finishing the week outranks any longer-range goal.
-  static const int weekFocusThreshold = 80;
+  /// It rendered "3 more to 10 clean doses" and did not survive an evidence review: a meta-review of
+  /// 12 meta-analyses found self-monitoring and personalised feedback on adherence had demonstrable
+  /// effect, while **goal setting specifically showed little evidence**
+  /// (Wilson et al. 2020, doi:10.1080/17437199.2019.1706615). The ladder it pointed at was invented
+  /// by this app — 10 and 14 are round numbers, not clinical ones.
+  ///
+  /// The progress rail survived, rebound to [HeroWeek.fraction]: a bar showing 1 of 3 doses this
+  /// week is self-monitoring of a real commitment, which is one of the classes that does work.
 
   /// Counts this week's scheduled slots and how many were taken.
   ///
@@ -112,54 +89,5 @@ class HeroCard {
       return '${week.logged} of ${week.scheduled} logged this week';
     }
     return '$percent% · ${week.logged} of ${week.scheduled} this week';
-  }
-
-  /// Picks the one goal to show. Priority: finish a slipping week, then the titration phase (the
-  /// only goal with an external deadline), then the next streak rung, then holding what is built.
-  static HeroGoal? goal({
-    required HeroWeek week,
-    required int streak,
-    int? titrationWeek,
-    int? titrationTotal,
-  }) {
-    // Nothing scheduled and nothing built — there is no goal to state.
-    if (week.scheduled <= 0 && streak <= 0) return null;
-
-    final percent = week.percent;
-    if (percent != null && !week.isComplete && percent < weekFocusThreshold) {
-      return HeroGoal(
-        text: '${week.remaining} more to finish this week',
-        current: week.logged,
-        target: week.scheduled,
-      );
-    }
-
-    if (titrationWeek != null && titrationTotal != null && titrationTotal > 0) {
-      return HeroGoal(
-        text: 'Complete week $titrationWeek of $titrationTotal',
-        current: titrationWeek,
-        target: titrationTotal,
-      );
-    }
-
-    for (final rung in streakLadder) {
-      if (rung > streak) {
-        // **"clean doses", never "day run".** The streak counts DOSES, so on a weekly protocol a
-        // 14-dose run is fourteen weeks — "14-day run" would be wrong by a factor of seven on
-        // exactly the protocols this app exists for.
-        return HeroGoal(
-          text: '${rung - streak} more to $rung clean doses',
-          current: streak,
-          target: rung,
-        );
-      }
-    }
-
-    if (streak <= 0) return null;
-    return HeroGoal(
-      text: 'Hold $streak clean doses',
-      current: streak,
-      target: streak,
-    );
   }
 }

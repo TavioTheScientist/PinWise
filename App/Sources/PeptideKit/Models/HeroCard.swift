@@ -26,6 +26,13 @@ public enum HeroCard {
 
         public var isComplete: Bool { scheduled > 0 && logged >= scheduled }
         public var remaining: Int { max(0, scheduled - logged) }
+        /// Progress through the week, for the rail beneath the adherence line. Clamped so a
+        /// double-logged day cannot overflow the bar.
+        public var fraction: Double {
+            guard scheduled > 0 else { return 0 }
+            return min(1, max(0, Double(logged) / Double(scheduled)))
+        }
+
         /// `nil` rather than 0 when nothing was scheduled — a week with no doses due has no
         /// adherence, and rendering "0%" would report a failure that never had a chance to happen.
         public var percent: Int? {
@@ -64,93 +71,25 @@ public enum HeroCard {
         return "\(percent)% · \(week.logged) of \(week.scheduled) this week"
     }
 
-    // MARK: - The short-term goal
+    // MARK: - Why there is no goal line
 
-    /// One thing to aim at, with the numbers behind it so the bar can be drawn.
-    public struct Goal: Sendable, Equatable {
-        public let text: String
-        public let current: Int
-        public let target: Int
-
-        public init(text: String, current: Int, target: Int) {
-            self.text = text
-            self.current = current
-            self.target = target
-        }
-
-        /// Clamped, because a streak can exceed the rung it is measured against between recomputes
-        /// and a progress bar past 1.0 renders as an overflowing rectangle.
-        public var fraction: Double {
-            guard target > 0 else { return 0 }
-            return min(1, max(0, Double(current) / Double(target)))
-        }
-    }
-
-    /// Near-term rungs for the streak goal — **deliberately not `StreakCalculator.milestones`.**
+    /// **The short-term goal was removed, and this note is the reason.**
     ///
-    /// That ladder is 7 / 30 / 90 and drives CELEBRATION: the moments worth marking. This one
-    /// answers a different question — what is the next reachable thing — and a celebration ladder is
-    /// bad at it, because someone at 8 doses would be told to aim at 30. The two share 7, 30 and 90,
-    /// so every celebration still coincides with a goal being met; this ladder just adds rungs
-    /// between them.
-    public static let streakLadder: [Int] = [7, 10, 14, 21, 30, 45, 60, 90]
-
-    /// Below this weekly adherence, finishing the week outranks any longer-range goal.
+    /// It rendered "3 more to 10 clean doses" over a rail bound to a streak milestone, and it did
+    /// not survive an evidence review. A meta-review of 12 meta-analyses of medication-adherence
+    /// interventions found self-monitoring, personalised feedback on adherence, and self-management
+    /// had demonstrable effect, while **goal setting specifically showed little evidence of
+    /// improving adherence** (Wilson et al. 2020, doi:10.1080/17437199.2019.1706615). The ladder it
+    /// pointed at was invented by this app — 10 and 14 are not clinically meaningful numbers, they
+    /// are round ones — so the card was asking the user to care about an arbitrary target on the
+    /// strength of an intervention class the literature does not support.
     ///
-    /// Derived from the spec's own examples rather than invented: it shows a 6-of-7 week (87%)
-    /// aiming at a streak milestone, and a 5-of-7 week (71%) aiming to "finish this week". The line
-    /// between them is where a week stops being on track and becomes the thing to fix.
-    public static let weekFocusThreshold = 80
-
-    /// Picks the one goal to show.
+    /// The progress rail SURVIVED, rebound to ``Week/fraction``. A bar showing 1 of 3 doses this
+    /// week is self-monitoring of a real commitment, which is one of the classes that does work.
+    /// Same pixels, and now it reinforces the line above it instead of pointing somewhere invented.
     ///
-    /// Priority, and why:
-    /// 1. **Finish the week**, when the week is behind. Nothing longer-range matters while the
-    ///    immediate commitment is slipping.
-    /// 2. **The titration phase**, when there is one. It is the only goal with a real external
-    ///    deadline — a step-up is coming whether or not the user attends to it.
-    /// 3. **The next streak rung**, when one is in reach.
-    /// 4. **Hold** what is already built, when nothing is pending.
-    ///
-    /// - Parameters:
-    ///   - week: This week's scheduled/logged counts.
-    ///   - streak: Current run of clean doses.
-    ///   - titration: `(week:total:)` when the protocol is mid-ramp, else `nil`.
-    public static func goal(
-        week: Week,
-        streak: Int,
-        titration: (week: Int, total: Int)? = nil
-    ) -> Goal? {
-        // Nothing scheduled and nothing built — there is no goal to state. Offering "7 more to 7
-        // clean doses" to someone with no protocol activity is a target they cannot act on, which is
-        // the same hollowness as rendering "0%" for a week that had nothing due.
-        guard week.scheduled > 0 || streak > 0 else { return nil }
-
-        // 1 — the week is behind, and that is the nearest real commitment.
-        if let percent = week.percent, !week.isComplete, percent < weekFocusThreshold {
-            let left = week.remaining
-            return Goal(text: "\(left) more to finish this week",
-                        current: week.logged, target: week.scheduled)
-        }
-
-        // 2 — a titration phase carries an external deadline the user does not control.
-        if let titration, titration.total > 0 {
-            return Goal(text: "Complete week \(titration.week) of \(titration.total)",
-                        current: titration.week, target: titration.total)
-        }
-
-        // 3 — the next reachable rung.
-        if let next = streakLadder.first(where: { $0 > streak }) {
-            let left = next - streak
-            // **"clean doses", never "day run".** The streak counts DOSES, so on a weekly protocol a
-            // 14-dose run is fourteen weeks — calling that a "14-day run" would be wrong by a factor
-            // of seven on exactly the protocols this app exists for. The spec used both phrasings;
-            // only this one is true for every cadence.
-            return Goal(text: "\(left) more to \(next) clean doses", current: streak, target: next)
-        }
-
-        // 4 — past the ladder there is nothing left to reach, so the goal becomes keeping it.
-        guard streak > 0 else { return nil }
-        return Goal(text: "Hold \(streak) clean doses", current: streak, target: streak)
-    }
+    /// Removing it also took the streak off the hero entirely, which is consistent: "Your best" and
+    /// the milestone bar were cut from this card earlier for the same reason. `StreakCalculator`
+    /// still drives the milestone CELEBRATION, which is a different job — marking something that
+    /// happened, not setting a target.
 }

@@ -29,78 +29,16 @@ void main() {
     );
   });
 
-  test('a behind week outranks every longer-range goal', () {
-    final g = HeroCard.goal(
-      week: const HeroWeek(logged: 5, scheduled: 7),
-      streak: 5,
-      titrationWeek: 3,
-      titrationTotal: 4,
-    );
-    expect(g?.text, '2 more to finish this week');
+  /// The rail survived the goal line's removal, rebound to the WEEK — self-monitoring of a real
+  /// commitment rather than progress toward an invented milestone.
+  test('week fraction drives the rail', () {
+    expect(const HeroWeek(logged: 1, scheduled: 3).fraction, 1 / 3);
+    expect(const HeroWeek(logged: 3, scheduled: 3).fraction, 1);
+    expect(const HeroWeek(logged: 0, scheduled: 3).fraction, 0);
   });
 
-  test('an on-track week looks past itself', () {
-    final g = HeroCard.goal(
-      week: const HeroWeek(logged: 6, scheduled: 7),
-      streak: 7,
-    );
-    expect(g?.text, '3 more to 10 clean doses');
-  });
-
-  test('titration outranks the streak', () {
-    final g = HeroCard.goal(
-      week: const HeroWeek(logged: 5, scheduled: 5),
-      streak: 12,
-      titrationWeek: 3,
-      titrationTotal: 4,
-    );
-    expect(g?.text, 'Complete week 3 of 4');
-    expect(g?.fraction, 0.75);
-  });
-
-  test('the next rung is the nearest one above', () {
-    expect(
-      HeroCard.goal(
-        week: const HeroWeek(logged: 7, scheduled: 7),
-        streak: 12,
-      )?.text,
-      '2 more to 14 clean doses',
-    );
-  });
-
-  test('past the ladder the goal is to hold', () {
-    final g = HeroCard.goal(
-      week: const HeroWeek(logged: 7, scheduled: 7),
-      streak: 120,
-    );
-    expect(g?.text, 'Hold 120 clean doses');
-    expect(g?.fraction, 1);
-  });
-
-  test('no streak and nothing scheduled yields no goal', () {
-    expect(
-      HeroCard.goal(week: const HeroWeek(logged: 0, scheduled: 0), streak: 0),
-      isNull,
-    );
-  });
-
-  /// The streak counts DOSES, not days — on a weekly protocol a 14-dose run is fourteen WEEKS.
-  test('goal never claims days for what is counted in doses', () {
-    for (final streak in [0, 3, 8, 13, 20, 44]) {
-      final text =
-          HeroCard.goal(
-            week: const HeroWeek(logged: 5, scheduled: 5),
-            streak: streak,
-          )?.text ??
-          '';
-      expect(text, isNot(contains('day')));
-      expect(text, contains('clean doses'));
-    }
-  });
-
-  test('fraction is always clamped', () {
-    expect(const HeroGoal(text: '', current: 15, target: 10).fraction, 1);
-    expect(const HeroGoal(text: '', current: -2, target: 10).fraction, 0);
-    expect(const HeroGoal(text: '', current: 5, target: 0).fraction, 0);
+  test('week fraction is clamped and safe', () {
+    expect(const HeroWeek(logged: 0, scheduled: 0).fraction, 0);
+    expect(const HeroWeek(logged: 5, scheduled: 3).fraction, 1);
   });
 }

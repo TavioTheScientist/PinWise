@@ -227,28 +227,39 @@ extension SavedProtocol {
     /// True when a ramp-up plan is attached and active.
     var hasRampPlan: Bool { !rampPhases.isEmpty && rampStartDate != nil }
 
-    /// Which ramp phase is running, as `(week:total:)`, for the hero card's goal line.
+    /// Which ramp step is running, and how far it is from the steps on either side.
     ///
-    /// **`nil` unless every phase is exactly 7 days.** `RampPhase.durationDays` defaults to 7 but is
-    /// user-editable, and "Complete week 3 of 4" is a lie on a plan built from 10-day steps — it
-    /// would misstate both how far along the user is and when the step-up lands. A protocol with
-    /// uneven phases simply falls through to the streak goal, which is always true. Correct-or-silent
-    /// beats plausible: this card sits above dosing decisions.
-    var heroTitrationPhase: (week: Int, total: Int, daysSinceStepUp: Int?)? {
+    /// **Walks the plan's ACTUAL durations.** The first version bailed out unless every phase was
+    /// exactly 7 days, because it wanted to say "week 3 of 4" and `RampPhase.durationDays` is
+    /// user-editable — calling a 10-day step a "week" misstates both progress and when the next
+    /// increase lands. That made the whole signal silent on any plan built from uneven steps, which
+    /// is a real way to build one.
+    ///
+    /// The fix was the wording, not the maths: a **step** is always a step, whatever its length. So
+    /// this now accumulates the real durations, works for every plan, and the phrase it feeds says
+    /// "Step 3 of 4" — true by construction rather than true only in the common case.
+    ///
+    /// `daysSinceStepUp` is `nil` during the FIRST step: starting a ramp is not a step up, it is the
+    /// starting dose, and "stepped up" would misdescribe it.
+    var heroRampStep: (step: Int, total: Int, daysSinceStepUp: Int?)? {
         guard hasRampPlan, let start = rampStartDate else { return nil }
-        guard rampPhases.allSatisfy({ $0.durationDays == 7 }) else { return nil }
         let cal = Calendar.current
         let elapsed = cal.dateComponents([.day], from: cal.startOfDay(for: start),
                                          to: cal.startOfDay(for: Date())).day ?? 0
         guard elapsed >= 0 else { return nil }
-        let index = elapsed / 7
-        // Past the last phase the ramp is done — there is no phase left to complete.
-        guard index < rampPhases.count else { return nil }
-        // Days since the CURRENT phase began, i.e. since the last increase. `nil` in phase 1:
-        // starting a ramp is not a step UP, it is the starting dose, and saying "stepped up" of a
-        // first dose would misdescribe it.
-        let sinceStep = index == 0 ? nil : elapsed - (index * 7)
-        return (week: index + 1, total: rampPhases.count, daysSinceStepUp: sinceStep)
+
+        var consumed = 0
+        for (index, phase) in rampPhases.enumerated() {
+            let duration = max(1, phase.durationDays)   // a zero-day step would never advance
+            if elapsed < consumed + duration {
+                return (step: index + 1,
+                        total: rampPhases.count,
+                        daysSinceStepUp: index == 0 ? nil : elapsed - consumed)
+            }
+            consumed += duration
+        }
+        // Past the last step the ramp is finished — there is no step left to be on.
+        return nil
     }
 
     /// The ramp dose for `date` (nil when no plan): before start → first phase; inside a phase →
