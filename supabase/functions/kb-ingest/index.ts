@@ -1,8 +1,19 @@
 // Ingest the vetted corpus into kb_chunks with gte-small embeddings. Admin-only, idempotent
-// (clears + reinserts). Run after any corpus change:
-//   curl -X POST "https://<ref>.supabase.co/functions/v1/kb-ingest" \
-//        -H "Authorization: Bearer <SERVICE_ROLE_KEY>"
-// The corpus JSON is bundled via imports, so no separate upload step.
+// (clears + reinserts). The corpus JSON is bundled via imports, so no separate upload step.
+//
+// **Run it as a LOOP — one call does not finish the job.** Each request handles one slice and
+// returns `{from, to, total, done}`; `start=0` clears the table, so the full loop is an idempotent
+// refresh. Auth is the `x-kb-admin` header (see the gate below); the service-role bearer is a legacy
+// fallback that no longer matches once project keys rotate.
+//
+//   REF=<project-ref>; KB=<KB_INGEST_TOKEN>; start=0
+//   while :; do
+//     r=$(curl -s -X POST "https://$REF.supabase.co/functions/v1/kb-ingest?start=$start&count=4" \
+//              -H "x-kb-admin: $KB")
+//     echo "$r"
+//     case "$r" in *'"done":true'*) break;; esac
+//     start=$(printf '%s' "$r" | python3 -c "import json,sys; print(json.load(sys.stdin)['to'])")
+//   done
 import { createClient } from "jsr:@supabase/supabase-js@2";
 // `corpus.json` is GENERATED from the Swift catalog by `swift run kb-export`, never hand-edited —
 // CI regenerates and diffs it, so a compound added to `CompoundCatalog` cannot silently fail to
@@ -123,7 +134,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // the full loop is still an idempotent refresh.
   const url = new URL(req.url);
   const start = Math.max(0, parseInt(url.searchParams.get("start") ?? "0", 10) || 0);
-  const count = Math.max(1, parseInt(url.searchParams.get("count") ?? "8", 10) || 8);
+  // **4, lowered from 8.** Adding compound profiles roughly doubled the average chunk, and at 8 the
+  // worker now trips WORKER_RESOURCE_LIMIT on every slice — a platform-level failure that returns
+  // `{code, message}` rather than this function's own `{error}` shape, so a caller checking only for
+  // `error` loops forever making no progress. Measured against the live project: 8 fails, 4 succeeds.
+  const count = Math.max(1, parseInt(url.searchParams.get("count") ?? "4", 10) || 4);
   try {
     const chunks = buildChunks();
     const total = chunks.length;
